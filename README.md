@@ -1,24 +1,40 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-## Getting Started
-
-First, run the development server:
+## First-time setup
 
 ```bash
+npm install
+
+# Start Supabase locally (requires Docker)
+npx supabase start
+
+# Add the printed DB URL to .env.local:
+# DATABASE_URL=postgresql://postgres:postgres@localhost:54322/postgres
+
+npm run db:migrate
+npm run db:seed      # optional
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Starting up again
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npx supabase start   # if not already running
+npm run dev          # runs db:migrate then starts the dev server
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Open [http://localhost:3000](http://localhost:3000) to see the result.
+
+## Database
+
+Uses [Drizzle ORM](https://orm.drizzle.team) with [Supabase](https://supabase.com) (Postgres). Schema is defined in `lib/schema.ts`.
+
+```bash
+npm run db:generate  # generate migrations from schema changes
+npm run db:migrate   # apply migrations
+npm run db:studio    # open Drizzle Studio
+npm run db:seed      # seed the database
+```
 
 ## Learn More
 
