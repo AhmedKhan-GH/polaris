@@ -8,6 +8,27 @@
       "when": 1776192839170,
       "tag": "0000_flat_thunderbird",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1776566982103,
+      "tag": "0001_tranquil_bug",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1776576645080,
+      "tag": "0002_yellow_vance_astro",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1776579993629,
+      "tag": "0003_burly_lorna_dane",
+      "breakpoints": true
     }
   ]
 }

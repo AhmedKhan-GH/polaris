@@ -1,11 +1,15 @@
-import { pgTable, text, integer, serial } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
+import { bigint, pgSequence, pgTable, timestamp, uuid } from "drizzle-orm/pg-core";
 
-export const posts = pgTable("posts", {
-  id: serial("id").primaryKey(),
-  title: text("title").notNull(),
-  content: text("content").notNull(),
-  createdAt: text("created_at")
+export const orderNumberSeq = pgSequence("order_number_seq", {
+  startWith: 1000000,
+});
+
+export const orders = pgTable("orders", {
+  id: uuid("id").primaryKey(),
+  orderNumber: bigint("order_number", { mode: "number" })
     .notNull()
-    .default(sql`(current_timestamp)`),
+    .unique()
+    .default(sql`nextval('order_number_seq')`),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
 });

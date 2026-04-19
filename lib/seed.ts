@@ -1,14 +1,16 @@
+import { randomUUID } from "node:crypto";
 import { db } from "./db";
-import { posts } from "./schema";
+import { orders } from "./schema";
 
 async function seed() {
-  await db.insert(posts).values([
-    { title: "Getting Started with Drizzle", content: "Drizzle ORM is a TypeScript ORM that feels like writing SQL." },
-    { title: "Server Components & Databases", content: "Next.js Server Components can query databases directly — no API layer needed." },
-    { title: "SQLite for Development", content: "SQLite is a great choice for local development — zero config, file-based, and fast." },
+  await db.insert(orders).values([
+    { id: randomUUID() },
+    { id: randomUUID() },
+    { id: randomUUID() },
+    { id: randomUUID() },
   ]);
 
-  console.log("Seeded 3 posts.");
+  console.log("Seeded 4 orders.");
 }
 
 seed();
