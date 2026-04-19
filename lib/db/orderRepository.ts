@@ -1,15 +1,7 @@
 import { eq } from 'drizzle-orm'
 import { db } from '../db'
 import { orders } from '../schema'
-import type { Order } from '../domain/order'
-
-function toOrder(row: typeof orders.$inferSelect): Order {
-  return {
-    id: row.id,
-    orderNumber: row.orderNumber,
-    createdAt: row.createdAt,
-  }
-}
+import { toOrder, type Order } from '../domain/order'
 
 export async function findOrderById(id: string): Promise<Order | null> {
   const rows = await db.select().from(orders).where(eq(orders.id, id)).limit(1)

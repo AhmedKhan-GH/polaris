@@ -5,6 +5,7 @@ export default defineConfig({
   plugins: [tsconfigPaths()],
   test: {
     environment: 'node',
+    reporters: ['verbose'],
     testTimeout: 120_000,
     hookTimeout: 120_000,
     include: ['tests/**/*.test.ts'],
