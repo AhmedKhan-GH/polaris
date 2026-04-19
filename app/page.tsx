@@ -1,34 +1,56 @@
-import { db } from "@/lib/db";
-import { posts } from "@/lib/schema";
+import { findAllOrders } from "@/lib/db/orderRepository";
+import { createOrderAction } from "./actions";
+
+const COLUMNS = ["Drafting", "Reviewing", "Invoicing", "Archiving"];
 
 export default async function Home() {
-  const allPosts = await db.select().from(posts);
+  const orders = await findAllOrders();
+  const drafting = [...orders].reverse();
 
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col gap-8 py-32 px-16 bg-white dark:bg-black">
-        <h1 className="text-3xl font-semibold tracking-tight text-black dark:text-zinc-50">
-          Posts
-        </h1>
-        <ul className="flex flex-col gap-4">
-          {allPosts.map((post) => (
-            <li
-              key={post.id}
-              className="rounded-lg border border-black/[.08] p-6 dark:border-white/[.145]"
+    <main className="flex flex-1 flex-col gap-6 p-6 overflow-hidden">
+      <header className="flex items-center justify-between">
+        <h1 className="text-xl font-semibold text-zinc-50">Orders</h1>
+        <form action={createOrderAction}>
+          <button
+            type="submit"
+            className="rounded-md bg-white px-3 py-1.5 text-sm font-medium text-zinc-900 hover:bg-zinc-200"
+          >
+            New Order
+          </button>
+        </form>
+      </header>
+
+      <div className="grid flex-1 min-h-0 gap-4 overflow-x-auto" style={{ gridTemplateColumns: "repeat(4, minmax(240px, 1fr))" }}>
+        {COLUMNS.map((column) => {
+          const tiles = column === "Drafting" ? drafting : [];
+          return (
+            <section
+              key={column}
+              className="flex min-h-0 flex-col gap-3 rounded-lg border border-zinc-800 bg-zinc-900 p-3"
             >
-              <h2 className="text-lg font-medium text-black dark:text-zinc-50">
-                {post.title}
-              </h2>
-              <p className="mt-2 text-zinc-600 dark:text-zinc-400">
-                {post.content}
-              </p>
-              <time className="mt-3 block text-sm text-zinc-400 dark:text-zinc-500">
-                {post.createdAt}
-              </time>
-            </li>
-          ))}
-        </ul>
-      </main>
-    </div>
+              <div className="flex items-center justify-between px-1">
+                <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-300">
+                  {column}
+                </h2>
+                <span className="rounded-full bg-zinc-800 px-2 py-0.5 text-[11px] font-medium text-zinc-300">
+                  {tiles.length}
+                </span>
+              </div>
+              <ul className="flex flex-1 flex-col gap-2 overflow-y-auto">
+                {tiles.map((order) => (
+                  <li
+                    key={order.id}
+                    className="rounded-md border border-zinc-700 bg-zinc-800 px-3 py-2 font-mono text-sm font-medium text-zinc-50"
+                  >
+                    {order.orderNumber}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          );
+        })}
+      </div>
+    </main>
   );
 }
