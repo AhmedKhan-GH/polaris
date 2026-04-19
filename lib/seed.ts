@@ -1,16 +1,15 @@
 import { randomUUID } from "node:crypto";
 import { db } from "./db";
+import { log } from "./log";
 import { orders } from "./schema";
 
 async function seed() {
-  await db.insert(orders).values([
-    { id: randomUUID() },
-    { id: randomUUID() },
-    { id: randomUUID() },
-    { id: randomUUID() },
-  ]);
+  const count = 4;
+  await db.insert(orders).values(
+    Array.from({ length: count }, () => ({ id: randomUUID() })),
+  );
 
-  console.log("Seeded 4 orders.");
+  log.info({ count }, "seeded orders");
 }
 
 seed();
