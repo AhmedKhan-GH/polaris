@@ -4,23 +4,19 @@ import { useEffect, useOptimistic, useState } from 'react'
 import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js'
 import { createOrderAction } from './actions'
 import { getSupabaseClient } from '@/lib/supabase'
-import type { Order } from '@/lib/domain/order'
+import { parseOrderRow, type Order } from '@/lib/domain/order'
 
 const COLUMNS = ['Drafting', 'Reviewing', 'Invoicing', 'Archiving'] as const
 
 type OrderTile = Order & { pending?: boolean }
 
-type OrderRow = {
-  id: string
-  order_number: number | string
-  created_at: string
-}
-
-function rowToOrder(row: OrderRow): Order {
-  return {
-    id: row.id,
-    orderNumber: Number(row.order_number),
-    createdAt: new Date(row.created_at),
+function safeParseOrder(row: unknown, source: 'insert' | 'update'): Order | null {
+  try {
+    return parseOrderRow(row)
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.warn(`[OrdersBoard] ignored malformed ${source} payload`, { row, err })
+    return null
   }
 }
 
@@ -38,14 +34,16 @@ export function OrdersBoard({ initial }: { initial: Order[] }) {
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'orders' },
-        (payload: RealtimePostgresChangesPayload<OrderRow>) => {
+        (payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => {
           if (payload.eventType === 'INSERT') {
-            const incoming = rowToOrder(payload.new)
+            const incoming = safeParseOrder(payload.new, 'insert')
+            if (!incoming) return
             setOrders((prev) =>
               prev.some((o) => o.id === incoming.id) ? prev : [...prev, incoming],
             )
           } else if (payload.eventType === 'UPDATE') {
-            const incoming = rowToOrder(payload.new)
+            const incoming = safeParseOrder(payload.new, 'update')
+            if (!incoming) return
             setOrders((prev) =>
               prev.map((o) => (o.id === incoming.id ? incoming : o)),
             )
