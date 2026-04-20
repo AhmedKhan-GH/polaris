@@ -5,9 +5,9 @@ import { Fragment, type ReactNode } from 'react'
 // The last column (Archiving) has no outbound transition, so it gets an
 // invisible spacer to keep all four sections top-aligned.
 const TRANSITION_LABELS = [
-  'Submitted →',
-  'Invoiced →',
-  'Closed →',
+  'Submit →',
+  'Invoice →',
+  'Close →',
   undefined,
 ] as const
 
