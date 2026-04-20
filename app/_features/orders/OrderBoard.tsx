@@ -3,6 +3,7 @@
 import { useEffect, useOptimistic, useState, useTransition } from 'react'
 import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js'
 import { createOrderAction } from './actions'
+import { OrderBoardShell } from './OrderBoardShell'
 import { OrderColumn } from './OrderColumn'
 import type { BoardCard } from './OrderCard'
 import { getSupabaseClient } from '@/lib/supabase'
@@ -96,9 +97,8 @@ export function OrderBoard({ initial }: { initial: Order[] }) {
   }
 
   return (
-    <main className="flex min-h-0 flex-1 flex-col gap-6 overflow-hidden p-6">
-      <header className="shrink-0 flex items-center gap-4">
-        <h1 className="text-xl font-semibold text-zinc-50">Orders</h1>
+    <OrderBoardShell
+      headerAction={
         <button
           type="button"
           onClick={handleCreateOrder}
@@ -107,48 +107,13 @@ export function OrderBoard({ initial }: { initial: Order[] }) {
         >
           New Order
         </button>
-      </header>
-
-      <div className="flex-1 min-h-0 flex overflow-x-auto scrollbar-thin pb-2">
-        <div className="flex flex-1 min-h-0 pr-4 items-stretch">
-          <div className="flex min-h-0 flex-col gap-2">
-            <span className="px-1 text-right text-sm font-semibold uppercase tracking-wider text-zinc-400 whitespace-nowrap">
-              Submitted →
-            </span>
-            <OrderColumn name="Drafting" cards={optimistic} />
-          </div>
-          <div
-            aria-hidden
-            className="mx-4 w-0.5 shrink-0 self-stretch rounded-full bg-zinc-700"
-          />
-          <div className="flex min-h-0 flex-col gap-2">
-            <span className="px-1 text-right text-sm font-semibold uppercase tracking-wider text-zinc-400 whitespace-nowrap">
-              Invoiced →
-            </span>
-            <OrderColumn name="Reviewing" cards={[]} />
-          </div>
-          <div
-            aria-hidden
-            className="mx-4 w-0.5 shrink-0 self-stretch rounded-full bg-zinc-700"
-          />
-          <div className="flex min-h-0 flex-col gap-2">
-            <span className="px-1 text-right text-sm font-semibold uppercase tracking-wider text-zinc-400 whitespace-nowrap">
-              Closed →
-            </span>
-            <OrderColumn name="Fulfilling" cards={[]} />
-          </div>
-          <div
-            aria-hidden
-            className="mx-4 w-0.5 shrink-0 self-stretch rounded-full bg-zinc-700"
-          />
-          <div className="flex min-h-0 flex-col gap-2">
-            <span aria-hidden className="px-1 text-right text-sm font-semibold uppercase tracking-wider text-transparent whitespace-nowrap select-none">
-              &nbsp;
-            </span>
-            <OrderColumn name="Archiving" cards={[]} />
-          </div>
-        </div>
-      </div>
-    </main>
+      }
+      columns={[
+        <OrderColumn key="drafting" name="Drafting" cards={optimistic} />,
+        <OrderColumn key="reviewing" name="Reviewing" cards={[]} />,
+        <OrderColumn key="fulfilling" name="Fulfilling" cards={[]} />,
+        <OrderColumn key="archiving" name="Archiving" cards={[]} />,
+      ]}
+    />
   )
 }
