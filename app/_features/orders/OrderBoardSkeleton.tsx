@@ -1,3 +1,5 @@
+import { OrderCardSkeleton } from './OrderCardSkeleton'
+
 const COLUMNS = ['Drafting', 'Reviewing', 'Invoicing', 'Archiving'] as const
 const SKELETON_CARDS_PER_COLUMN = 4
 
@@ -29,11 +31,7 @@ export function OrderBoardSkeleton() {
               </div>
               <ul className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden">
                 {Array.from({ length: SKELETON_CARDS_PER_COLUMN }).map((_, i) => (
-                  <li
-                    key={i}
-                    aria-hidden
-                    className="h-8 rounded-md border border-zinc-700 bg-zinc-800 animate-pulse"
-                  />
+                  <OrderCardSkeleton key={i} />
                 ))}
               </ul>
             </section>
