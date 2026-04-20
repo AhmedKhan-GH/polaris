@@ -30,3 +30,46 @@
 .scrollbar-thin::-webkit-scrollbar-thumb:hover {
   background-color: rgb(113 113 122);
 }
+
+/* Loading animations. Tailwind's default animate-pulse cycles too fast on
+   a dark palette without enough contrast for the whole-card swing to
+   register. We use a gentle 1 -> 0.55 breath at a slow 1.8s cycle so the
+   card reads as clearly loading without strobing. The per-dot animation
+   below is the primary indicator; the card breath is secondary context. */
+@keyframes loading-card {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.75;
+  }
+}
+.animate-loading-card {
+  animation: loading-card 1.8s ease-in-out infinite;
+}
+
+/* Per-dot stagger. Each period fades in turn so "Loading..." reads as an
+   active three-beat cycle. Delays are applied inline to the 2nd and 3rd
+   dots. */
+@keyframes loading-dot {
+  0%,
+  80%,
+  100% {
+    opacity: 0.75;
+  }
+  40% {
+    opacity: 1;
+  }
+}
+.animate-loading-dot {
+  animation: loading-dot 1.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-loading-card,
+  .animate-loading-dot {
+    animation: none;
+    opacity: 0.75;
+  }
+}

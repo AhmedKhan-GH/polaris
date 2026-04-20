@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useOptimistic, useState } from 'react'
+import { useEffect, useOptimistic, useState, useTransition } from 'react'
 import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js'
 import { createOrderAction } from './actions'
 import { OrderColumn } from './OrderColumn'
@@ -35,6 +35,7 @@ export function OrderBoard({ initial }: { initial: Order[] }) {
     orders,
     mergeById,
   )
+  const [isCreating, startCreate] = useTransition()
 
   useEffect(() => {
     const supabase = getSupabaseClient()
@@ -70,35 +71,44 @@ export function OrderBoard({ initial }: { initial: Order[] }) {
     }
   }, [])
 
-  async function handleCreateOrder() {
-    // Client-generated UUID is the permanent id. The optimistic card and the
-    // real row share a key, so React reconciles the `…` card into the final
-    // card in place --- no unmount/remount, no doubled state.
-    const id = crypto.randomUUID()
-    addOptimistic({
-      id,
-      orderNumber: 0,
-      createdAt: new Date(),
-      pending: true,
+  function handleCreateOrder() {
+    // Guard against overlapping server actions: each click fires a server
+    // round-trip + route revalidation, so back-to-back spam-clicks stack
+    // into parallel RSC rerenders. The transition's pending flag disables
+    // the button between submission and resolution. User can still create
+    // many orders --- just one in flight at a time.
+    if (isCreating) return
+    startCreate(async () => {
+      // Client-generated UUID is the permanent id. The optimistic card and
+      // the real row share a key, so React reconciles the skeleton card
+      // into the final card in place --- no unmount/remount, no doubled
+      // state.
+      const id = crypto.randomUUID()
+      addOptimistic({
+        id,
+        orderNumber: 0,
+        createdAt: new Date(),
+        pending: true,
+      })
+      const created = await createOrderAction(id)
+      setOrders((prev) =>
+        prev.some((o) => o.id === created.id) ? prev : [created, ...prev],
+      )
     })
-    const created = await createOrderAction(id)
-    setOrders((prev) =>
-      prev.some((o) => o.id === created.id) ? prev : [created, ...prev],
-    )
   }
 
   return (
     <main className="flex min-h-0 flex-1 flex-col gap-6 overflow-hidden p-6">
       <header className="shrink-0 flex items-center justify-between">
         <h1 className="text-xl font-semibold text-zinc-50">Orders</h1>
-        <form action={handleCreateOrder}>
-          <button
-            type="submit"
-            className="rounded-md bg-white px-3 py-1.5 text-sm font-medium text-zinc-900 hover:bg-zinc-200"
-          >
-            New Order
-          </button>
-        </form>
+        <button
+          type="button"
+          onClick={handleCreateOrder}
+          disabled={isCreating}
+          className="rounded-md bg-white px-3 py-1.5 text-sm font-medium text-zinc-900 transition-opacity hover:bg-zinc-200 disabled:cursor-wait disabled:opacity-40"
+        >
+          New Order
+        </button>
       </header>
 
       <div className="flex-1 min-h-0 flex overflow-x-auto scrollbar-thin pb-2">
