@@ -19,11 +19,21 @@ function safeParseOrder(row: unknown, source: 'insert' | 'update'): Order | null
   }
 }
 
+function mergeById<T extends { id: string }>(list: T[], next: T): T[] {
+  const index = list.findIndex((item) => item.id === next.id)
+  if (index === -1) return [next, ...list]
+  const copy = list.slice()
+  copy[index] = next
+  return copy
+}
+
 export function OrdersBoard({ initial }: { initial: Order[] }) {
-  const [orders, setOrders] = useState<Order[]>(initial)
+  const [orders, setOrders] = useState<Order[]>(() =>
+    [...initial].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()),
+  )
   const [optimistic, addOptimistic] = useOptimistic<OrderTile[], OrderTile>(
     orders,
-    (state, newOrder) => [...state, newOrder],
+    mergeById,
   )
 
   useEffect(() => {
@@ -38,7 +48,7 @@ export function OrdersBoard({ initial }: { initial: Order[] }) {
             const incoming = safeParseOrder(payload.new, 'insert')
             if (!incoming) return
             setOrders((prev) =>
-              prev.some((o) => o.id === incoming.id) ? prev : [...prev, incoming],
+              prev.some((o) => o.id === incoming.id) ? prev : [incoming, ...prev],
             )
           } else if (payload.eventType === 'UPDATE') {
             const incoming = safeParseOrder(payload.new, 'update')
@@ -61,16 +71,21 @@ export function OrdersBoard({ initial }: { initial: Order[] }) {
   }, [])
 
   async function handleCreateOrder() {
+    // Client-generated UUID is the permanent id. The optimistic tile and the
+    // real row share a key, so React reconciles the `…` tile into the final
+    // tile in place --- no unmount/remount, no doubled state.
+    const id = crypto.randomUUID()
     addOptimistic({
-      id: `optimistic-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      id,
       orderNumber: 0,
       createdAt: new Date(),
       pending: true,
     })
-    await createOrderAction()
+    const created = await createOrderAction(id)
+    setOrders((prev) =>
+      prev.some((o) => o.id === created.id) ? prev : [created, ...prev],
+    )
   }
-
-  const drafting = [...optimistic].reverse()
 
   return (
     <main className="flex min-h-0 flex-1 flex-col gap-6 overflow-hidden p-6">
@@ -89,7 +104,7 @@ export function OrdersBoard({ initial }: { initial: Order[] }) {
       <div className="flex-1 min-h-0 flex overflow-x-auto scrollbar-thin pb-2">
         <div className="flex gap-4 pr-4">
           {COLUMNS.map((column) => {
-            const tiles = column === 'Drafting' ? drafting : []
+            const tiles = column === 'Drafting' ? optimistic : []
             return (
               <section
                 key={column}
@@ -108,8 +123,8 @@ export function OrdersBoard({ initial }: { initial: Order[] }) {
                     <li
                       key={order.id}
                       className={
-                        'rounded-md border border-zinc-700 bg-zinc-800 px-3 py-2 font-mono text-sm font-medium text-zinc-50 ' +
-                        (order.pending ? 'opacity-50' : '')
+                        'rounded-md border border-zinc-700 bg-zinc-800 px-3 py-2 font-mono text-sm font-medium text-zinc-50 transition-opacity ' +
+                        (order.pending ? 'opacity-50' : 'opacity-100')
                       }
                     >
                       {order.pending ? '…' : order.orderNumber}
