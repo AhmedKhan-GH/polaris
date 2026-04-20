@@ -4,6 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "drizzle-kit migrate && next dev",
+    "dev:up": "npx supabase start && npm run dev",
+    "dev:down": "npx supabase stop && docker ps -aq --filter label=org.testcontainers | xargs -r docker rm -f",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
