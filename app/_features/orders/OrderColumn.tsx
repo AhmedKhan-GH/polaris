@@ -10,7 +10,7 @@ export function OrderColumn({
   cards: BoardCard[]
 }) {
   return (
-    <section className="flex w-64 shrink-0 min-h-0 flex-col gap-3 rounded-lg border border-zinc-800 bg-zinc-900 p-3">
+    <section className="flex w-64 shrink-0 min-h-0 flex-1 flex-col gap-3 rounded-lg border border-zinc-800 bg-zinc-900 p-3">
       <div className="flex items-center justify-between px-1">
         <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-300">
           {name}

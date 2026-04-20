@@ -8,8 +8,6 @@ import type { BoardCard } from './OrderCard'
 import { getSupabaseClient } from '@/lib/supabase'
 import { parseOrderRow, type Order } from '@/lib/domain/order'
 
-const COLUMNS = ['Drafting', 'Reviewing', 'Invoicing', 'Archiving'] as const
-
 function safeParseOrder(row: unknown, source: 'insert' | 'update'): Order | null {
   try {
     return parseOrderRow(row)
@@ -99,7 +97,7 @@ export function OrderBoard({ initial }: { initial: Order[] }) {
 
   return (
     <main className="flex min-h-0 flex-1 flex-col gap-6 overflow-hidden p-6">
-      <header className="shrink-0 flex items-center justify-between">
+      <header className="shrink-0 flex items-center gap-4">
         <h1 className="text-xl font-semibold text-zinc-50">Orders</h1>
         <button
           type="button"
@@ -112,14 +110,43 @@ export function OrderBoard({ initial }: { initial: Order[] }) {
       </header>
 
       <div className="flex-1 min-h-0 flex overflow-x-auto scrollbar-thin pb-2">
-        <div className="flex gap-4 pr-4">
-          {COLUMNS.map((column) => (
-            <OrderColumn
-              key={column}
-              name={column}
-              cards={column === 'Drafting' ? optimistic : []}
-            />
-          ))}
+        <div className="flex flex-1 min-h-0 pr-4 items-stretch">
+          <div className="flex min-h-0 flex-col gap-2">
+            <span className="px-1 text-right text-sm font-semibold uppercase tracking-wider text-zinc-400 whitespace-nowrap">
+              Submitted →
+            </span>
+            <OrderColumn name="Drafting" cards={optimistic} />
+          </div>
+          <div
+            aria-hidden
+            className="mx-4 w-0.5 shrink-0 self-stretch rounded-full bg-zinc-700"
+          />
+          <div className="flex min-h-0 flex-col gap-2">
+            <span className="px-1 text-right text-sm font-semibold uppercase tracking-wider text-zinc-400 whitespace-nowrap">
+              Invoiced →
+            </span>
+            <OrderColumn name="Reviewing" cards={[]} />
+          </div>
+          <div
+            aria-hidden
+            className="mx-4 w-0.5 shrink-0 self-stretch rounded-full bg-zinc-700"
+          />
+          <div className="flex min-h-0 flex-col gap-2">
+            <span className="px-1 text-right text-sm font-semibold uppercase tracking-wider text-zinc-400 whitespace-nowrap">
+              Closed →
+            </span>
+            <OrderColumn name="Fulfilling" cards={[]} />
+          </div>
+          <div
+            aria-hidden
+            className="mx-4 w-0.5 shrink-0 self-stretch rounded-full bg-zinc-700"
+          />
+          <div className="flex min-h-0 flex-col gap-2">
+            <span aria-hidden className="px-1 text-right text-sm font-semibold uppercase tracking-wider text-transparent whitespace-nowrap select-none">
+              &nbsp;
+            </span>
+            <OrderColumn name="Archiving" cards={[]} />
+          </div>
         </div>
       </div>
     </main>
