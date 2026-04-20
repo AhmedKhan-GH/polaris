@@ -1,7 +1,7 @@
 const COLUMNS = ['Drafting', 'Reviewing', 'Invoicing', 'Archiving'] as const
-const SKELETON_TILES_PER_COLUMN = 4
+const SKELETON_CARDS_PER_COLUMN = 4
 
-export function BoardSkeleton() {
+export function OrderBoardSkeleton() {
   return (
     <main className="flex min-h-0 flex-1 flex-col gap-6 overflow-hidden p-6">
       <header className="shrink-0 flex items-center justify-between">
@@ -28,7 +28,7 @@ export function BoardSkeleton() {
                 </span>
               </div>
               <ul className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden">
-                {Array.from({ length: SKELETON_TILES_PER_COLUMN }).map((_, i) => (
+                {Array.from({ length: SKELETON_CARDS_PER_COLUMN }).map((_, i) => (
                   <li
                     key={i}
                     aria-hidden

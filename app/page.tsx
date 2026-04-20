@@ -1,17 +1,17 @@
 import { Suspense } from 'react'
 import { findAllOrders } from '@/lib/db/orderRepository'
-import { BoardSkeleton } from './BoardSkeleton'
-import { OrdersBoard } from './OrdersBoard'
+import { OrderBoardSkeleton } from './_features/orders/OrderBoardSkeleton'
+import { OrderBoard } from './_features/orders/OrderBoard'
 
 export default function Home() {
   return (
-    <Suspense fallback={<BoardSkeleton />}>
-      <BoardData />
+    <Suspense fallback={<OrderBoardSkeleton />}>
+      <OrderBoardData />
     </Suspense>
   )
 }
 
-async function BoardData() {
+async function OrderBoardData() {
   const initial = await findAllOrders()
-  return <OrdersBoard initial={initial} />
+  return <OrderBoard initial={initial} />
 }

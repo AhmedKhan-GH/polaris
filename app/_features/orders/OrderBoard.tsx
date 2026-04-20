@@ -3,18 +3,18 @@
 import { useEffect, useOptimistic, useState } from 'react'
 import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js'
 import { createOrderAction } from './actions'
+import { OrderColumn } from './OrderColumn'
+import type { BoardCard } from './OrderCard'
 import { getSupabaseClient } from '@/lib/supabase'
 import { parseOrderRow, type Order } from '@/lib/domain/order'
 
 const COLUMNS = ['Drafting', 'Reviewing', 'Invoicing', 'Archiving'] as const
 
-type OrderTile = Order & { pending?: boolean }
-
 function safeParseOrder(row: unknown, source: 'insert' | 'update'): Order | null {
   try {
     return parseOrderRow(row)
   } catch (err) {
-    console.warn(`[OrdersBoard] ignored malformed ${source} payload`, { row, err })
+    console.warn(`[OrderBoard] ignored malformed ${source} payload`, { row, err })
     return null
   }
 }
@@ -27,11 +27,11 @@ function mergeById<T extends { id: string }>(list: T[], next: T): T[] {
   return copy
 }
 
-export function OrdersBoard({ initial }: { initial: Order[] }) {
+export function OrderBoard({ initial }: { initial: Order[] }) {
   const [orders, setOrders] = useState<Order[]>(() =>
     [...initial].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()),
   )
-  const [optimistic, addOptimistic] = useOptimistic<OrderTile[], OrderTile>(
+  const [optimistic, addOptimistic] = useOptimistic<BoardCard[], BoardCard>(
     orders,
     mergeById,
   )
@@ -71,9 +71,9 @@ export function OrdersBoard({ initial }: { initial: Order[] }) {
   }, [])
 
   async function handleCreateOrder() {
-    // Client-generated UUID is the permanent id. The optimistic tile and the
-    // real row share a key, so React reconciles the `…` tile into the final
-    // tile in place --- no unmount/remount, no doubled state.
+    // Client-generated UUID is the permanent id. The optimistic card and the
+    // real row share a key, so React reconciles the `…` card into the final
+    // card in place --- no unmount/remount, no doubled state.
     const id = crypto.randomUUID()
     addOptimistic({
       id,
@@ -103,37 +103,13 @@ export function OrdersBoard({ initial }: { initial: Order[] }) {
 
       <div className="flex-1 min-h-0 flex overflow-x-auto scrollbar-thin pb-2">
         <div className="flex gap-4 pr-4">
-          {COLUMNS.map((column) => {
-            const tiles = column === 'Drafting' ? optimistic : []
-            return (
-              <section
-                key={column}
-                className="flex w-64 shrink-0 min-h-0 flex-col gap-3 rounded-lg border border-zinc-800 bg-zinc-900 p-3"
-              >
-                <div className="flex items-center justify-between px-1">
-                  <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-300">
-                    {column}
-                  </h2>
-                  <span className="rounded-full bg-zinc-800 px-2 py-0.5 text-[11px] font-medium text-zinc-300">
-                    {tiles.length}
-                  </span>
-                </div>
-                <ul className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overflow-x-hidden scrollbar-thin">
-                  {tiles.map((order) => (
-                    <li
-                      key={order.id}
-                      className={
-                        'rounded-md border border-zinc-700 bg-zinc-800 px-3 py-2 font-mono text-sm font-medium text-zinc-50 transition-opacity ' +
-                        (order.pending ? 'opacity-50' : 'opacity-100')
-                      }
-                    >
-                      {order.pending ? '…' : order.orderNumber}
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            )
-          })}
+          {COLUMNS.map((column) => (
+            <OrderColumn
+              key={column}
+              name={column}
+              cards={column === 'Drafting' ? optimistic : []}
+            />
+          ))}
         </div>
       </div>
     </main>
