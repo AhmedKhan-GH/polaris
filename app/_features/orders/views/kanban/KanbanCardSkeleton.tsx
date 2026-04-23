@@ -1,8 +1,8 @@
-import { OrderCardShell } from './OrderCardShell'
+import { KanbanCardShell } from './KanbanCardShell'
 
-export function OrderCardSkeleton() {
+export function KanbanCardSkeleton() {
   return (
-    <OrderCardShell loading>
+    <KanbanCardShell loading>
       Loading
       <span className="animate-loading-dot">.</span>
       <span className="animate-loading-dot" style={{ animationDelay: '0.2s' }}>
@@ -11,6 +11,6 @@ export function OrderCardSkeleton() {
       <span className="animate-loading-dot" style={{ animationDelay: '0.4s' }}>
         .
       </span>
-    </OrderCardShell>
+    </KanbanCardShell>
   )
 }

@@ -1,18 +1,18 @@
 import type { ReactNode } from 'react'
 
-interface OrderColumnShellProps {
+interface KanbanColumnShellProps {
   name: string
   count: ReactNode
   loading?: boolean
   children?: ReactNode
 }
 
-export function OrderColumnShell({
+export function KanbanColumnShell({
   name,
   count,
   loading,
   children,
-}: OrderColumnShellProps) {
+}: KanbanColumnShellProps) {
   const sectionClass = loading
     ? 'flex w-64 shrink-0 min-h-0 flex-1 flex-col gap-3 rounded-lg border border-zinc-800 bg-zinc-900 p-3 animate-loading-card'
     : 'flex w-64 shrink-0 min-h-0 flex-1 flex-col gap-3 rounded-lg border border-zinc-800 bg-zinc-900 p-3'
