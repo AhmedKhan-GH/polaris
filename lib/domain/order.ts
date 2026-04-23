@@ -38,3 +38,31 @@ export const orderRowSchema = z
 export function parseOrderRow(row: unknown): Order {
   return orderRowSchema.parse(row)
 }
+
+export function safeParseOrder(
+  row: unknown,
+  source: 'insert' | 'update',
+): Order | null {
+  try {
+    return parseOrderRow(row)
+  } catch (err) {
+    console.warn(`[orders] ignored malformed ${source} payload`, { row, err })
+    return null
+  }
+}
+
+export function sortOrdersNewestFirst<T extends { createdAt: Date }>(
+  orders: T[],
+): T[] {
+  return [...orders].sort(
+    (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
+  )
+}
+
+export function mergeById<T extends { id: string }>(list: T[], next: T): T[] {
+  const index = list.findIndex((item) => item.id === next.id)
+  if (index === -1) return [next, ...list]
+  const copy = list.slice()
+  copy[index] = next
+  return copy
+}

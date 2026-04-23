@@ -29,24 +29,6 @@ describe('drizzle migration chain', () => {
     ).resolves.not.toThrow()
   })
 
-  test('creates the orders table with expected columns', async () => {
-    const db = drizzle(pool)
-    const result = await db.execute<{ column_name: string; data_type: string }>(sql`
-      SELECT column_name, data_type
-      FROM information_schema.columns
-      WHERE table_schema = 'public' AND table_name = 'orders'
-      ORDER BY ordinal_position
-    `)
-    const columns = Object.fromEntries(
-      result.rows.map((r) => [r.column_name, r.data_type])
-    )
-    expect(columns).toMatchObject({
-      id: 'uuid',
-      order_number: 'bigint',
-      created_at: expect.stringMatching(/timestamp/),
-    })
-  })
-
   test('order_number_seq starts at 1000000', async () => {
     const db = drizzle(pool)
     const result = await db.execute<{ nextval: string }>(

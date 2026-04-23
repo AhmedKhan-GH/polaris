@@ -7,29 +7,15 @@ import { OrderBoardShell } from './OrderBoardShell'
 import { OrderColumn } from './OrderColumn'
 import type { BoardCard } from './OrderCard'
 import { getSupabaseClient } from '@/lib/supabase'
-import { parseOrderRow, type Order } from '@/lib/domain/order'
-
-function safeParseOrder(row: unknown, source: 'insert' | 'update'): Order | null {
-  try {
-    return parseOrderRow(row)
-  } catch (err) {
-    console.warn(`[OrderBoard] ignored malformed ${source} payload`, { row, err })
-    return null
-  }
-}
-
-function mergeById<T extends { id: string }>(list: T[], next: T): T[] {
-  const index = list.findIndex((item) => item.id === next.id)
-  if (index === -1) return [next, ...list]
-  const copy = list.slice()
-  copy[index] = next
-  return copy
-}
+import {
+  mergeById,
+  safeParseOrder,
+  sortOrdersNewestFirst,
+  type Order,
+} from '@/lib/domain/order'
 
 export function OrderBoard({ initial }: { initial: Order[] }) {
-  const [orders, setOrders] = useState<Order[]>(() =>
-    [...initial].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()),
-  )
+  const [orders, setOrders] = useState<Order[]>(() => sortOrdersNewestFirst(initial))
   const [optimistic, addOptimistic] = useOptimistic<BoardCard[], BoardCard>(
     orders,
     mergeById,
