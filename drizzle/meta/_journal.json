@@ -43,6 +43,13 @@
       "when": 1776918973063,
       "tag": "0005_uuid_default_random",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1776933407806,
+      "tag": "0006_client_correlation_id",
+      "breakpoints": true
     }
   ]
 }

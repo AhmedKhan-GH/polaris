@@ -17,8 +17,13 @@ export async function findAllOrders(): Promise<Order[]> {
   return rows.map(toOrder)
 }
 
-export async function insertOrder(): Promise<Order> {
-  const [row] = await db.insert(orders).values({}).returning()
+export async function insertOrder(
+  input?: { correlationId?: string },
+): Promise<Order> {
+  const [row] = await db
+    .insert(orders)
+    .values({ clientCorrelationId: input?.correlationId ?? null })
+    .returning()
   log.debug({ orderId: row.id, orderNumber: row.orderNumber }, 'insertOrder')
   return toOrder(row)
 }
