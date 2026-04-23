@@ -14,11 +14,23 @@ import {
   type Order,
 } from '@/lib/domain/order'
 
+type OptimisticAction =
+  | { type: 'add'; card: BoardCard }
+  | { type: 'finalize'; tempId: string }
+
+function applyOptimistic(list: BoardCard[], action: OptimisticAction): BoardCard[] {
+  if (action.type === 'add') return mergeById(list, action.card)
+  // Drop the temp skeleton. The real card is delivered via setOrders (or
+  // realtime) into the underlying `orders` state, so removing here is
+  // enough --- re-inserting it in the optimistic layer would duplicate it.
+  return list.filter((c) => c.id !== action.tempId)
+}
+
 export function OrderBoard({ initial }: { initial: Order[] }) {
   const [orders, setOrders] = useState<Order[]>(() => sortOrdersNewestFirst(initial))
-  const [optimistic, addOptimistic] = useOptimistic<BoardCard[], BoardCard>(
+  const [optimistic, dispatchOptimistic] = useOptimistic<BoardCard[], OptimisticAction>(
     orders,
-    mergeById,
+    applyOptimistic,
   )
   const [isCreating, startCreate] = useTransition()
 
@@ -64,18 +76,20 @@ export function OrderBoard({ initial }: { initial: Order[] }) {
     // many orders --- just one in flight at a time.
     if (isCreating) return
     startCreate(async () => {
-      // Client-generated UUID is the permanent id. The optimistic card and
-      // the real row share a key, so React reconciles the skeleton card
-      // into the final card in place --- no unmount/remount, no doubled
-      // state.
-      const id = crypto.randomUUID()
-      addOptimistic({
-        id,
+      // Temp id keys the optimistic skeleton until the server returns the
+      // real row. After the action resolves we dispatch `finalize` so the
+      // optimistic layer swaps the skeleton for the real card in place ---
+      // without this, both would render during the transition tail.
+      const tempId = crypto.randomUUID()
+      const tempCard: BoardCard = {
+        id: tempId,
         orderNumber: 0,
         createdAt: new Date(),
         pending: true,
-      })
-      const created = await createOrderAction(id)
+      }
+      dispatchOptimistic({ type: 'add', card: tempCard })
+      const created = await createOrderAction()
+      dispatchOptimistic({ type: 'finalize', tempId })
       setOrders((prev) =>
         prev.some((o) => o.id === created.id) ? prev : [created, ...prev],
       )

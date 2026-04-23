@@ -7,7 +7,6 @@ import { drizzle } from 'drizzle-orm/node-postgres'
 import { migrate } from 'drizzle-orm/node-postgres/migrator'
 import { Pool } from 'pg'
 import path from 'node:path'
-import { randomUUID } from 'node:crypto'
 
 const MIGRATIONS_FOLDER = path.resolve(__dirname, '..', 'drizzle')
 
@@ -51,43 +50,46 @@ describe('orderRepository', () => {
   })
 
   test('insertOrder auto-assigns orderNumber from the sequence', async () => {
-    const order = await repo.insertOrder({ id: randomUUID() })
+    const order = await repo.insertOrder()
     expect(order.orderNumber).toBe(1_000_000)
   })
 
   test('consecutive inserts produce monotonically increasing orderNumbers', async () => {
-    const a = await repo.insertOrder({ id: randomUUID() })
-    const b = await repo.insertOrder({ id: randomUUID() })
-    const c = await repo.insertOrder({ id: randomUUID() })
+    const a = await repo.insertOrder()
+    const b = await repo.insertOrder()
+    const c = await repo.insertOrder()
     expect([a.orderNumber, b.orderNumber, c.orderNumber]).toEqual([
       1_000_000, 1_000_001, 1_000_002,
     ])
   })
 
-  test('insertOrder populates createdAt server-side when only { id } is passed', async () => {
+  test('insertOrder has the database mint id and createdAt', async () => {
     const before = Date.now()
-    const order = await repo.insertOrder({ id: randomUUID() })
+    const order = await repo.insertOrder()
     const after = Date.now()
 
+    expect(order.id).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
+    )
     expect(order.createdAt).toBeInstanceOf(Date)
     expect(order.createdAt.getTime()).toBeGreaterThanOrEqual(before - 1_000)
     expect(order.createdAt.getTime()).toBeLessThanOrEqual(after + 1_000)
   })
 
   test('findOrderById returns the inserted order', async () => {
-    const inserted = await repo.insertOrder({ id: randomUUID() })
+    const inserted = await repo.insertOrder()
     const found = await repo.findOrderById(inserted.id)
     expect(found).toEqual(inserted)
   })
 
   test('findOrderById returns null for an unknown UUID', async () => {
-    const result = await repo.findOrderById(randomUUID())
+    const result = await repo.findOrderById('00000000-0000-0000-0000-000000000000')
     expect(result).toBeNull()
   })
 
   test('findAllOrders returns every inserted row projected through toOrder', async () => {
-    const a = await repo.insertOrder({ id: randomUUID() })
-    const b = await repo.insertOrder({ id: randomUUID() })
+    const a = await repo.insertOrder()
+    const b = await repo.insertOrder()
 
     const all = await repo.findAllOrders()
     expect(all.map((o) => o.id).sort()).toEqual([a.id, b.id].sort())

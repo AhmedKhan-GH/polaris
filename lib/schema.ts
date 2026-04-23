@@ -6,7 +6,7 @@ export const orderNumberSeq = pgSequence("order_number_seq", {
 });
 
 export const orders = pgTable("orders", {
-  id: uuid("id").primaryKey(),
+  id: uuid("id").primaryKey().defaultRandom(),
   orderNumber: bigint("order_number", { mode: "number" })
     .notNull()
     .unique()
