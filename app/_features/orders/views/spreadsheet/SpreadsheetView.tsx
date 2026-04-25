@@ -1,6 +1,7 @@
 'use client'
 
 import { type Order } from '@/lib/domain/order'
+import { useLoadMoreRef } from '../../useLoadMoreRef'
 
 // Locale + options pinned so server-rendered output matches the client's
 // first paint --- otherwise hydration mismatches on the comma/space and
@@ -20,7 +21,22 @@ function formatCreatedAt(date: Date): string {
   return `${datePart} · ${timePart}`
 }
 
-export function SpreadsheetView({ orders }: { orders: Order[] }) {
+export function SpreadsheetView({
+  orders,
+  hasNextPage,
+  isFetchingNextPage,
+  fetchNextPage,
+}: {
+  orders: Order[]
+  hasNextPage: boolean
+  isFetchingNextPage: boolean
+  fetchNextPage: () => void
+}) {
+  const loadMoreRef = useLoadMoreRef({
+    enabled: hasNextPage && !isFetchingNextPage,
+    onLoadMore: fetchNextPage,
+  })
+
   return (
     <div className="flex-1 min-h-0 overflow-auto scrollbar-thin rounded-lg border border-zinc-800 bg-zinc-900">
       <table className="min-w-full text-sm">
@@ -45,16 +61,33 @@ export function SpreadsheetView({ orders }: { orders: Order[] }) {
               </td>
             </tr>
           ) : (
-            orders.map((order) => (
-              <tr key={order.id} className="hover:bg-zinc-800/50">
-                <td className="px-4 py-3 font-mono text-zinc-50">
-                  {order.orderNumber}
-                </td>
-                <td className="px-4 py-3 text-zinc-300">
-                  {formatCreatedAt(order.createdAt)}
-                </td>
-              </tr>
-            ))
+            <>
+              {orders.map((order) => (
+                <tr key={order.id} className="hover:bg-zinc-800/50">
+                  <td className="px-4 py-3 font-mono text-zinc-50">
+                    {order.orderNumber}
+                  </td>
+                  <td className="px-4 py-3 text-zinc-300">
+                    {formatCreatedAt(order.createdAt)}
+                  </td>
+                </tr>
+              ))}
+              {hasNextPage && (
+                <tr ref={loadMoreRef} aria-hidden>
+                  <td colSpan={2} className="h-px p-0" />
+                </tr>
+              )}
+              {isFetchingNextPage && (
+                <tr>
+                  <td
+                    colSpan={2}
+                    className="px-4 py-3 text-center text-xs text-zinc-500"
+                  >
+                    Loading more…
+                  </td>
+                </tr>
+              )}
+            </>
           )}
         </tbody>
       </table>

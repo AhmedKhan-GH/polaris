@@ -10,7 +10,7 @@ import { OrdersView } from './_features/orders/OrdersView'
 import {
   ORDERS_PAGE_SIZE,
   ORDERS_QUERY_KEY,
-} from './_features/orders/useOrders'
+} from './_features/orders/ordersQuery'
 import { KanbanBoardShell } from './_features/orders/views/kanban/KanbanBoardShell'
 import { KanbanColumnShell } from './_features/orders/views/kanban/KanbanColumnShell'
 

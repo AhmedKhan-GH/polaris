@@ -8,12 +8,10 @@ import {
 } from '@tanstack/react-query'
 import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js'
 import { createOrderAction, findOrdersPageAction } from './actions'
+import { ORDERS_PAGE_SIZE, ORDERS_QUERY_KEY } from './ordersQuery'
 import { getSupabaseClient } from '@/lib/supabase'
 import { safeParseOrder, type Order } from '@/lib/domain/order'
 import type { OrdersCursor } from '@/lib/db/orderRepository'
-
-export const ORDERS_PAGE_SIZE = 50
-export const ORDERS_QUERY_KEY = ['orders'] as const
 
 type OrdersPage = Order[]
 type OrdersCache = InfiniteData<OrdersPage, OrdersCursor | null>
@@ -25,6 +23,25 @@ export interface UseOrdersResult {
   fetchNextPage: () => void
   hasNextPage: boolean
   isFetchingNextPage: boolean
+  pendingCount: number
+  revealPending: () => void
+}
+
+function isInCache(cache: OrdersCache | undefined, id: string): boolean {
+  if (!cache) return false
+  return cache.pages.some((page) => page.some((o) => o.id === id))
+}
+
+function prependToFirstPage(
+  cache: OrdersCache | undefined,
+  rows: Order[],
+): OrdersCache | undefined {
+  if (!cache) return cache
+  const [first, ...rest] = cache.pages
+  const existingIds = new Set((first ?? []).map((o) => o.id))
+  const fresh = rows.filter((r) => !existingIds.has(r.id))
+  if (fresh.length === 0) return cache
+  return { ...cache, pages: [[...fresh, ...(first ?? [])], ...rest] }
 }
 
 export function useOrders(): UseOrdersResult {
@@ -47,9 +64,12 @@ export function useOrders(): UseOrdersResult {
     },
   })
 
-  // Realtime mutates the query cache directly so paginated state and live
-  // events share one source of truth. INSERT prepends to page 0, UPDATE
-  // replaces in place across all loaded pages, DELETE filters by id.
+  // Foreign INSERTs (other users' creates) are buffered here instead of
+  // being injected into the cache directly --- the user opts in to seeing
+  // them by clicking the pill. Own creates skip the buffer and apply
+  // immediately because we want the click → see-your-card feedback loop.
+  const [pendingInserts, setPendingInserts] = useState<Order[]>([])
+
   useEffect(() => {
     const supabase = getSupabaseClient()
     const channel = supabase
@@ -61,12 +81,18 @@ export function useOrders(): UseOrdersResult {
           if (payload.eventType === 'INSERT') {
             const incoming = safeParseOrder(payload.new, 'insert')
             if (!incoming) return
-            queryClient.setQueryData<OrdersCache>(ORDERS_QUERY_KEY, (old) => {
-              if (!old) return old
-              if (old.pages[0]?.some((o) => o.id === incoming.id)) return old
-              const [first, ...rest] = old.pages
-              return { ...old, pages: [[incoming, ...(first ?? [])], ...rest] }
-            })
+            // Skip if our own createOrder() already wrote this row to the
+            // cache via the action's response. That covers two cases:
+            // (1) action resolved before realtime arrived, the cache
+            //     already has the row → ignore
+            // (2) realtime arrived first, this handler runs before the
+            //     action resolves → buffer; createOrder() will move it
+            //     out of pending after it gets the action's response.
+            const cache = queryClient.getQueryData<OrdersCache>(ORDERS_QUERY_KEY)
+            if (isInCache(cache, incoming.id)) return
+            setPendingInserts((prev) =>
+              prev.some((p) => p.id === incoming.id) ? prev : [incoming, ...prev],
+            )
           } else if (payload.eventType === 'UPDATE') {
             const incoming = safeParseOrder(payload.new, 'update')
             if (!incoming) return
@@ -91,6 +117,9 @@ export function useOrders(): UseOrdersResult {
                 ),
               }
             })
+            // Also drop from the pending buffer in case it was buffered
+            // and never revealed before being deleted.
+            setPendingInserts((prev) => prev.filter((p) => p.id !== oldId))
           }
         },
       )
@@ -102,10 +131,6 @@ export function useOrders(): UseOrdersResult {
   }, [queryClient])
 
   const [isCreating, setIsCreating] = useState(false)
-  // Synchronous guard for back-to-back programmatic calls in the same
-  // microtask --- the disabled button covers user clicks, but two
-  // closures over pre-update state would both pass the `isCreating`
-  // check. Not DOS protection; real throttling lives server-side.
   const actionInFlight = useRef(false)
 
   async function createOrder() {
@@ -113,14 +138,27 @@ export function useOrders(): UseOrdersResult {
     actionInFlight.current = true
     setIsCreating(true)
     try {
-      await createOrderAction()
-      // Realtime delivers the new tile via the INSERT handler above;
-      // we discard the action's return value on purpose so there's
-      // exactly one path that adds rows to local state.
+      const created = await createOrderAction()
+      // Apply to the cache directly so the user sees their own card
+      // immediately. If realtime delivered first and buffered it, also
+      // remove from pending so the count doesn't tick up for our row.
+      queryClient.setQueryData<OrdersCache>(ORDERS_QUERY_KEY, (old) =>
+        prependToFirstPage(old, [created]),
+      )
+      setPendingInserts((prev) => prev.filter((p) => p.id !== created.id))
     } finally {
       actionInFlight.current = false
       setIsCreating(false)
     }
+  }
+
+  function revealPending() {
+    if (pendingInserts.length === 0) return
+    const toReveal = pendingInserts
+    queryClient.setQueryData<OrdersCache>(ORDERS_QUERY_KEY, (old) =>
+      prependToFirstPage(old, toReveal),
+    )
+    setPendingInserts([])
   }
 
   const orders = useMemo(
@@ -137,5 +175,7 @@ export function useOrders(): UseOrdersResult {
     },
     hasNextPage: query.hasNextPage,
     isFetchingNextPage: query.isFetchingNextPage,
+    pendingCount: pendingInserts.length,
+    revealPending,
   }
 }
