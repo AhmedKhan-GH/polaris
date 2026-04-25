@@ -19,9 +19,6 @@ export async function findAllOrders(): Promise<Order[]> {
   return rows.map(toOrder)
 }
 
-// Cursor-paginated newest-first feed. The (createdAt, id) tuple breaks
-// same-millisecond ties so callers never skip rows. A null cursor returns
-// the first page.
 export async function findOrdersPage(
   cursor: OrdersCursor | null,
   limit: number,
@@ -44,6 +41,7 @@ export async function findOrdersPage(
   log.debug({ cursor, limit, count: rows.length }, 'findOrdersPage')
   return rows.map(toOrder)
 }
+
 
 export async function insertOrder(): Promise<Order> {
   const [row] = await db.insert(orders).values({}).returning()
