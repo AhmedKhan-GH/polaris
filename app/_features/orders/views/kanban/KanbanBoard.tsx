@@ -17,11 +17,11 @@ export function KanbanBoard({
   isFetchingNextPage: boolean
   fetchNextPage: () => void
 }) {
-  const pagination = { hasNextPage, isFetchingNextPage, fetchNextPage }
-  // Until a status field exists, every order belongs to Drafting. The
-  // expected total drives the virtualizer's spacer for that column so the
-  // scroll bar doesn't shrink as pages stream in. Other columns omit it
-  // and behave as plain empty columns.
+  const pagination = {
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  }
   return (
     <KanbanBoardShell
       columns={[
@@ -30,6 +30,7 @@ export function KanbanBoard({
           name="Drafting"
           cards={orders}
           expectedTotal={totalCount}
+          showUnseenIndicator
           {...pagination}
         />,
         <KanbanColumn key="reviewing" name="Reviewing" cards={[]} {...pagination} />,

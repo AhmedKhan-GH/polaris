@@ -55,15 +55,15 @@ export function useOrders(): UseOrdersResult {
     },
   })
 
-  // Total row count drives the virtualizer's spacer height. Without it the
-  // scroll bar would shrink as each page loads, which feels lurchy. We
-  // increment/decrement on realtime INSERT/DELETE so the spacer stays
-  // accurate without refetching.
   const total = useQuery({
     queryKey: ORDERS_COUNT_QUERY_KEY,
     queryFn: () => countOrdersAction(),
   })
 
+  // Realtime mutates the cache directly. No eviction means cards[i]
+  // always equals global row i, so the cache-based idempotency check
+  // is enough --- a redelivered INSERT for any loaded row is caught
+  // by `cache.pages.some(...)`.
   useEffect(() => {
     const supabase = getSupabaseClient()
     const channel = supabase
@@ -75,9 +75,12 @@ export function useOrders(): UseOrdersResult {
           if (payload.eventType === 'INSERT') {
             const row = safeParseOrder(payload.new, 'insert')
             if (!row) return
+            const cache = queryClient.getQueryData<OrdersCache>(ORDERS_QUERY_KEY)
+            if (cache?.pages.some((page) => page.some((o) => o.id === row.id))) {
+              return
+            }
             queryClient.setQueryData<OrdersCache>(ORDERS_QUERY_KEY, (old) => {
               if (!old) return old
-              if (old.pages[0]?.some((o) => o.id === row.id)) return old
               const [first, ...rest] = old.pages
               return { ...old, pages: [[row, ...(first ?? [])], ...rest] }
             })
@@ -128,10 +131,13 @@ export function useOrders(): UseOrdersResult {
     [pages.data],
   )
 
-  // Defensive max(): if the count query is stale/late, the loaded set
-  // can briefly exceed the cached total. The virtualizer should never
-  // think there are fewer items than we've actually loaded.
-  const totalCount = Math.max(orders.length, total.data ?? 0)
+  // Once we know we've fetched everything (last page < PAGE_SIZE,
+  // hasNextPage=false), trust orders.length as the exact total --- the
+  // server count might be slightly stale, and once we have it all
+  // there's no reason to extend the scroll bar past actual data.
+  const totalCount = pages.hasNextPage
+    ? Math.max(orders.length, total.data ?? 0)
+    : orders.length
 
   return {
     orders,

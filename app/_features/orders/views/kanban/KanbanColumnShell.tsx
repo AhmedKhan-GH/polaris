@@ -4,6 +4,10 @@ interface KanbanColumnShellProps {
   name: string
   count: ReactNode
   loading?: boolean
+  // Optional inline element rendered in the header bar between the
+  // column title and the count badge. Used for the "↑ N new" pill on
+  // the Drafting column.
+  headerAlert?: ReactNode
   children?: ReactNode
 }
 
@@ -11,6 +15,7 @@ export function KanbanColumnShell({
   name,
   count,
   loading,
+  headerAlert,
   children,
 }: KanbanColumnShellProps) {
   const sectionClass = loading
@@ -22,10 +27,13 @@ export function KanbanColumnShell({
 
   return (
     <section aria-hidden={loading || undefined} className={sectionClass}>
-      <div className="flex items-center justify-between px-1">
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-300">
-          {name}
-        </h2>
+      <div className="flex items-center justify-between gap-2 px-1">
+        <div className="flex min-w-0 items-center gap-2">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-300">
+            {name}
+          </h2>
+          {headerAlert}
+        </div>
         <span className={badgeClass}>{count}</span>
       </div>
       {children}

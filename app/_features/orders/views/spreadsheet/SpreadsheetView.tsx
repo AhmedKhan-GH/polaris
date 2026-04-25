@@ -1,8 +1,9 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { type Order } from '@/lib/domain/order'
+import { useStableScrollOnPrepend } from '../../useStableScrollOnPrepend'
 
 const ROW_HEIGHT = 44
 
@@ -39,9 +40,6 @@ export function SpreadsheetView({
 }) {
   const scrollRef = useRef<HTMLDivElement>(null)
 
-  // Virtualizer is sized to the FULL row count, not just what's loaded ---
-  // this keeps the scroll bar stable as pages stream in. Indices beyond
-  // orders.length render as placeholders until their page arrives.
   const virtualizer = useVirtualizer({
     count: totalCount,
     getScrollElement: () => scrollRef.current,
@@ -49,16 +47,14 @@ export function SpreadsheetView({
     overscan: 8,
   })
 
+  useStableScrollOnPrepend(scrollRef, totalCount, ROW_HEIGHT)
+
+  const [isAtTop, setIsAtTop] = useState(true)
+
   const items = virtualizer.getVirtualItems()
-  // Compute the spacer height manually instead of relying on
-  // virtualizer.getTotalSize(), which can return a stale value on first
-  // render before the measurement cache initializes. Static estimateSize
-  // means total = totalCount × ROW_HEIGHT exactly.
   const totalSize = totalCount * ROW_HEIGHT
   const lastIndex = items.length > 0 ? items[items.length - 1].index : -1
 
-  // When the user scrolls into the placeholder zone (or simply when the
-  // viewport doesn't fit all loaded rows), pull the next page.
   useEffect(() => {
     if (lastIndex < 0) return
     if (
@@ -69,6 +65,17 @@ export function SpreadsheetView({
       fetchNextPage()
     }
   }, [lastIndex, orders.length, hasNextPage, isFetchingNextPage, fetchNextPage])
+
+  useEffect(() => {
+    const el = scrollRef.current
+    if (!el) return
+    const onScroll = () => {
+      const atTop = el.scrollTop === 0
+      setIsAtTop((prev) => (prev === atTop ? prev : atTop))
+    }
+    el.addEventListener('scroll', onScroll, { passive: true })
+    return () => el.removeEventListener('scroll', onScroll)
+  }, [])
 
   if (totalCount === 0) {
     return (
@@ -104,34 +111,16 @@ export function SpreadsheetView({
       >
         {items.map((vi) => {
           const order = orders[vi.index]
-          if (!order) {
-            return (
-              <div
-                key={`placeholder-${vi.index}`}
-                role="row"
-                aria-rowindex={vi.index + 1}
-                aria-hidden
-                className="absolute left-0 right-0 grid grid-cols-2 border-b border-zinc-800 transition-transform duration-200 ease-out motion-reduce:transition-none"
-                style={{
-                  transform: `translateY(${vi.start}px)`,
-                  height: vi.size,
-                }}
-              >
-                <div role="cell" className="px-4 py-3">
-                  <div className="h-3 w-16 rounded bg-zinc-800" />
-                </div>
-                <div role="cell" className="px-4 py-3">
-                  <div className="h-3 w-32 rounded bg-zinc-800" />
-                </div>
-              </div>
-            )
-          }
+          if (!order) return null
+          const transitionClass = isAtTop
+            ? 'transition-transform duration-200 ease-out motion-reduce:transition-none'
+            : ''
           return (
             <div
               key={order.id}
               role="row"
               aria-rowindex={vi.index + 1}
-              className="absolute left-0 right-0 grid grid-cols-2 border-b border-zinc-800 transition-transform duration-200 ease-out hover:bg-zinc-800/50 motion-reduce:transition-none"
+              className={`absolute left-0 right-0 grid grid-cols-2 border-b border-zinc-800 hover:bg-zinc-800/50 ${transitionClass}`}
               style={{
                 transform: `translateY(${vi.start}px)`,
                 height: vi.size,

@@ -1,30 +1,27 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import type { Order } from '@/lib/domain/order'
+import { useStableScrollOnPrepend } from '../../useStableScrollOnPrepend'
 import { KanbanCard } from './KanbanCard'
 import { KanbanColumnShell } from './KanbanColumnShell'
 
-// Card height ~36px + 8px gap below = 44px slot. KanbanCard renders top-
-// aligned in its slot, leaving the trailing 8px as the inter-card gap.
 const SLOT_HEIGHT = 44
 
 export function KanbanColumn({
   name,
   cards,
   expectedTotal,
+  showUnseenIndicator = false,
   hasNextPage,
   isFetchingNextPage,
   fetchNextPage,
 }: {
   name: string
   cards: Order[]
-  // Total rows that belong in this column even if not yet loaded. When
-  // larger than `cards.length`, the virtualizer reserves space (and shows
-  // placeholders) for the unloaded tail so the scroll bar doesn't grow as
-  // pages stream in. Empty / unscoped columns omit this prop.
   expectedTotal?: number
+  showUnseenIndicator?: boolean
   hasNextPage: boolean
   isFetchingNextPage: boolean
   fetchNextPage: () => void
@@ -40,11 +37,15 @@ export function KanbanColumn({
     overscan: 6,
   })
 
+  const { unseenCount, reset: resetUnseen } = useStableScrollOnPrepend(
+    scrollRef,
+    totalSlots,
+    SLOT_HEIGHT,
+  )
+
+  const [isAtTop, setIsAtTop] = useState(true)
+
   const items = virtualizer.getVirtualItems()
-  // Compute the spacer height manually instead of relying on
-  // virtualizer.getTotalSize(), which can return a stale value on first
-  // render before the measurement cache initializes. Static estimateSize
-  // means total = totalSlots × SLOT_HEIGHT exactly.
   const totalSize = totalSlots * SLOT_HEIGHT
   const lastIndex = items.length > 0 ? items[items.length - 1].index : -1
 
@@ -60,11 +61,47 @@ export function KanbanColumn({
     }
   }, [lastIndex, cards.length, hasNextPage, isFetchingNextPage, fetchNextPage])
 
+  useEffect(() => {
+    const el = scrollRef.current
+    if (!el) return
+    const onScroll = () => {
+      const atTop = el.scrollTop === 0
+      setIsAtTop((prev) => (prev === atTop ? prev : atTop))
+      if (atTop) resetUnseen()
+    }
+    el.addEventListener('scroll', onScroll, { passive: true })
+    return () => el.removeEventListener('scroll', onScroll)
+  }, [resetUnseen])
+
+  function handleUnseenClick() {
+    scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
+    resetUnseen()
+  }
+
+  const itemTransitionClass = isAtTop
+    ? 'transition-transform duration-200 ease-out motion-reduce:transition-none'
+    : ''
+
+  const headerAlert =
+    showUnseenIndicator && unseenCount > 0 ? (
+      <button
+        type="button"
+        onClick={handleUnseenClick}
+        className="rounded-full bg-blue-500/15 px-2 py-0.5 text-[11px] font-medium text-blue-300 transition-colors hover:bg-blue-500/25"
+      >
+        ↑ {unseenCount} new
+      </button>
+    ) : undefined
+
   return (
-    <KanbanColumnShell name={name} count={totalSlots}>
+    <KanbanColumnShell
+      name={name}
+      count={totalSlots}
+      headerAlert={headerAlert}
+    >
       <div
         ref={scrollRef}
-        className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden scrollbar-thin"
+        className="relative min-h-0 flex-1 overflow-y-auto overflow-x-hidden scrollbar-thin"
       >
         <div
           className="relative w-full"
@@ -72,25 +109,11 @@ export function KanbanColumn({
         >
           {items.map((vi) => {
             const order = cards[vi.index]
-            if (!order) {
-              return (
-                <div
-                  key={`placeholder-${vi.index}`}
-                  aria-hidden
-                  className="absolute left-0 right-0 transition-transform duration-200 ease-out motion-reduce:transition-none"
-                  style={{
-                    transform: `translateY(${vi.start}px)`,
-                    height: vi.size,
-                  }}
-                >
-                  <div className="rounded-md border border-zinc-800 bg-zinc-900/40 px-3 py-2 h-9" />
-                </div>
-              )
-            }
+            if (!order) return null
             return (
               <div
                 key={order.id}
-                className="absolute left-0 right-0 transition-transform duration-200 ease-out motion-reduce:transition-none"
+                className={`absolute left-0 right-0 ${itemTransitionClass}`}
                 style={{
                   transform: `translateY(${vi.start}px)`,
                   height: vi.size,
