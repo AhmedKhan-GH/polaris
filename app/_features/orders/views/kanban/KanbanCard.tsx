@@ -1,15 +1,13 @@
 'use client'
 
 import { memo } from 'react'
-import type { OrderWithPending } from '../../useOrders'
+import type { Order } from '@/lib/domain/order'
 import { KanbanCardShell } from './KanbanCardShell'
-import { KanbanCardSkeleton } from './KanbanCardSkeleton'
 
 export const KanbanCard = memo(function KanbanCard({
   order,
 }: {
-  order: OrderWithPending
+  order: Order
 }) {
-  if (order.pending) return <KanbanCardSkeleton />
   return <KanbanCardShell>{order.orderNumber}</KanbanCardShell>
 })

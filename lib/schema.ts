@@ -12,10 +12,4 @@ export const orders = pgTable("orders", {
     .unique()
     .default(sql`nextval('order_number_seq')`),
   createdAt: timestamp("created_at").notNull().defaultNow(),
-  // Client-minted token echoed back in the realtime INSERT payload so
-  // the client can match its own pending placeholder to the incoming
-  // row even before the server action returns. Not a primary key ---
-  // the row's real identity is still `id`. Nullable because rows
-  // seeded or created server-side never need one.
-  clientCorrelationId: uuid("client_correlation_id"),
 });

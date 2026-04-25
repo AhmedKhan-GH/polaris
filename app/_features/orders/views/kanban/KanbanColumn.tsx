@@ -1,6 +1,6 @@
 'use client'
 
-import type { OrderWithPending } from '../../useOrders'
+import type { Order } from '@/lib/domain/order'
 import { KanbanCard } from './KanbanCard'
 import { KanbanColumnShell } from './KanbanColumnShell'
 
@@ -9,7 +9,7 @@ export function KanbanColumn({
   cards,
 }: {
   name: string
-  cards: OrderWithPending[]
+  cards: Order[]
 }) {
   return (
     <KanbanColumnShell name={name} count={cards.length}>

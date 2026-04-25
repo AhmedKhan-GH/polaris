@@ -1,10 +1,10 @@
 'use client'
 
-import type { OrderWithPending } from '../../useOrders'
+import type { Order } from '@/lib/domain/order'
 import { KanbanBoardShell } from './KanbanBoardShell'
 import { KanbanColumn } from './KanbanColumn'
 
-export function KanbanBoard({ orders }: { orders: OrderWithPending[] }) {
+export function KanbanBoard({ orders }: { orders: Order[] }) {
   return (
     <KanbanBoardShell
       columns={[
