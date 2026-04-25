@@ -4,10 +4,11 @@ import {
   QueryClient,
   dehydrate,
 } from '@tanstack/react-query'
-import { findOrdersPage } from '@/lib/db/orderRepository'
+import { countOrders, findOrdersPage } from '@/lib/db/orderRepository'
 import { OrdersShell } from './_features/orders/OrdersShell'
 import { OrdersView } from './_features/orders/OrdersView'
 import {
+  ORDERS_COUNT_QUERY_KEY,
   ORDERS_PAGE_SIZE,
   ORDERS_QUERY_KEY,
 } from './_features/orders/ordersQuery'
@@ -48,11 +49,17 @@ async function OrdersViewData() {
   // via HydrationBoundary so useInfiniteQuery picks up the cached page
   // without an extra round-trip on first paint.
   const queryClient = new QueryClient()
-  await queryClient.prefetchInfiniteQuery({
-    queryKey: ORDERS_QUERY_KEY,
-    queryFn: () => findOrdersPage(null, ORDERS_PAGE_SIZE),
-    initialPageParam: null,
-  })
+  await Promise.all([
+    queryClient.prefetchInfiniteQuery({
+      queryKey: ORDERS_QUERY_KEY,
+      queryFn: () => findOrdersPage(null, ORDERS_PAGE_SIZE),
+      initialPageParam: null,
+    }),
+    queryClient.prefetchQuery({
+      queryKey: ORDERS_COUNT_QUERY_KEY,
+      queryFn: () => countOrders(),
+    }),
+  ])
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
       <OrdersView />

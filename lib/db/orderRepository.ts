@@ -1,4 +1,4 @@
-import { and, desc, eq, lt, or, sql } from 'drizzle-orm'
+import { and, count, desc, eq, lt, or, sql } from 'drizzle-orm'
 import { db } from '../db'
 import { log } from '../log'
 import { orders } from '../schema'
@@ -49,4 +49,14 @@ export async function insertOrder(): Promise<Order> {
   const [row] = await db.insert(orders).values({}).returning()
   log.debug({ orderId: row.id, orderNumber: row.orderNumber }, 'insertOrder')
   return toOrder(row)
+}
+
+export async function countOrders(): Promise<number> {
+  const [row] = await db.select({ value: count() }).from(orders)
+  // Defensive: Postgres bigint can come back as string from node-postgres
+  // depending on driver config. Coerce explicitly so callers always
+  // receive a plain number, not "282" or 282n.
+  const n = Number(row.value)
+  log.debug({ count: n, raw: row.value, type: typeof row.value }, 'countOrders')
+  return Number.isFinite(n) ? n : 0
 }
