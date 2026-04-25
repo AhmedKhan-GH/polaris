@@ -26,6 +26,11 @@ export function OrdersView() {
     fetchNextPage,
   }
 
+  // Both views are always mounted; the inactive one is hidden via
+  // display: none. This preserves each view's scroll position,
+  // virtualizer measurement state, and any in-flight DOM state across
+  // view switches --- the browser keeps scrollTop on the underlying
+  // element when an ancestor toggles display.
   return (
     <OrdersShell
       headerAction={
@@ -42,11 +47,18 @@ export function OrdersView() {
         </div>
       }
     >
-      {view === 'kanban' ? (
+      <div
+        className={view === 'kanban' ? 'flex min-h-0 flex-1' : 'hidden'}
+        aria-hidden={view !== 'kanban'}
+      >
         <KanbanBoard orders={orders} {...pagination} />
-      ) : (
+      </div>
+      <div
+        className={view === 'spreadsheet' ? 'flex min-h-0 flex-1' : 'hidden'}
+        aria-hidden={view !== 'spreadsheet'}
+      >
         <SpreadsheetView orders={orders} {...pagination} />
-      )}
+      </div>
     </OrdersShell>
   )
 }
