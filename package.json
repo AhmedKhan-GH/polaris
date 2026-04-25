@@ -18,7 +18,7 @@
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
     "db:seed": "npx tsx lib/seed.ts",
-    "sim:other-user": "npx tsx lib/simulate-other-user.ts"
+    "sim:other-user": "npx tsx scripts/simulate-other-user.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.103.3",

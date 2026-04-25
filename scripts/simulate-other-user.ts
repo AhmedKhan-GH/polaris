@@ -1,6 +1,6 @@
-import { db } from './db'
-import { log } from './log'
-import { orders } from './schema'
+import { db } from '../lib/db'
+import { log } from '../lib/log'
+import { orders } from '../lib/schema'
 
 // Dev-only: impersonates another user by inserting a fresh order into
 // Postgres every 5 seconds. Bypasses the server action on purpose ---

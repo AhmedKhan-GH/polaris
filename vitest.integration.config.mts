@@ -10,6 +10,6 @@ export default defineConfig({
     testTimeout: 120_000,
     hookTimeout: 120_000,
     include: ['**/*.integration.test.ts'],
-    exclude: [...configDefaults.exclude, 'dump/**'],
+    exclude: [...configDefaults.exclude, '**/dump/**'],
   },
 })
