@@ -1,10 +1,17 @@
 import { redirect } from 'next/navigation'
 import { getServerSupabase } from '@/lib/supabase/server'
+import { log } from '@/lib/log'
 
 async function signOut() {
   'use server'
   const supabase = await getServerSupabase()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
   await supabase.auth.signOut()
+  if (user) {
+    log.info({ email: user.email, userId: user.id }, 'logout succeeded')
+  }
   redirect('/login')
 }
 
