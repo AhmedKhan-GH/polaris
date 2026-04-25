@@ -9,7 +9,7 @@ export default defineConfig({
     reporters: ['verbose'],
     testTimeout: 120_000,
     hookTimeout: 120_000,
-    include: ['**/*.test.ts'],
-    exclude: [...configDefaults.exclude, 'dump/**', '**/*.integration.test.ts'],
+    include: ['**/*.integration.test.ts'],
+    exclude: [...configDefaults.exclude, 'dump/**'],
   },
 })
