@@ -7,7 +7,10 @@ import { useScrollAnchor } from '../../useScrollAnchor'
 import { KanbanCard } from './KanbanCard'
 import { KanbanColumnShell } from './KanbanColumnShell'
 
-const SLOT_HEIGHT = 44
+// Card now has two text lines (order number + datetime subtitle).
+// ~52px card + 8px gap below = 60px slot. KanbanCard renders top-
+// aligned in its slot; the trailing space is the inter-card gap.
+const SLOT_HEIGHT = 60
 
 export function KanbanColumn({
   name,

@@ -8,28 +8,10 @@ import {
   getCoreRowModel,
   useReactTable,
 } from '@tanstack/react-table'
-import { type Order } from '@/lib/domain/order'
+import { formatCreatedAt, type Order } from '@/lib/domain/order'
 import { useScrollAnchor } from '../../useScrollAnchor'
 
 const ROW_HEIGHT = 44
-
-// Locale + options pinned so server-rendered output matches the client's
-// first paint --- otherwise hydration mismatches on the comma/space and
-// 12h vs 24h based on the user's system.
-function formatCreatedAt(date: Date): string {
-  const d = new Date(date)
-  const datePart = d.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  })
-  const timePart = d.toLocaleTimeString('en-US', {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  })
-  return `${datePart} · ${timePart}`
-}
 
 // Per-column meta: className applied to the <div role="cell"> wrapper
 // so each column can carry its own typography/colors without nesting

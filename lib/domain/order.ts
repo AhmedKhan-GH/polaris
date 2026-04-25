@@ -66,3 +66,23 @@ export function mergeById<T extends { id: string }>(list: T[], next: T): T[] {
   copy[index] = next
   return copy
 }
+
+// Locale + options pinned so server-rendered output matches the client's
+// first paint --- otherwise hydration mismatches on the comma/space and
+// 12h vs 24h based on the user's system. Shared between the kanban
+// card and the spreadsheet "Created" column.
+export function formatCreatedAt(date: Date): string {
+  const d = new Date(date)
+  const datePart = d.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  })
+  const timePart = d.toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  })
+  return `${datePart} · ${timePart}`
+}
