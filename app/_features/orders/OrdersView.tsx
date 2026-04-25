@@ -1,6 +1,6 @@
 'use client'
 
-import { useSearchParams } from 'next/navigation'
+import { useState } from 'react'
 import { type Order } from '@/lib/domain/order'
 import { OrdersShell } from './OrdersShell'
 import { useOrders } from './useOrders'
@@ -8,13 +8,9 @@ import { ViewSwitcher, type View } from './ViewSwitcher'
 import { KanbanBoard } from './views/kanban/KanbanBoard'
 import { SpreadsheetView } from './views/spreadsheet/SpreadsheetView'
 
-function parseView(raw: string | null): View {
-  return raw === 'spreadsheet' ? 'spreadsheet' : 'kanban'
-}
-
 export function OrdersView({ initial }: { initial: Order[] }) {
   const { orders, isCreating, createOrder } = useOrders(initial)
-  const view = parseView(useSearchParams().get('view'))
+  const [view, setView] = useState<View>('kanban')
 
   return (
     <OrdersShell
@@ -28,7 +24,7 @@ export function OrdersView({ initial }: { initial: Order[] }) {
           >
             New Order
           </button>
-          <ViewSwitcher current={view} />
+          <ViewSwitcher current={view} onChange={setView} />
         </div>
       }
     >

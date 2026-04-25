@@ -1,7 +1,5 @@
 'use client'
 
-import Link from 'next/link'
-
 export type View = 'kanban' | 'spreadsheet'
 
 const VIEWS: { value: View; label: string }[] = [
@@ -9,7 +7,13 @@ const VIEWS: { value: View; label: string }[] = [
   { value: 'spreadsheet', label: 'Spreadsheet' },
 ]
 
-export function ViewSwitcher({ current }: { current: View }) {
+export function ViewSwitcher({
+  current,
+  onChange,
+}: {
+  current: View
+  onChange: (next: View) => void
+}) {
   return (
     <div
       role="tablist"
@@ -19,11 +23,10 @@ export function ViewSwitcher({ current }: { current: View }) {
       {VIEWS.map((view) => {
         const active = view.value === current
         return (
-          <Link
+          <button
             key={view.value}
-            href={`?view=${view.value}`}
-            replace
-            scroll={false}
+            type="button"
+            onClick={() => onChange(view.value)}
             role="tab"
             aria-selected={active}
             className={
@@ -33,7 +36,7 @@ export function ViewSwitcher({ current }: { current: View }) {
             }
           >
             {view.label}
-          </Link>
+          </button>
         )
       })}
     </div>
