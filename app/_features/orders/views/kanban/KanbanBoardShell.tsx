@@ -17,13 +17,13 @@ interface KanbanBoardShellProps {
 
 export function KanbanBoardShell({ columns }: KanbanBoardShellProps) {
   return (
-    <div className="flex-1 min-h-0 flex overflow-x-auto scrollbar-thin pb-2">
-      <div className="flex flex-1 min-h-0 pr-4 items-stretch">
+    <div className="flex-1 min-h-0 flex overflow-x-auto scrollbar-thin">
+      <div className="flex flex-1 min-h-0 items-stretch">
         {columns.map((col, i) => {
           const label = TRANSITION_LABELS[i]
           return (
             <Fragment key={i}>
-              <div className="flex min-h-0 flex-col gap-2">
+              <div className="flex min-h-0 flex-1 flex-col gap-2">
                 {label ? (
                   <span className="px-1 text-right text-sm font-semibold uppercase tracking-wider text-zinc-400 whitespace-nowrap">
                     {label}
