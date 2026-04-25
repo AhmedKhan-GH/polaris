@@ -1,7 +1,16 @@
 import { Suspense } from 'react'
-import { findAllOrders } from '@/lib/db/orderRepository'
+import {
+  HydrationBoundary,
+  QueryClient,
+  dehydrate,
+} from '@tanstack/react-query'
+import { findOrdersPage } from '@/lib/db/orderRepository'
 import { OrdersShell } from './_features/orders/OrdersShell'
 import { OrdersView } from './_features/orders/OrdersView'
+import {
+  ORDERS_PAGE_SIZE,
+  ORDERS_QUERY_KEY,
+} from './_features/orders/useOrders'
 import { KanbanBoardShell } from './_features/orders/views/kanban/KanbanBoardShell'
 import { KanbanColumnShell } from './_features/orders/views/kanban/KanbanColumnShell'
 
@@ -35,6 +44,18 @@ export default function Home() {
 }
 
 async function OrdersViewData() {
-  const initial = await findAllOrders()
-  return <OrdersView initial={initial} />
+  // Prefetch the first page on the server, then hand it to the client
+  // via HydrationBoundary so useInfiniteQuery picks up the cached page
+  // without an extra round-trip on first paint.
+  const queryClient = new QueryClient()
+  await queryClient.prefetchInfiniteQuery({
+    queryKey: ORDERS_QUERY_KEY,
+    queryFn: () => findOrdersPage(null, ORDERS_PAGE_SIZE),
+    initialPageParam: null,
+  })
+  return (
+    <HydrationBoundary state={dehydrate(queryClient)}>
+      <OrdersView />
+    </HydrationBoundary>
+  )
 }

@@ -1,15 +1,14 @@
 'use client'
 
 import { useState } from 'react'
-import { type Order } from '@/lib/domain/order'
 import { OrdersShell } from './OrdersShell'
 import { useOrders } from './useOrders'
 import { ViewSwitcher, type View } from './ViewSwitcher'
 import { KanbanBoard } from './views/kanban/KanbanBoard'
 import { SpreadsheetView } from './views/spreadsheet/SpreadsheetView'
 
-export function OrdersView({ initial }: { initial: Order[] }) {
-  const { orders, isCreating, createOrder } = useOrders(initial)
+export function OrdersView() {
+  const { orders, isCreating, createOrder } = useOrders()
   const [view, setView] = useState<View>('kanban')
 
   return (

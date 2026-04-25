@@ -1,32 +1,55 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
-import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js'
-import { createOrderAction } from './actions'
-import { getSupabaseClient } from '@/lib/supabase'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
-  safeParseOrder,
-  sortOrdersNewestFirst,
-  type Order,
-} from '@/lib/domain/order'
+  useInfiniteQuery,
+  useQueryClient,
+  type InfiniteData,
+} from '@tanstack/react-query'
+import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js'
+import { createOrderAction, findOrdersPageAction } from './actions'
+import { getSupabaseClient } from '@/lib/supabase'
+import { safeParseOrder, type Order } from '@/lib/domain/order'
+import type { OrdersCursor } from '@/lib/db/orderRepository'
+
+export const ORDERS_PAGE_SIZE = 50
+export const ORDERS_QUERY_KEY = ['orders'] as const
+
+type OrdersPage = Order[]
+type OrdersCache = InfiniteData<OrdersPage, OrdersCursor | null>
 
 export interface UseOrdersResult {
   orders: Order[]
   isCreating: boolean
   createOrder: () => void
+  fetchNextPage: () => void
+  hasNextPage: boolean
+  isFetchingNextPage: boolean
 }
 
-export function useOrders(initial: Order[]): UseOrdersResult {
-  const [orders, setOrders] = useState<Order[]>(() =>
-    sortOrdersNewestFirst(initial),
-  )
-  const [isCreating, setIsCreating] = useState(false)
-  // Synchronous guard for back-to-back programmatic calls in the same
-  // microtask --- the disabled button covers user clicks, but two
-  // closures over pre-update state would both pass the `isCreating`
-  // check. Not DOS protection; real throttling lives server-side.
-  const actionInFlight = useRef(false)
+export function useOrders(): UseOrdersResult {
+  const queryClient = useQueryClient()
 
+  const query = useInfiniteQuery<
+    OrdersPage,
+    Error,
+    InfiniteData<OrdersPage, OrdersCursor | null>,
+    typeof ORDERS_QUERY_KEY,
+    OrdersCursor | null
+  >({
+    queryKey: ORDERS_QUERY_KEY,
+    queryFn: ({ pageParam }) => findOrdersPageAction(pageParam, ORDERS_PAGE_SIZE),
+    initialPageParam: null,
+    getNextPageParam: (lastPage) => {
+      if (lastPage.length < ORDERS_PAGE_SIZE) return undefined
+      const last = lastPage[lastPage.length - 1]
+      return { createdAt: last.createdAt.toISOString(), id: last.id }
+    },
+  })
+
+  // Realtime mutates the query cache directly so paginated state and live
+  // events share one source of truth. INSERT prepends to page 0, UPDATE
+  // replaces in place across all loaded pages, DELETE filters by id.
   useEffect(() => {
     const supabase = getSupabaseClient()
     const channel = supabase
@@ -38,25 +61,36 @@ export function useOrders(initial: Order[]): UseOrdersResult {
           if (payload.eventType === 'INSERT') {
             const incoming = safeParseOrder(payload.new, 'insert')
             if (!incoming) return
-            setOrders((prev) => {
-              const idx = prev.findIndex((o) => o.id === incoming.id)
-              if (idx >= 0) {
-                const copy = prev.slice()
-                copy[idx] = incoming
-                return copy
-              }
-              return [incoming, ...prev]
+            queryClient.setQueryData<OrdersCache>(ORDERS_QUERY_KEY, (old) => {
+              if (!old) return old
+              if (old.pages[0]?.some((o) => o.id === incoming.id)) return old
+              const [first, ...rest] = old.pages
+              return { ...old, pages: [[incoming, ...(first ?? [])], ...rest] }
             })
           } else if (payload.eventType === 'UPDATE') {
             const incoming = safeParseOrder(payload.new, 'update')
             if (!incoming) return
-            setOrders((prev) =>
-              prev.map((o) => (o.id === incoming.id ? incoming : o)),
-            )
+            queryClient.setQueryData<OrdersCache>(ORDERS_QUERY_KEY, (old) => {
+              if (!old) return old
+              return {
+                ...old,
+                pages: old.pages.map((page) =>
+                  page.map((o) => (o.id === incoming.id ? incoming : o)),
+                ),
+              }
+            })
           } else if (payload.eventType === 'DELETE') {
             const oldId = (payload.old as { id?: string }).id
             if (!oldId) return
-            setOrders((prev) => prev.filter((o) => o.id !== oldId))
+            queryClient.setQueryData<OrdersCache>(ORDERS_QUERY_KEY, (old) => {
+              if (!old) return old
+              return {
+                ...old,
+                pages: old.pages.map((page) =>
+                  page.filter((o) => o.id !== oldId),
+                ),
+              }
+            })
           }
         },
       )
@@ -65,22 +99,43 @@ export function useOrders(initial: Order[]): UseOrdersResult {
     return () => {
       void supabase.removeChannel(channel)
     }
-  }, [])
+  }, [queryClient])
+
+  const [isCreating, setIsCreating] = useState(false)
+  // Synchronous guard for back-to-back programmatic calls in the same
+  // microtask --- the disabled button covers user clicks, but two
+  // closures over pre-update state would both pass the `isCreating`
+  // check. Not DOS protection; real throttling lives server-side.
+  const actionInFlight = useRef(false)
 
   async function createOrder() {
     if (actionInFlight.current) return
     actionInFlight.current = true
     setIsCreating(true)
     try {
+      await createOrderAction()
       // Realtime delivers the new tile via the INSERT handler above;
       // we discard the action's return value on purpose so there's
       // exactly one path that adds rows to local state.
-      await createOrderAction()
     } finally {
       actionInFlight.current = false
       setIsCreating(false)
     }
   }
 
-  return { orders, isCreating, createOrder }
+  const orders = useMemo(
+    () => query.data?.pages.flat() ?? [],
+    [query.data],
+  )
+
+  return {
+    orders,
+    isCreating,
+    createOrder,
+    fetchNextPage: () => {
+      void query.fetchNextPage()
+    },
+    hasNextPage: query.hasNextPage,
+    isFetchingNextPage: query.isFetchingNextPage,
+  }
 }
