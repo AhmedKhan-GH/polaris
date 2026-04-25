@@ -1,13 +1,21 @@
 import { redirect } from 'next/navigation'
 import { getServerSupabase } from '@/lib/supabase/server'
+import { log } from '@/lib/log'
 
 async function signIn(formData: FormData) {
   'use server'
   const email = String(formData.get('email'))
   const password = String(formData.get('password'))
   const supabase = await getServerSupabase()
-  const { error } = await supabase.auth.signInWithPassword({ email, password })
-  if (error) redirect(`/login?error=${encodeURIComponent(error.message)}`)
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  })
+  if (error) {
+    log.warn({ email, reason: error.message }, 'login failed')
+    redirect(`/login?error=${encodeURIComponent(error.message)}`)
+  }
+  log.info({ email, userId: data.user?.id }, 'login succeeded')
   redirect('/')
 }
 
