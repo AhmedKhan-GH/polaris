@@ -1,4 +1,14 @@
+import { config } from 'dotenv'
 import { z } from 'zod'
+
+// Server-only: pull .env.local into process.env. Next.js auto-loads
+// before any module executes, so this is a no-op there. tsx scripts
+// (npm run sim:other-user, db:seed) don't auto-load, so this is the
+// only place that gets them to validate. Guarded by a window check
+// so the client bundle skips dotenv (it has no fs).
+if (typeof window === 'undefined') {
+  config({ path: '.env.local' })
+}
 
 // Client-safe env (NEXT_PUBLIC_* only). Validated on both server and client.
 const clientSchema = z.object({
