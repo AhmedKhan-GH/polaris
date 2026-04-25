@@ -19,7 +19,7 @@ import {
   ORDERS_PAGE_SIZE,
   ORDERS_QUERY_KEY,
 } from './queryKeys'
-import { getSupabaseClient } from '@/lib/supabase'
+import { getSupabaseClient } from '@/lib/supabase/browser'
 import { safeParseOrder, type Order } from '@/lib/domain/order'
 import type { OrdersCursor } from '@/lib/db/orderRepository'
 
