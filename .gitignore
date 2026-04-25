@@ -48,3 +48,6 @@ next-env.d.ts
 *.out
 *.toc
 *.synctex.gz
+
+# docs (local-only, not tracked)
+/docs/
