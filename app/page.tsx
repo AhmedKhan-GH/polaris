@@ -5,6 +5,7 @@ import {
   dehydrate,
 } from '@tanstack/react-query'
 import { countOrders, findOrdersPage } from '@/lib/db/orderRepository'
+import { OrdersHeaderShell } from './_features/orders/OrdersHeaderShell'
 import { OrdersPageShell } from './_features/orders/OrdersPageShell'
 import { OrdersPage } from './_features/orders/OrdersPage'
 import {
@@ -18,12 +19,7 @@ import { KanbanColumnShell } from './_features/orders/views/kanban/KanbanColumnS
 const FALLBACK = (
   <OrdersPageShell
     loading
-    headerAction={
-      <div
-        aria-hidden
-        className="h-8 w-[86px] rounded-md bg-zinc-700 animate-loading-card"
-      />
-    }
+    header={<OrdersHeaderShell loading />}
   >
     <KanbanBoardShell
       columns={[
