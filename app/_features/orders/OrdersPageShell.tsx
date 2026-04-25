@@ -1,12 +1,12 @@
 import type { ReactNode } from 'react'
 
-interface OrdersShellProps {
+interface OrdersPageShellProps {
   loading?: boolean
   headerAction: ReactNode
   children: ReactNode
 }
 
-export function OrdersShell({ loading, headerAction, children }: OrdersShellProps) {
+export function OrdersPageShell({ loading, headerAction, children }: OrdersPageShellProps) {
   return (
     <main
       aria-busy={loading ? 'true' : undefined}

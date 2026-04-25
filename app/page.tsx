@@ -5,18 +5,18 @@ import {
   dehydrate,
 } from '@tanstack/react-query'
 import { countOrders, findOrdersPage } from '@/lib/db/orderRepository'
-import { OrdersShell } from './_features/orders/OrdersShell'
-import { OrdersView } from './_features/orders/OrdersView'
+import { OrdersPageShell } from './_features/orders/OrdersPageShell'
+import { OrdersPage } from './_features/orders/OrdersPage'
 import {
   ORDERS_COUNT_QUERY_KEY,
   ORDERS_PAGE_SIZE,
   ORDERS_QUERY_KEY,
-} from './_features/orders/ordersQuery'
+} from './_features/orders/queryKeys'
 import { KanbanBoardShell } from './_features/orders/views/kanban/KanbanBoardShell'
 import { KanbanColumnShell } from './_features/orders/views/kanban/KanbanColumnShell'
 
 const FALLBACK = (
-  <OrdersShell
+  <OrdersPageShell
     loading
     headerAction={
       <div
@@ -33,18 +33,18 @@ const FALLBACK = (
         <KanbanColumnShell key="archiving" loading name="Archiving" count="—" />,
       ]}
     />
-  </OrdersShell>
+  </OrdersPageShell>
 )
 
 export default function Home() {
   return (
     <Suspense fallback={FALLBACK}>
-      <OrdersViewData />
+      <OrdersPageData />
     </Suspense>
   )
 }
 
-async function OrdersViewData() {
+async function OrdersPageData() {
   // Prefetch the first page on the server, then hand it to the client
   // via HydrationBoundary so useInfiniteQuery picks up the cached page
   // without an extra round-trip on first paint.
@@ -62,7 +62,7 @@ async function OrdersViewData() {
   ])
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
-      <OrdersView />
+      <OrdersPage />
     </HydrationBoundary>
   )
 }

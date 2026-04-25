@@ -1,13 +1,13 @@
 'use client'
 
 import { useState } from 'react'
-import { OrdersShell } from './OrdersShell'
+import { OrdersPageShell } from './OrdersPageShell'
 import { useOrders } from './useOrders'
 import { ViewSwitcher, type View } from './ViewSwitcher'
 import { KanbanBoard } from './views/kanban/KanbanBoard'
 import { SpreadsheetView } from './views/spreadsheet/SpreadsheetView'
 
-export function OrdersView() {
+export function OrdersPage() {
   const {
     orders,
     totalCount,
@@ -27,7 +27,7 @@ export function OrdersView() {
   }
 
   return (
-    <OrdersShell
+    <OrdersPageShell
       headerAction={
         <div className="flex flex-1 items-center justify-between">
           <button
@@ -54,6 +54,6 @@ export function OrdersView() {
       >
         <SpreadsheetView orders={orders} {...pagination} />
       </div>
-    </OrdersShell>
+    </OrdersPageShell>
   )
 }

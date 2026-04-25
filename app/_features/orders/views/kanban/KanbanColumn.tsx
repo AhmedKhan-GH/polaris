@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import type { Order } from '@/lib/domain/order'
-import { useStableScrollOnPrepend } from '../../useStableScrollOnPrepend'
+import { useScrollAnchor } from '../../useScrollAnchor'
 import { KanbanCard } from './KanbanCard'
 import { KanbanColumnShell } from './KanbanColumnShell'
 
@@ -37,7 +37,7 @@ export function KanbanColumn({
     overscan: 6,
   })
 
-  const { unseenCount, reset: resetUnseen } = useStableScrollOnPrepend(
+  const { unseenCount, reset: resetUnseen } = useScrollAnchor(
     scrollRef,
     totalSlots,
     SLOT_HEIGHT,

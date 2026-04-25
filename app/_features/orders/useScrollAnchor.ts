@@ -2,18 +2,19 @@
 
 import { useCallback, useLayoutEffect, useRef, useState, type RefObject } from 'react'
 
-// Anchors scroll position when the global ordering grows (a row was
-// added at the top, either via realtime cache mutation when page 0 is
-// loaded, or via an evicted-state insert that bumped the eviction
-// offset). Driven entirely by `totalCount` --- not by inspecting
-// cards, since under eviction cards[0] doesn't equal global row 0.
+// Keeps the user's visual position stable when the list grows at the
+// top. Driven by `totalCount` so it works whether new rows landed in
+// cache or only bumped a count, and regardless of how the cache was
+// shaped underneath.
 //
-// When totalCount increases by N, the global row at the user's current
-// scrollTop has shifted down by N rows. We compensate by adding
-// N × itemHeight to scrollTop --- if the user is scrolled away from
-// the top. At the top, we let prepends push naturally into view and
-// don't count them as unseen.
-export function useStableScrollOnPrepend(
+// When totalCount grows by N, the global row at the user's current
+// scrollTop has shifted down by N rows. If the user is scrolled away
+// from the top, we add N × itemHeight to scrollTop to compensate ---
+// the visible window stays put, and we surface the delta as an unseen
+// counter the view can render as a "↑ N new" indicator. At
+// scrollTop === 0, prepends push naturally into view and don't count
+// as unseen.
+export function useScrollAnchor(
   scrollRef: RefObject<HTMLElement | null>,
   totalCount: number,
   itemHeight: number,

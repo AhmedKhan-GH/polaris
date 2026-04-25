@@ -18,7 +18,7 @@ import {
   ORDERS_COUNT_QUERY_KEY,
   ORDERS_PAGE_SIZE,
   ORDERS_QUERY_KEY,
-} from './ordersQuery'
+} from './queryKeys'
 import { getSupabaseClient } from '@/lib/supabase'
 import { safeParseOrder, type Order } from '@/lib/domain/order'
 import type { OrdersCursor } from '@/lib/db/orderRepository'
