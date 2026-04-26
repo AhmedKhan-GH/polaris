@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useEffect, useState } from 'react'
 import { signInAction, type LoginState } from './actions'
 
 const initialState: LoginState = {}
@@ -10,16 +10,34 @@ export function LoginForm() {
     signInAction,
     initialState,
   )
+
+  // Defer the form to the client. Password managers (LastPass, 1Password,
+  // Bitwarden) inject icon roots next to <input type="password"> as soon
+  // as the DOM is parsed, before React hydrates. suppressHydrationWarning
+  // only suppresses one level deep, so it doesn't cover the structural
+  // mismatch from extension-added children. Rendering after mount avoids
+  // the SSR/CSR diff entirely; cost is a brief skeleton on first paint.
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  if (!mounted) {
+    return (
+      <div aria-hidden className="flex flex-col gap-3">
+        <div className="h-10 rounded border border-zinc-800 bg-zinc-900" />
+        <div className="h-10 rounded border border-zinc-800 bg-zinc-900" />
+        <div className="h-10 rounded bg-zinc-800" />
+      </div>
+    )
+  }
+
   return (
     <>
       {state.error && (
         <p className="mb-3 text-sm text-red-400">{state.error}</p>
       )}
-      <form
-        action={formAction}
-        className="flex flex-col gap-3"
-        suppressHydrationWarning
-      >
+      <form action={formAction} className="flex flex-col gap-3">
         <input
           name="email"
           type="email"
