@@ -171,47 +171,28 @@ export function OrderDetailSidebar({
           </dl>
 
           <div ref={dropdownsRef} className="flex flex-col gap-2 px-5 py-4">
-            {actions.length > 0 ? (
-              <>
-                {primaryActions.length > 0 && (
-                  <ActionDropdown
-                    group="primary"
-                    label={
-                      primaryActions.length === 1
-                        ? primaryActions[0].label
-                        : 'Move forward'
-                    }
-                    actions={primaryActions}
-                    isOpen={openGroup === 'primary'}
-                    isPending={isPending}
-                    onToggle={() =>
-                      setOpenGroup((g) => (g === 'primary' ? null : 'primary'))
-                    }
-                    onPick={handleTransition}
-                  />
-                )}
-                {dangerActions.length > 0 && (
-                  <ActionDropdown
-                    group="danger"
-                    label={
-                      dangerActions.length === 1
-                        ? dangerActions[0].label
-                        : 'Stop'
-                    }
-                    actions={dangerActions}
-                    isOpen={openGroup === 'danger'}
-                    isPending={isPending}
-                    onToggle={() =>
-                      setOpenGroup((g) => (g === 'danger' ? null : 'danger'))
-                    }
-                    onPick={handleTransition}
-                  />
-                )}
-              </>
+            {primaryActions.length > 0 ? (
+              <ActionDropdown
+                group="primary"
+                label={
+                  primaryActions.length === 1
+                    ? primaryActions[0].label
+                    : 'Move forward'
+                }
+                actions={primaryActions}
+                isOpen={openGroup === 'primary'}
+                isPending={isPending}
+                onToggle={() =>
+                  setOpenGroup((g) => (g === 'primary' ? null : 'primary'))
+                }
+                onPick={handleTransition}
+              />
             ) : (
-              <p className="text-sm text-zinc-500">
-                Terminal state — no further transitions.
-              </p>
+              actions.length === 0 && (
+                <p className="text-sm text-zinc-500">
+                  Terminal state — no further transitions.
+                </p>
+              )
             )}
             <button
               type="button"
@@ -221,6 +202,24 @@ export function OrderDetailSidebar({
             >
               Duplicate to new draft
             </button>
+            {dangerActions.length > 0 && (
+              <ActionDropdown
+                group="danger"
+                label={
+                  dangerActions.length === 1
+                    ? dangerActions[0].label
+                    : 'Stop'
+                }
+                actions={dangerActions}
+                isOpen={openGroup === 'danger'}
+                isPending={isPending}
+                direction="up"
+                onToggle={() =>
+                  setOpenGroup((g) => (g === 'danger' ? null : 'danger'))
+                }
+                onPick={handleTransition}
+              />
+            )}
           </div>
 
           {error && (
@@ -243,6 +242,7 @@ function ActionDropdown({
   actions,
   isOpen,
   isPending,
+  direction = 'down',
   onToggle,
   onPick,
 }: {
@@ -251,6 +251,7 @@ function ActionDropdown({
   actions: ActionConfig[]
   isOpen: boolean
   isPending: boolean
+  direction?: 'up' | 'down'
   onToggle: () => void
   onPick: (action: ActionConfig) => void
 }) {
@@ -258,6 +259,19 @@ function ActionDropdown({
     group === 'primary'
       ? 'flex w-full items-center justify-between rounded bg-zinc-100 px-3 py-2 text-sm font-medium text-zinc-900 hover:bg-zinc-200 disabled:cursor-wait disabled:opacity-60'
       : 'flex w-full items-center justify-between rounded border border-red-500/40 bg-transparent px-3 py-2 text-sm font-medium text-red-300 hover:bg-red-500/10 disabled:cursor-wait disabled:opacity-60'
+
+  const menuClass =
+    direction === 'up'
+      ? 'absolute left-0 right-0 bottom-full z-10 mb-1 overflow-hidden rounded border border-zinc-700 bg-zinc-900 shadow-lg'
+      : 'absolute left-0 right-0 z-10 mt-1 overflow-hidden rounded border border-zinc-700 bg-zinc-900 shadow-lg'
+
+  const caret = isOpen
+    ? direction === 'up'
+      ? '▾'
+      : '▴'
+    : direction === 'up'
+      ? '▴'
+      : '▾'
 
   return (
     <div className="relative">
@@ -271,14 +285,11 @@ function ActionDropdown({
       >
         <span>{label}</span>
         <span aria-hidden className="text-xs opacity-70">
-          {isOpen ? '▴' : '▾'}
+          {caret}
         </span>
       </button>
       {isOpen && (
-        <div
-          role="menu"
-          className="absolute left-0 right-0 z-10 mt-1 overflow-hidden rounded border border-zinc-700 bg-zinc-900 shadow-lg"
-        >
+        <div role="menu" className={menuClass}>
           {actions.map((action) => (
             <button
               key={action.toStatus}
