@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   formatCreatedAt,
   type Order,
@@ -44,6 +44,8 @@ const ACTIONS_BY_STATUS: Record<OrderStatus, ActionConfig[]> = {
   voided:    [],
 }
 
+type DropdownGroup = 'primary' | 'danger' | null
+
 export function OrderDetailSidebar({
   order,
   onClose,
@@ -54,21 +56,60 @@ export function OrderDetailSidebar({
   const { transition, discardDraft, duplicate, isPending, error } =
     useOrderActions()
 
-  // Esc closes the panel — gives keyboard parity with the X button.
+  // Two-step dropdown gate per group: the user opens a menu, then
+  // explicitly picks the item. Primary and danger live in separate
+  // dropdowns so a hover or fat-finger on one path can't possibly land
+  // on the other --- the structural separation is the point.
+  const [openGroup, setOpenGroup] = useState<DropdownGroup>(null)
+  const dropdownsRef = useRef<HTMLDivElement>(null)
+
+  const actions = order ? ACTIONS_BY_STATUS[order.status] : []
+  const primaryActions = useMemo(
+    () => actions.filter((a) => a.tone === 'primary'),
+    [actions],
+  )
+  const dangerActions = useMemo(
+    () => actions.filter((a) => a.tone === 'danger'),
+    [actions],
+  )
+
+  // Reset the open menu whenever the panel switches to a different order.
+  useEffect(() => {
+    setOpenGroup(null)
+  }, [order?.id])
+
+  // Esc layers: dropdown first, then the panel itself.
   useEffect(() => {
     if (!order) return
     function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') onClose()
+      if (e.key !== 'Escape') return
+      if (openGroup) {
+        setOpenGroup(null)
+      } else {
+        onClose()
+      }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [order, onClose])
+  }, [order, onClose, openGroup])
 
-  const open = order !== null
-  const actions = order ? ACTIONS_BY_STATUS[order.status] : []
+  // Click anywhere outside both menus closes whichever is open.
+  useEffect(() => {
+    if (!openGroup) return
+    function onClickOutside(e: MouseEvent) {
+      if (!dropdownsRef.current?.contains(e.target as Node)) {
+        setOpenGroup(null)
+      }
+    }
+    document.addEventListener('mousedown', onClickOutside)
+    return () => document.removeEventListener('mousedown', onClickOutside)
+  }, [openGroup])
+
+  const isOpen = order !== null
 
   async function handleTransition(action: ActionConfig) {
     if (!order) return
+    setOpenGroup(null)
     if (action.toStatus === 'discarded') {
       await discardDraft({ orderId: order.id }).catch(() => {})
     } else {
@@ -86,9 +127,9 @@ export function OrderDetailSidebar({
 
   return (
     <aside
-      aria-hidden={!open}
+      aria-hidden={!isOpen}
       className={`fixed right-0 top-0 z-40 flex h-full w-full max-w-sm flex-col border-l border-zinc-800 bg-zinc-950 shadow-xl transition-transform duration-200 ease-out motion-reduce:transition-none ${
-        open ? 'translate-x-0' : 'translate-x-full'
+        isOpen ? 'translate-x-0' : 'translate-x-full'
       }`}
     >
       {order && (
@@ -129,23 +170,44 @@ export function OrderDetailSidebar({
             )}
           </dl>
 
-          <div className="flex flex-col gap-2 px-5 py-4">
+          <div ref={dropdownsRef} className="flex flex-col gap-2 px-5 py-4">
             {actions.length > 0 ? (
-              actions.map((action) => (
-                <button
-                  key={action.toStatus}
-                  type="button"
-                  disabled={isPending}
-                  onClick={() => handleTransition(action)}
-                  className={
-                    action.tone === 'primary'
-                      ? 'rounded bg-zinc-100 px-3 py-2 text-sm font-medium text-zinc-900 hover:bg-zinc-200 disabled:cursor-wait disabled:opacity-60'
-                      : 'rounded border border-red-500/40 bg-transparent px-3 py-2 text-sm font-medium text-red-300 hover:bg-red-500/10 disabled:cursor-wait disabled:opacity-60'
-                  }
-                >
-                  {action.label}
-                </button>
-              ))
+              <>
+                {primaryActions.length > 0 && (
+                  <ActionDropdown
+                    group="primary"
+                    label={
+                      primaryActions.length === 1
+                        ? primaryActions[0].label
+                        : 'Move forward'
+                    }
+                    actions={primaryActions}
+                    isOpen={openGroup === 'primary'}
+                    isPending={isPending}
+                    onToggle={() =>
+                      setOpenGroup((g) => (g === 'primary' ? null : 'primary'))
+                    }
+                    onPick={handleTransition}
+                  />
+                )}
+                {dangerActions.length > 0 && (
+                  <ActionDropdown
+                    group="danger"
+                    label={
+                      dangerActions.length === 1
+                        ? dangerActions[0].label
+                        : 'Stop'
+                    }
+                    actions={dangerActions}
+                    isOpen={openGroup === 'danger'}
+                    isPending={isPending}
+                    onToggle={() =>
+                      setOpenGroup((g) => (g === 'danger' ? null : 'danger'))
+                    }
+                    onPick={handleTransition}
+                  />
+                )}
+              </>
             ) : (
               <p className="text-sm text-zinc-500">
                 Terminal state — no further transitions.
@@ -172,5 +234,69 @@ export function OrderDetailSidebar({
         </>
       )}
     </aside>
+  )
+}
+
+function ActionDropdown({
+  group,
+  label,
+  actions,
+  isOpen,
+  isPending,
+  onToggle,
+  onPick,
+}: {
+  group: 'primary' | 'danger'
+  label: string
+  actions: ActionConfig[]
+  isOpen: boolean
+  isPending: boolean
+  onToggle: () => void
+  onPick: (action: ActionConfig) => void
+}) {
+  const triggerClass =
+    group === 'primary'
+      ? 'flex w-full items-center justify-between rounded bg-zinc-100 px-3 py-2 text-sm font-medium text-zinc-900 hover:bg-zinc-200 disabled:cursor-wait disabled:opacity-60'
+      : 'flex w-full items-center justify-between rounded border border-red-500/40 bg-transparent px-3 py-2 text-sm font-medium text-red-300 hover:bg-red-500/10 disabled:cursor-wait disabled:opacity-60'
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        disabled={isPending}
+        aria-haspopup="menu"
+        aria-expanded={isOpen}
+        onClick={onToggle}
+        className={triggerClass}
+      >
+        <span>{label}</span>
+        <span aria-hidden className="text-xs opacity-70">
+          {isOpen ? '▴' : '▾'}
+        </span>
+      </button>
+      {isOpen && (
+        <div
+          role="menu"
+          className="absolute left-0 right-0 z-10 mt-1 overflow-hidden rounded border border-zinc-700 bg-zinc-900 shadow-lg"
+        >
+          {actions.map((action) => (
+            <button
+              key={action.toStatus}
+              type="button"
+              role="menuitem"
+              disabled={isPending}
+              onClick={() => onPick(action)}
+              className={
+                group === 'danger'
+                  ? 'block w-full px-3 py-2 text-left text-sm font-medium text-red-300 hover:bg-red-500/10 disabled:cursor-wait disabled:opacity-60'
+                  : 'block w-full px-3 py-2 text-left text-sm font-medium text-zinc-100 hover:bg-zinc-800 disabled:cursor-wait disabled:opacity-60'
+              }
+            >
+              {action.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   )
 }
