@@ -223,7 +223,7 @@ export function OrderDetailSidebar({
                 />
               )}
             </div>
-            <div aria-hidden className="h-32 shrink-0" />
+            <div aria-hidden className="h-10 shrink-0" />
           </div>
 
           {error && (
