@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type RefObject } from 'react'
 import {
   formatCreatedAt,
   type Order,
@@ -53,6 +53,38 @@ export function OrderDetailSidebar({
   order: Order | null
   onClose: () => void
 }) {
+  const dropdownsRef = useRef<HTMLElement>(null)
+  const isOpen = order !== null
+
+  return (
+    <aside
+      ref={dropdownsRef}
+      aria-hidden={!isOpen}
+      className={`fixed right-0 top-0 z-40 flex h-full w-full max-w-sm flex-col border-l border-zinc-800 bg-zinc-950 shadow-xl transition-transform duration-200 ease-out motion-reduce:transition-none ${
+        isOpen ? 'translate-x-0' : 'translate-x-full'
+      }`}
+    >
+      {order && (
+        <SidebarBody
+          key={order.id}
+          order={order}
+          onClose={onClose}
+          dropdownsRef={dropdownsRef}
+        />
+      )}
+    </aside>
+  )
+}
+
+function SidebarBody({
+  order,
+  onClose,
+  dropdownsRef,
+}: {
+  order: Order
+  onClose: () => void
+  dropdownsRef: RefObject<HTMLElement | null>
+}) {
   const { transition, discardDraft, duplicate, isPending, error } =
     useOrderActions()
 
@@ -67,29 +99,15 @@ export function OrderDetailSidebar({
   const [pendingTerminate, setPendingTerminate] = useState<ActionConfig | null>(
     null,
   )
-  const dropdownsRef = useRef<HTMLElement>(null)
 
-  const actions = order ? ACTIONS_BY_STATUS[order.status] : []
-  const primaryActions = useMemo(
-    () => actions.filter((a) => a.tone === 'primary'),
-    [actions],
-  )
-  const dangerActions = useMemo(
-    () => actions.filter((a) => a.tone === 'danger'),
-    [actions],
-  )
-
-  // Reset the open menu whenever the panel switches to a different order.
-  useEffect(() => {
-    setOpenGroup(null)
-    setPendingTerminate(null)
-  }, [order?.id])
+  const actions = ACTIONS_BY_STATUS[order.status]
+  const primaryActions = actions.filter((action) => action.tone === 'primary')
+  const dangerActions = actions.filter((action) => action.tone === 'danger')
 
   // Esc layers: confirm modal first, then any open dropdown, then the
   // panel itself --- innermost wins so a single Esc never crosses two
   // boundaries at once.
   useEffect(() => {
-    if (!order) return
     function onKey(e: KeyboardEvent) {
       if (e.key !== 'Escape') return
       if (pendingTerminate) {
@@ -102,7 +120,7 @@ export function OrderDetailSidebar({
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [order, onClose, openGroup, pendingTerminate])
+  }, [onClose, openGroup, pendingTerminate])
 
   // Click anywhere outside the sidebar closes whichever dropdown is
   // open. Scoped to the aside (via dropdownsRef on the aside itself)
@@ -118,12 +136,9 @@ export function OrderDetailSidebar({
     }
     document.addEventListener('mousedown', onClickOutside)
     return () => document.removeEventListener('mousedown', onClickOutside)
-  }, [openGroup])
-
-  const isOpen = order !== null
+  }, [dropdownsRef, openGroup])
 
   async function runTransition(action: ActionConfig) {
-    if (!order) return
     if (action.toStatus === 'discarded') {
       await discardDraft({ orderId: order.id }).catch(() => {})
     } else {
@@ -135,7 +150,6 @@ export function OrderDetailSidebar({
   }
 
   async function handleTransition(action: ActionConfig) {
-    if (!order) return
     setOpenGroup(null)
     // Danger actions defer to the confirmation modal --- a forward
     // primary move is still cheap to undo (transition again), but the
@@ -156,125 +170,113 @@ export function OrderDetailSidebar({
   }
 
   async function handleDuplicate() {
-    if (!order) return
     await duplicate({ sourceOrderId: order.id }).catch(() => {})
   }
 
   return (
-    <aside
-      ref={dropdownsRef}
-      aria-hidden={!isOpen}
-      className={`fixed right-0 top-0 z-40 flex h-full w-full max-w-sm flex-col border-l border-zinc-800 bg-zinc-950 shadow-xl transition-transform duration-200 ease-out motion-reduce:transition-none ${
-        isOpen ? 'translate-x-0' : 'translate-x-full'
-      }`}
-    >
-      {order && (
-        <>
-          <header className="flex items-center justify-between border-b border-zinc-800 px-5 py-4">
-            <div className="flex items-center gap-3">
-              <span className="font-mono text-base font-medium text-zinc-50">
-                #{order.orderNumber}
-              </span>
-              <StatusBadge status={order.status} />
-            </div>
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label="Close detail panel"
-              className="rounded p-1 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
-            >
-              ✕
-            </button>
-          </header>
+    <>
+      <header className="flex items-center justify-between border-b border-zinc-800 px-5 py-4">
+        <div className="flex items-center gap-3">
+          <span className="font-mono text-base font-medium text-zinc-50">
+            #{order.orderNumber}
+          </span>
+          <StatusBadge status={order.status} />
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close detail panel"
+          className="rounded p-1 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
+        >
+          ✕
+        </button>
+      </header>
 
-          <dl className="grid grid-cols-[max-content_1fr] gap-x-4 gap-y-2 border-b border-zinc-800 px-5 py-4 text-sm">
-            <dt className="text-zinc-500">Created</dt>
-            <dd className="text-zinc-200">{formatCreatedAt(order.createdAt)}</dd>
+      <dl className="grid grid-cols-[max-content_1fr] gap-x-4 gap-y-2 border-b border-zinc-800 px-5 py-4 text-sm">
+        <dt className="text-zinc-500">Created</dt>
+        <dd className="text-zinc-200">{formatCreatedAt(order.createdAt)}</dd>
 
-            <dt className="text-zinc-500">Status changed</dt>
-            <dd className="text-zinc-200">
-              {formatCreatedAt(order.statusUpdatedAt)}
+        <dt className="text-zinc-500">Status changed</dt>
+        <dd className="text-zinc-200">
+          {formatCreatedAt(order.statusUpdatedAt)}
+        </dd>
+
+        {order.duplicatedFromOrderId && (
+          <>
+            <dt className="text-zinc-500">Duplicated from</dt>
+            <dd className="font-mono text-xs text-zinc-300">
+              {order.duplicatedFromOrderId}
             </dd>
+          </>
+        )}
+      </dl>
 
-            {order.duplicatedFromOrderId && (
-              <>
-                <dt className="text-zinc-500">Duplicated from</dt>
-                <dd className="font-mono text-xs text-zinc-300">
-                  {order.duplicatedFromOrderId}
-                </dd>
-              </>
-            )}
-          </dl>
+      {/* The body stays in normal flex flow: Transition owns the
+          top of the remaining space, while the footer actions stay
+          pinned last without overlaying content above. */}
+      <div className="flex min-h-0 flex-1 flex-col">
+        <div className="flex-1 min-h-0 overflow-y-auto px-5 py-4">
+          {primaryActions.length > 0 ? (
+            <ActionDropdown
+              group="primary"
+              label="Transition"
+              actions={primaryActions}
+              isOpen={openGroup === 'primary'}
+              isPending={isPending}
+              onToggle={() =>
+                setOpenGroup((group) => (group === 'primary' ? null : 'primary'))
+              }
+              onPick={handleTransition}
+            />
+          ) : (
+            actions.length === 0 && (
+              <p className="text-sm text-zinc-500">
+                Terminal state — no further transitions.
+              </p>
+            )
+          )}
+          {error && (
+            <p
+              role="alert"
+              className="mt-3 rounded border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-300"
+            >
+              {error.message}
+            </p>
+          )}
+        </div>
 
-          {/* Transition area: takes whatever vertical room is left
-              after header + dl, scrolls if it ever overflows. Padded
-              at the bottom so its content can never end up underneath
-              the absolutely-pinned action group below. */}
-          <div className="flex-1 min-h-0 overflow-y-auto px-5 py-4 pb-44">
-            {primaryActions.length > 0 ? (
+        {/* Duplicate sits directly above the anchored Terminate
+            control. The danger menu opens upward because the
+            trigger is intentionally parked at the bottom rim. */}
+        <div className="flex flex-col gap-2 border-t border-zinc-800 bg-zinc-950 px-5 py-4">
+          <button
+            type="button"
+            disabled={isPending}
+            onClick={handleDuplicate}
+            className="rounded border border-zinc-700 bg-transparent px-3 py-2 text-sm font-medium text-zinc-200 hover:bg-zinc-800 disabled:cursor-wait disabled:opacity-60"
+          >
+            Duplicate to new draft
+          </button>
+          <div className="flex min-h-9 justify-end">
+            {dangerActions.length > 0 && (
               <ActionDropdown
-                group="primary"
-                label="Transition"
-                actions={primaryActions}
-                isOpen={openGroup === 'primary'}
+                group="danger"
+                label="Terminate"
+                actions={dangerActions}
+                isOpen={openGroup === 'danger'}
                 isPending={isPending}
+                direction="up"
                 onToggle={() =>
-                  setOpenGroup((g) => (g === 'primary' ? null : 'primary'))
+                  setOpenGroup((group) => (group === 'danger' ? null : 'danger'))
                 }
                 onPick={handleTransition}
               />
-            ) : (
-              actions.length === 0 && (
-                <p className="text-sm text-zinc-500">
-                  Terminal state — no further transitions.
-                </p>
-              )
-            )}
-            {error && (
-              <p
-                role="alert"
-                className="mt-3 rounded border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-300"
-              >
-                {error.message}
-              </p>
             )}
           </div>
+        </div>
+      </div>
 
-          {/* Pinned bottom group --- absolutely positioned at the
-              aside's rim so it can't drift when content above changes
-              height. pt-4 + pb-14 leaves the open Terminate menu a
-              56px landing zone below its trigger; the Terminate slot
-              uses min-h to hold its place across statuses without
-              danger actions, and `flex justify-end` right-justifies
-              the dropdown to the panel's right rim. */}
-          <div className="absolute inset-x-0 bottom-0 flex flex-col gap-2 border-t border-zinc-800 bg-zinc-950 px-5 pt-4 pb-14">
-            <button
-              type="button"
-              disabled={isPending}
-              onClick={handleDuplicate}
-              className="rounded border border-zinc-700 bg-transparent px-3 py-2 text-sm font-medium text-zinc-200 hover:bg-zinc-800 disabled:cursor-wait disabled:opacity-60"
-            >
-              Duplicate to new draft
-            </button>
-            <div className="flex min-h-9 justify-end">
-              {dangerActions.length > 0 && (
-                <ActionDropdown
-                  group="danger"
-                  label="Terminate"
-                  actions={dangerActions}
-                  isOpen={openGroup === 'danger'}
-                  isPending={isPending}
-                  onToggle={() =>
-                    setOpenGroup((g) => (g === 'danger' ? null : 'danger'))
-                  }
-                  onPick={handleTransition}
-                />
-              )}
-            </div>
-          </div>
-        </>
-      )}
-      {pendingTerminate && order && (
+      {pendingTerminate && (
         <ConfirmTerminateModal
           action={pendingTerminate}
           orderNumber={order.orderNumber}
@@ -283,7 +285,7 @@ export function OrderDetailSidebar({
           onCancel={() => setPendingTerminate(null)}
         />
       )}
-    </aside>
+    </>
   )
 }
 
