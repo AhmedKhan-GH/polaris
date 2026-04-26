@@ -31,7 +31,7 @@ export function KanbanBoard({
   onSelect: (id: string) => void
 }) {
   // One pass through orders puts each card in the bucket whose column it
-  // belongs to. Terminal states (archived, deleted, cancelled, voided)
+  // belongs to. Terminal states (archived, discarded, rejected, voided)
   // fall through and are intentionally not surfaced in the kanban ---
   // they remain visible in the spreadsheet, which is the audit view.
   const buckets = useMemo(() => {
@@ -42,7 +42,7 @@ export function KanbanBoard({
       archiving: [],
       archived: [],
       discarded: [],
-      cancelled: [],
+      rejected: [],
       voided: [],
     }
     for (const order of orders) {

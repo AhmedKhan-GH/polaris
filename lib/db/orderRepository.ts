@@ -12,16 +12,16 @@ import {
 export type OrdersCursor = { createdAt: string; id: string }
 
 // Forward-only graph. Mirrors enforce_forward_status as last updated in
-// drizzle/0012_rename_deleted_to_discarded.sql. Keep the two in lockstep
+// drizzle/0013_rename_cancelled_to_rejected.sql. Keep the two in lockstep
 // --- if you change the graph, change both.
 export const VALID_TRANSITIONS: Record<OrderStatus, readonly OrderStatus[]> = {
   draft:     ['submitted', 'discarded'],
-  submitted: ['invoiced',  'cancelled'],
+  submitted: ['invoiced',  'rejected'],
   invoiced:  ['archiving', 'voided'],
   archiving: ['archived'],
   archived:  [],
   discarded: [],
-  cancelled: [],
+  rejected:  [],
   voided:    [],
 }
 

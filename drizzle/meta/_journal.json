@@ -92,6 +92,13 @@
       "when": 1777186300725,
       "tag": "0012_rename_deleted_to_discarded",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1777186966183,
+      "tag": "0013_rename_cancelled_to_rejected",
+      "breakpoints": true
     }
   ]
 }

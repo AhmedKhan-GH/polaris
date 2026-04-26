@@ -426,7 +426,7 @@ describe('orderRepository (integration)', () => {
       })
       await repo.transitionOrderStatus({
         orderId: source.id,
-        toStatus: 'cancelled',
+        toStatus: 'rejected',
         changedBy: ACTOR,
       })
 
@@ -436,22 +436,22 @@ describe('orderRepository (integration)', () => {
       })
 
       const reloaded = await repo.findOrderById(source.id)
-      expect(reloaded?.status).toBe('cancelled')
+      expect(reloaded?.status).toBe('rejected')
     })
 
     test('works from any source state, including terminal ones', async () => {
-      for (const terminal of ['discarded', 'cancelled', 'voided', 'archived'] as const) {
+      for (const terminal of ['discarded', 'rejected', 'voided', 'archived'] as const) {
         const source = await repo.insertOrder()
         if (terminal === 'discarded') {
           await repo.transitionOrderStatus({
             orderId: source.id, toStatus: 'discarded', changedBy: ACTOR,
           })
-        } else if (terminal === 'cancelled') {
+        } else if (terminal === 'rejected') {
           await repo.transitionOrderStatus({
             orderId: source.id, toStatus: 'submitted', changedBy: ACTOR,
           })
           await repo.transitionOrderStatus({
-            orderId: source.id, toStatus: 'cancelled', changedBy: ACTOR,
+            orderId: source.id, toStatus: 'rejected', changedBy: ACTOR,
           })
         } else if (terminal === 'voided') {
           await repo.transitionOrderStatus({

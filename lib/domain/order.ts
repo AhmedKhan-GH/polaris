@@ -7,7 +7,7 @@ export const ORDER_STATUSES = [
   'archiving',
   'archived',
   'discarded',
-  'cancelled',
+  'rejected',
   'voided',
 ] as const
 

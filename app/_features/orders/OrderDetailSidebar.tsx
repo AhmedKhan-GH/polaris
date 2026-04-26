@@ -17,7 +17,7 @@ interface ActionConfig {
 
 // Mirrors VALID_TRANSITIONS in lib/db/orderRepository.ts. Forward
 // transitions render as "primary" (continue the pipeline); terminal
-// exits render as "danger" so the discard/cancel/void sinks stand
+// exits render as "danger" so the discard/reject/void sinks stand
 // apart from the happy-path moves. archiving is the post-fulfillment
 // holding step before the terminal archived state. 'Discard' is the
 // author-driven soft delete on a draft; an admin 'Delete' (hard) is
@@ -29,7 +29,7 @@ const ACTIONS_BY_STATUS: Record<OrderStatus, ActionConfig[]> = {
   ],
   submitted: [
     { label: 'Invoice',  toStatus: 'invoiced',  tone: 'primary' },
-    { label: 'Cancel',   toStatus: 'cancelled', tone: 'danger'  },
+    { label: 'Reject',   toStatus: 'rejected',  tone: 'danger'  },
   ],
   invoiced: [
     { label: 'Complete', toStatus: 'archiving', tone: 'primary' },
@@ -40,7 +40,7 @@ const ACTIONS_BY_STATUS: Record<OrderStatus, ActionConfig[]> = {
   ],
   archived:  [],
   discarded: [],
-  cancelled: [],
+  rejected:  [],
   voided:    [],
 }
 
