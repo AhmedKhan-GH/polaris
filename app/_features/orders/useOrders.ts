@@ -6,7 +6,6 @@ import {
   useMutation,
   useQuery,
   useQueryClient,
-  type InfiniteData,
 } from '@tanstack/react-query'
 import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js'
 import {
@@ -20,15 +19,22 @@ import {
   ORDERS_PAGE_SIZE,
   ORDERS_QUERY_KEY,
   ORDERS_STATUS_COUNTS_QUERY_KEY,
+  ordersByStatusQueryKey,
 } from './queryKeys'
+import {
+  findStatusInPerStatusCaches,
+  insertSortedIfInWindow,
+  prependToCache,
+  removeFromCache,
+  updateInCache,
+  type OrdersCache,
+} from './cacheHelpers'
 import { getSupabaseClient } from '@/lib/supabase/browser'
 import { safeParseOrder, type Order } from '@/lib/domain/order'
 import type {
   OrderStatusCounts,
   OrdersCursor,
 } from '@/lib/db/orderRepository'
-
-type OrdersCache = InfiniteData<Order[], OrdersCursor | null>
 
 export interface UseOrdersResult {
   orders: Order[]
@@ -71,10 +77,10 @@ export function useOrders(): UseOrdersResult {
     queryFn: () => countOrdersByStatusAction(),
   })
 
-  // Realtime mutates the cache directly. No eviction means cards[i]
-  // always equals global row i, so the cache-based idempotency check
-  // is enough --- a redelivered INSERT for any loaded row is caught
-  // by `cache.pages.some(...)`.
+  // Single channel, single writer. The handler fans each event out to
+  // the global cache (spreadsheet view) AND the per-status cache the
+  // row belongs to (kanban columns), keeping all five in lockstep so
+  // that any consumer reading from any cache sees the same row state.
   useEffect(() => {
     const supabase = getSupabaseClient()
     const channel = supabase
@@ -86,15 +92,16 @@ export function useOrders(): UseOrdersResult {
           if (payload.eventType === 'INSERT') {
             const row = safeParseOrder(payload.new, 'insert')
             if (!row) return
-            const cache = queryClient.getQueryData<OrdersCache>(ORDERS_QUERY_KEY)
-            if (cache?.pages.some((page) => page.some((o) => o.id === row.id))) {
-              return
-            }
-            queryClient.setQueryData<OrdersCache>(ORDERS_QUERY_KEY, (old) => {
-              if (!old) return old
-              const [first, ...rest] = old.pages
-              return { ...old, pages: [[row, ...(first ?? [])], ...rest] }
-            })
+            // New rows always start as 'draft' (DB default + insertOrder
+            // / duplicateOrder both go through default values), so we
+            // can hardcode the per-status target and skip the lookup.
+            queryClient.setQueryData<OrdersCache>(ORDERS_QUERY_KEY, (old) =>
+              prependToCache(old, row),
+            )
+            queryClient.setQueryData<OrdersCache>(
+              ordersByStatusQueryKey('draft'),
+              (old) => prependToCache(old, row),
+            )
             queryClient.setQueryData<number>(ORDERS_COUNT_QUERY_KEY, (n) =>
               (n ?? 0) + 1,
             )
@@ -108,31 +115,47 @@ export function useOrders(): UseOrdersResult {
           } else if (payload.eventType === 'UPDATE') {
             const row = safeParseOrder(payload.new, 'update')
             if (!row) return
-            queryClient.setQueryData<OrdersCache>(ORDERS_QUERY_KEY, (old) => {
-              if (!old) return old
-              return {
-                ...old,
-                pages: old.pages.map((page) =>
-                  page.map((o) => (o.id === row.id ? row : o)),
-                ),
+            queryClient.setQueryData<OrdersCache>(ORDERS_QUERY_KEY, (old) =>
+              updateInCache(old, row),
+            )
+            // Default REPLICA IDENTITY only ships the PK in payload.old,
+            // so we discover the row's previous status by scanning the
+            // per-status caches for its id. O(loaded rows), only on
+            // UPDATE.
+            const prevStatus = findStatusInPerStatusCaches(queryClient, row.id)
+            if (prevStatus === row.status) {
+              queryClient.setQueryData<OrdersCache>(
+                ordersByStatusQueryKey(row.status),
+                (old) => updateInCache(old, row),
+              )
+            } else {
+              if (prevStatus) {
+                queryClient.setQueryData<OrdersCache>(
+                  ordersByStatusQueryKey(prevStatus),
+                  (old) => removeFromCache(old, row.id),
+                )
               }
-            })
-            // Status may have changed; payload.old only carries the PK
-            // by default, so we can't compute the diff locally. Refetch
-            // is the simplest path that keeps counts honest.
+              queryClient.setQueryData<OrdersCache>(
+                ordersByStatusQueryKey(row.status),
+                (old) => insertSortedIfInWindow(old, row),
+              )
+            }
             void queryClient.invalidateQueries({
               queryKey: ORDERS_STATUS_COUNTS_QUERY_KEY,
             })
           } else if (payload.eventType === 'DELETE') {
             const oldId = (payload.old as { id?: string }).id
             if (!oldId) return
-            queryClient.setQueryData<OrdersCache>(ORDERS_QUERY_KEY, (old) => {
-              if (!old) return old
-              return {
-                ...old,
-                pages: old.pages.map((page) => page.filter((o) => o.id !== oldId)),
-              }
-            })
+            const prevStatus = findStatusInPerStatusCaches(queryClient, oldId)
+            queryClient.setQueryData<OrdersCache>(ORDERS_QUERY_KEY, (old) =>
+              removeFromCache(old, oldId),
+            )
+            if (prevStatus) {
+              queryClient.setQueryData<OrdersCache>(
+                ordersByStatusQueryKey(prevStatus),
+                (old) => removeFromCache(old, oldId),
+              )
+            }
             queryClient.setQueryData<number>(ORDERS_COUNT_QUERY_KEY, (n) =>
               Math.max(0, (n ?? 0) - 1),
             )

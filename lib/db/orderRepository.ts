@@ -82,6 +82,37 @@ export async function findOrdersPage(
   return rows.map(toOrder)
 }
 
+// Same cursor-ordered scan as findOrdersPage but filtered to a single
+// status. Each kanban column owns its own cursor through this so a
+// sparse status (Archiving) doesn't have to wait for the global newest-
+// first stream to walk past every fresher draft.
+export async function findOrdersPageByStatus(
+  status: OrderStatus,
+  cursor: OrdersCursor | null,
+  limit: number,
+): Promise<Order[]> {
+  const cursorWhere = cursor
+    ? or(
+        lt(orders.createdAt, sql`${cursor.createdAt}::timestamp`),
+        and(
+          eq(orders.createdAt, sql`${cursor.createdAt}::timestamp`),
+          lt(orders.id, sql`${cursor.id}::uuid`),
+        ),
+      )
+    : undefined
+  const where = cursorWhere
+    ? and(eq(orders.status, status), cursorWhere)
+    : eq(orders.status, status)
+  const rows = await db
+    .select()
+    .from(orders)
+    .where(where)
+    .orderBy(desc(orders.createdAt), desc(orders.id))
+    .limit(limit)
+  log.debug({ status, cursor, limit, count: rows.length }, 'findOrdersPageByStatus')
+  return rows.map(toOrder)
+}
+
 
 export async function insertOrder(): Promise<Order> {
   const [row] = await db.insert(orders).values({}).returning()

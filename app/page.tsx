@@ -8,7 +8,9 @@ import {
   countOrders,
   countOrdersByStatus,
   findOrdersPage,
+  findOrdersPageByStatus,
 } from '@/lib/db/orderRepository'
+import type { OrderStatus } from '@/lib/domain/order'
 import { OrdersHeaderShell } from './_features/orders/OrdersHeaderShell'
 import { OrdersPageShell } from './_features/orders/OrdersPageShell'
 import { OrdersPage } from './_features/orders/OrdersPage'
@@ -17,9 +19,20 @@ import {
   ORDERS_PAGE_SIZE,
   ORDERS_QUERY_KEY,
   ORDERS_STATUS_COUNTS_QUERY_KEY,
+  ordersByStatusQueryKey,
 } from './_features/orders/queryKeys'
 import { KanbanBoardShell } from './_features/orders/views/kanban/KanbanBoardShell'
 import { KanbanColumnShell } from './_features/orders/views/kanban/KanbanColumnShell'
+
+// Statuses surfaced by the kanban (terminal states stay in the
+// spreadsheet only). Each gets its own prefetch so columns paint with
+// real cards on first load instead of waiting for realtime to fill in.
+const KANBAN_STATUSES: ReadonlyArray<OrderStatus> = [
+  'draft',
+  'submitted',
+  'invoiced',
+  'archiving',
+]
 
 const FALLBACK = (
   <OrdersPageShell
@@ -46,9 +59,10 @@ export default function Home() {
 }
 
 async function OrdersPageData() {
-  // Prefetch the first page on the server, then hand it to the client
-  // via HydrationBoundary so useInfiniteQuery picks up the cached page
-  // without an extra round-trip on first paint.
+  // Prefetch every cache the client will need on first paint so
+  // useInfiniteQuery / useQuery hydrate without an extra round-trip:
+  // the spreadsheet's global page, the count + per-status aggregates,
+  // and the first page of each kanban column.
   const queryClient = new QueryClient()
   await Promise.all([
     queryClient.prefetchInfiniteQuery({
@@ -64,6 +78,13 @@ async function OrdersPageData() {
       queryKey: ORDERS_STATUS_COUNTS_QUERY_KEY,
       queryFn: () => countOrdersByStatus(),
     }),
+    ...KANBAN_STATUSES.map((status) =>
+      queryClient.prefetchInfiniteQuery({
+        queryKey: ordersByStatusQueryKey(status),
+        queryFn: () => findOrdersPageByStatus(status, null, ORDERS_PAGE_SIZE),
+        initialPageParam: null,
+      }),
+    ),
   ])
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>

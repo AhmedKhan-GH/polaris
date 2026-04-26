@@ -1,7 +1,6 @@
 'use client'
 
-import { useMemo } from 'react'
-import type { Order, OrderStatus } from '@/lib/domain/order'
+import type { OrderStatus } from '@/lib/domain/order'
 import type { OrderStatusCounts } from '@/lib/db/orderRepository'
 import { KanbanBoardShell } from './KanbanBoardShell'
 import { KanbanColumn } from './KanbanColumn'
@@ -14,61 +13,28 @@ const KANBAN_COLUMNS: ReadonlyArray<{ name: string; status: OrderStatus }> = [
 ]
 
 export function KanbanBoard({
-  orders,
   statusCounts,
-  hasNextPage,
-  isFetchingNextPage,
-  fetchNextPage,
   selectedId,
   onSelect,
 }: {
-  orders: Order[]
   statusCounts: OrderStatusCounts | undefined
-  hasNextPage: boolean
-  isFetchingNextPage: boolean
-  fetchNextPage: () => void
   selectedId: string | null
   onSelect: (id: string) => void
 }) {
-  // One pass through orders puts each card in the bucket whose column it
-  // belongs to. Terminal states (archived, discarded, rejected, voided)
-  // fall through and are intentionally not surfaced in the kanban ---
-  // they remain visible in the spreadsheet, which is the audit view.
-  const buckets = useMemo(() => {
-    const grouped: Record<OrderStatus, Order[]> = {
-      draft: [],
-      submitted: [],
-      invoiced: [],
-      archiving: [],
-      archived: [],
-      discarded: [],
-      rejected: [],
-      voided: [],
-    }
-    for (const order of orders) {
-      grouped[order.status].push(order)
-    }
-    return grouped
-  }, [orders])
-
-  const pagination = {
-    hasNextPage,
-    isFetchingNextPage,
-    fetchNextPage,
-  }
-
+  // Each column owns its own per-status infinite query (see
+  // useOrdersByStatus). Buckets and pagination live inside the
+  // column, so this board is a thin shell over the per-column views.
   return (
     <KanbanBoardShell
       columns={KANBAN_COLUMNS.map(({ name, status }, idx) => (
         <KanbanColumn
           key={status}
           name={name}
-          cards={buckets[status]}
+          status={status}
           expectedTotal={statusCounts?.[status]}
           showUnseenIndicator={idx === 0}
           selectedId={selectedId}
           onSelect={onSelect}
-          {...pagination}
         />
       ))}
     />

@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
-import type { Order } from '@/lib/domain/order'
+import type { OrderStatus } from '@/lib/domain/order'
+import { useOrdersByStatus } from '../../useOrdersByStatus'
 import { useScrollAnchor } from '../../useScrollAnchor'
 import { KanbanCard } from './KanbanCard'
 import { KanbanColumnShell } from './KanbanColumnShell'
@@ -17,25 +18,21 @@ const SLOT_HEIGHT = 60
 
 export function KanbanColumn({
   name,
-  cards,
+  status,
   expectedTotal,
   showUnseenIndicator = false,
-  hasNextPage,
-  isFetchingNextPage,
-  fetchNextPage,
   selectedId,
   onSelect,
 }: {
   name: string
-  cards: Order[]
+  status: OrderStatus
   expectedTotal?: number
   showUnseenIndicator?: boolean
-  hasNextPage: boolean
-  isFetchingNextPage: boolean
-  fetchNextPage: () => void
   selectedId: string | null
   onSelect: (id: string) => void
 }) {
+  const { cards, hasNextPage, isFetchingNextPage, fetchNextPage } =
+    useOrdersByStatus(status)
   const scrollRef = useRef<HTMLDivElement>(null)
 
   const totalSlots = Math.max(cards.length, expectedTotal ?? 0)
@@ -44,7 +41,10 @@ export function KanbanColumn({
     count: totalSlots,
     getScrollElement: () => scrollRef.current,
     estimateSize: () => SLOT_HEIGHT,
-    overscan: 6,
+    // Higher overscan masks single-page latency on fast scrolls --- by
+    // the time the user reaches the rendered edge, the next page has
+    // usually arrived.
+    overscan: 12,
   })
 
   const { unseenCount, reset: resetUnseen } = useScrollAnchor(
@@ -90,6 +90,25 @@ export function KanbanColumn({
     fetchNextPage,
     resetUnseen,
   ])
+
+  // Fast-scroll resilience. The scroll handler only fires on user
+  // input; if the user flings the column past the loaded boundary
+  // while a fetch is in flight and then stops, no further scroll
+  // events arrive --- the next page lands but pagination stalls. This
+  // effect re-runs the proximity check whenever a fetch settles or
+  // cards.length grows, kicking off the next fetch automatically when
+  // the viewport is still near the boundary.
+  useEffect(() => {
+    if (!hasNextPage || isFetchingNextPage) return
+    const el = scrollRef.current
+    if (!el || cards.length === 0) return
+    const loadedBottomPx = cards.length * SLOT_HEIGHT
+    const distanceFromLoadedBottom =
+      loadedBottomPx - el.scrollTop - el.clientHeight
+    if (distanceFromLoadedBottom < SLOT_HEIGHT * 3) {
+      fetchNextPage()
+    }
+  }, [cards.length, hasNextPage, isFetchingNextPage, fetchNextPage])
 
   function handleUnseenClick() {
     scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' })

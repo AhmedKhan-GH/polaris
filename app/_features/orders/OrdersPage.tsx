@@ -1,10 +1,12 @@
 'use client'
 
 import { useCallback, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { OrderDetailSidebar } from './OrderDetailSidebar'
 import { OrdersHeader } from './OrdersHeader'
 import { OrdersPageShell } from './OrdersPageShell'
 import { useOrders } from './useOrders'
+import { findInCaches } from './cacheHelpers'
 import { type View } from './ViewSwitcher'
 import { KanbanBoard } from './views/kanban/KanbanBoard'
 import { SpreadsheetView } from './views/spreadsheet/SpreadsheetView'
@@ -20,6 +22,7 @@ export function OrdersPage() {
     isFetchingNextPage,
     fetchNextPage,
   } = useOrders()
+  const queryClient = useQueryClient()
   const [view, setView] = useState<View>('kanban')
   const [selectedId, setSelectedId] = useState<string | null>(null)
 
@@ -27,16 +30,12 @@ export function OrdersPage() {
   const handleSelect = useCallback((id: string) => setSelectedId(id), [])
   const handleClose = useCallback(() => setSelectedId(null), [])
 
+  // The selected order may live in a per-status (kanban) cache that the
+  // global query hasn't paged into yet, so we walk every cache instead
+  // of just the spreadsheet's flat array.
   const selectedOrder = selectedId
-    ? orders.find((o) => o.id === selectedId) ?? null
+    ? findInCaches(queryClient, selectedId)
     : null
-
-  const pagination = {
-    totalCount,
-    hasNextPage,
-    isFetchingNextPage,
-    fetchNextPage,
-  }
 
   return (
     <OrdersPageShell
@@ -54,11 +53,9 @@ export function OrdersPage() {
         aria-hidden={view !== 'kanban'}
       >
         <KanbanBoard
-          orders={orders}
           statusCounts={statusCounts}
           selectedId={selectedId}
           onSelect={handleSelect}
-          {...pagination}
         />
       </div>
       <div
@@ -67,9 +64,12 @@ export function OrdersPage() {
       >
         <SpreadsheetView
           orders={orders}
+          totalCount={totalCount}
+          hasNextPage={hasNextPage}
+          isFetchingNextPage={isFetchingNextPage}
+          fetchNextPage={fetchNextPage}
           selectedId={selectedId}
           onSelect={handleSelect}
-          {...pagination}
         />
       </div>
       <OrderDetailSidebar order={selectedOrder} onClose={handleClose} />

@@ -8,6 +8,7 @@ import {
   discardDraftOrder,
   duplicateOrder,
   findOrdersPage,
+  findOrdersPageByStatus,
   transitionOrderStatus,
   type OrderStatusCounts,
   type OrdersCursor,
@@ -37,6 +38,14 @@ export async function findOrdersPageAction(
   limit: number,
 ): Promise<Order[]> {
   return await findOrdersPage(cursor, limit)
+}
+
+export async function findOrdersPageByStatusAction(
+  status: OrderStatus,
+  cursor: OrdersCursor | null,
+  limit: number,
+): Promise<Order[]> {
+  return await findOrdersPageByStatus(status, cursor, limit)
 }
 
 export async function countOrdersAction(): Promise<number> {
