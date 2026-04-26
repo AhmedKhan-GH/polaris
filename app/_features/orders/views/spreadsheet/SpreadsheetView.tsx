@@ -81,7 +81,10 @@ export function SpreadsheetView({
   const [isAtTop, setIsAtTop] = useState(true)
 
   const items = virtualizer.getVirtualItems()
-  const totalSize = totalCount * ROW_HEIGHT
+  // Each rendered row reports its real height back via measureElement,
+  // so the running total respects content scaling at zoom levels and
+  // unloaded rows fall back to ROW_HEIGHT as the estimate.
+  const totalSize = virtualizer.getTotalSize()
 
   // Scroll-driven pagination: fetch the next page only when the user has
   // actually scrolled near the bottom of the loaded rows. A purely
@@ -138,7 +141,7 @@ export function SpreadsheetView({
             <div
               key={header.id}
               role="columnheader"
-              className="px-4 py-3 font-semibold"
+              className="truncate px-4 py-3 font-semibold"
             >
               {flexRender(header.column.columnDef.header, header.getContext())}
             </div>
@@ -168,6 +171,8 @@ export function SpreadsheetView({
           return (
             <div
               key={row.id}
+              data-index={vi.index}
+              ref={virtualizer.measureElement}
               role="row"
               aria-rowindex={vi.index + 1}
               aria-selected={isSelected}
@@ -182,14 +187,13 @@ export function SpreadsheetView({
               className={`absolute left-0 right-0 grid cursor-pointer grid-cols-[120px_140px_1fr] border-b border-zinc-800 ${selectionClass} ${transitionClass}`}
               style={{
                 transform: `translateY(${vi.start}px)`,
-                height: vi.size,
               }}
             >
               {row.getVisibleCells().map((cell) => (
                 <div
                   key={cell.id}
                   role="cell"
-                  className={`px-4 py-3 ${cell.column.columnDef.meta?.cellClassName ?? ''}`}
+                  className={`truncate px-4 py-3 ${cell.column.columnDef.meta?.cellClassName ?? ''}`}
                 >
                   {flexRender(cell.column.columnDef.cell, cell.getContext())}
                 </div>
