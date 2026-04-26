@@ -27,14 +27,16 @@ export function KanbanColumnShell({
 
   return (
     <section aria-hidden={loading || undefined} className={sectionClass}>
-      <div className="flex items-center justify-between gap-2 px-1">
-        <div className="flex min-w-0 items-center gap-2">
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-300">
-            {name}
-          </h2>
-          {headerAlert}
-        </div>
+      <div className="flex items-center gap-2 px-1">
+        <h2 className="min-w-0 truncate text-xs font-semibold uppercase tracking-wider text-zinc-300">
+          {name}
+        </h2>
+        {/* Count tucks against the title on the left so it reads as
+            part of the same label; the "↑ N new" pill is pushed to
+            the column's right edge with ml-auto so it doesn't compete
+            with the count for attention. */}
         <span className={badgeClass}>{count}</span>
+        {headerAlert && <div className="ml-auto">{headerAlert}</div>}
       </div>
       {children}
     </section>

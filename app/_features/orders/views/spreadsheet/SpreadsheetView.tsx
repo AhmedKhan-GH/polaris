@@ -9,8 +9,8 @@ import {
   useReactTable,
 } from '@tanstack/react-table'
 import { formatCreatedAt, type Order } from '@/lib/domain/order'
-import { StatusBadge } from '../../StatusBadge'
-import { useScrollAnchor } from '../../useScrollAnchor'
+import { StatusBadge } from '../../shared/StatusBadge'
+import { useScrollAnchor } from '../../shared/useScrollAnchor'
 
 const ROW_HEIGHT = 44
 
@@ -136,19 +136,17 @@ export function SpreadsheetView({
       {/* Header sits outside the scroll container so the vertical
           scrollbar track only spans the body rows --- it can't run
           alongside the header band the way it would inside a sticky
-          layout. The "↑ N new" pill rides at the far right of the
-          header row (inside the last column header, pushed by ml-auto)
-          when rows have arrived while the user was scrolled away;
-          clicking jumps back and resets the counter. */}
+          layout. Each header row is wrapped in a `relative` div so
+          the "↑ N new" pill can absolutely-anchor to the right edge
+          of the band without being trapped inside a column cell or
+          stealing width from the 1fr Created column. */}
       {headerGroups.map((headerGroup) => (
-        <div
-          key={headerGroup.id}
-          role="row"
-          className="grid grid-cols-[120px_140px_1fr] text-left text-xs uppercase tracking-wider text-zinc-400 shadow-[inset_0_-1px_0_0_rgb(39,39,42)]"
-        >
-          {headerGroup.headers.map((header, index, arr) => {
-            const isLast = index === arr.length - 1
-            return (
+        <div key={headerGroup.id} className="relative">
+          <div
+            role="row"
+            className="grid grid-cols-[120px_140px_1fr] text-left text-xs uppercase tracking-wider text-zinc-400 shadow-[inset_0_-1px_0_0_rgb(39,39,42)]"
+          >
+            {headerGroup.headers.map((header) => (
               <div
                 key={header.id}
                 role="columnheader"
@@ -160,18 +158,18 @@ export function SpreadsheetView({
                     header.getContext(),
                   )}
                 </span>
-                {isLast && unseenCount > 0 && (
-                  <button
-                    type="button"
-                    onClick={handleUnseenClick}
-                    className="ml-auto shrink-0 rounded-full bg-blue-500/15 px-2 py-0.5 text-[10px] font-medium normal-case tracking-normal text-blue-300 transition-colors hover:bg-blue-500/25"
-                  >
-                    ↑ {unseenCount} new
-                  </button>
-                )}
               </div>
-            )
-          })}
+            ))}
+          </div>
+          {unseenCount > 0 && (
+            <button
+              type="button"
+              onClick={handleUnseenClick}
+              className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full bg-blue-500/15 px-2 py-0.5 text-[10px] font-medium normal-case tracking-normal text-blue-300 transition-colors hover:bg-blue-500/25"
+            >
+              ↑ {unseenCount} new
+            </button>
+          )}
         </div>
       ))}
 

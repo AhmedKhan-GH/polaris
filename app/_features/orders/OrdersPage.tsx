@@ -2,12 +2,12 @@
 
 import { useCallback, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { OrderDetailSidebar } from './OrderDetailSidebar'
-import { OrdersHeader } from './OrdersHeader'
+import { OrderDetailSidebar } from './sidebar/OrderDetailSidebar'
+import { OrdersHeader } from './header/OrdersHeader'
 import { OrdersPageShell } from './OrdersPageShell'
-import { useOrders } from './useOrders'
-import { findInCaches } from './cacheHelpers'
-import { type View } from './ViewSwitcher'
+import { useOrders } from './data/useOrders'
+import { findInCaches } from './data/cacheHelpers'
+import { type View } from './header/ViewSwitcher'
 import { KanbanBoard } from './views/kanban/KanbanBoard'
 import { SpreadsheetView } from './views/spreadsheet/SpreadsheetView'
 

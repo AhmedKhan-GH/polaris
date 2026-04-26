@@ -11,7 +11,7 @@ import {
   findOrdersPageByStatus,
 } from '@/lib/db/orderRepository'
 import type { OrderStatus } from '@/lib/domain/order'
-import { OrdersHeaderShell } from './_features/orders/OrdersHeaderShell'
+import { OrdersHeaderShell } from './_features/orders/header/OrdersHeaderShell'
 import { OrdersPageShell } from './_features/orders/OrdersPageShell'
 import { OrdersPage } from './_features/orders/OrdersPage'
 import {
@@ -20,7 +20,7 @@ import {
   ORDERS_QUERY_KEY,
   ORDERS_STATUS_COUNTS_QUERY_KEY,
   ordersByStatusQueryKey,
-} from './_features/orders/queryKeys'
+} from './_features/orders/data/queryKeys'
 import { KanbanBoardShell } from './_features/orders/views/kanban/KanbanBoardShell'
 import { KanbanColumnShell } from './_features/orders/views/kanban/KanbanColumnShell'
 

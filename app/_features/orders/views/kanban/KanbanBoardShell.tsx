@@ -35,7 +35,7 @@ const TRANSITION_LABELS: ReadonlyArray<ReactNode> = [
   // a flex `gap` on this wrapper.
   <span key="archive" className="inline-flex items-center">
     <span>Archive →</span>
-    <ArchiveCabinetIcon />
+    <ArchiveCabinetIcon />what augment
   </span>,
 ]
 

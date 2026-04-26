@@ -6,8 +6,8 @@ import {
   type Order,
   type OrderStatus,
 } from '@/lib/domain/order'
-import { StatusBadge } from './StatusBadge'
-import { useOrderActions } from './useOrderActions'
+import { StatusBadge } from '../shared/StatusBadge'
+import { useOrderActions } from '../data/useOrderActions'
 
 interface ActionConfig {
   label: string
