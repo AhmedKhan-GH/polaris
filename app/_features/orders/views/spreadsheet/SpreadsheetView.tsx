@@ -134,23 +134,24 @@ export function SpreadsheetView({
       className="flex-1 min-h-0 flex flex-col overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900"
     >
       {/* Header sits outside the scroll container so the vertical
-          scrollbar track only spans the body rows --- it can't run
-          alongside the header band the way it would inside a sticky
-          layout. Each header row is wrapped in a `relative` div so
-          the "↑ N new" pill can absolutely-anchor to the right edge
-          of the band without being trapped inside a column cell or
-          stealing width from the 1fr Created column. */}
+          scrollbar track only spans the body rows. The "↑ N new" pill
+          rides inline inside the last (Created) column header with
+          justify-between splitting the cell into title-on-left,
+          pill-on-right --- no absolute positioning, no wrapper div,
+          just two flex children of the column-header cell. */}
       {headerGroups.map((headerGroup) => (
-        <div key={headerGroup.id} className="relative">
-          <div
-            role="row"
-            className="grid grid-cols-[120px_140px_1fr] text-left text-xs uppercase tracking-wider text-zinc-400 shadow-[inset_0_-1px_0_0_rgb(39,39,42)]"
-          >
-            {headerGroup.headers.map((header) => (
+        <div
+          key={headerGroup.id}
+          role="row"
+          className="grid grid-cols-[120px_140px_1fr] text-left text-xs uppercase tracking-wider text-zinc-400 shadow-[inset_0_-1px_0_0_rgb(39,39,42)]"
+        >
+          {headerGroup.headers.map((header, index, arr) => {
+            const isLast = index === arr.length - 1
+            return (
               <div
                 key={header.id}
                 role="columnheader"
-                className="flex min-w-0 items-center gap-2 px-4 py-3 font-semibold"
+                className="flex min-w-0 items-center justify-between gap-2 px-4 py-3 font-semibold"
               >
                 <span className="truncate">
                   {flexRender(
@@ -158,18 +159,18 @@ export function SpreadsheetView({
                     header.getContext(),
                   )}
                 </span>
+                {isLast && unseenCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleUnseenClick}
+                    className="shrink-0 rounded-full bg-blue-500/15 px-2 py-0.5 text-[10px] font-medium normal-case tracking-normal text-blue-300 transition-colors hover:bg-blue-500/25"
+                  >
+                    ↑ {unseenCount} new
+                  </button>
+                )}
               </div>
-            ))}
-          </div>
-          {unseenCount > 0 && (
-            <button
-              type="button"
-              onClick={handleUnseenClick}
-              className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full bg-blue-500/15 px-2 py-0.5 text-[10px] font-medium normal-case tracking-normal text-blue-300 transition-colors hover:bg-blue-500/25"
-            >
-              ↑ {unseenCount} new
-            </button>
-          )}
+            )
+          })}
         </div>
       ))}
 

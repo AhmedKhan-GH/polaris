@@ -67,7 +67,7 @@ export function OrderDetailSidebar({
   const [pendingTerminate, setPendingTerminate] = useState<ActionConfig | null>(
     null,
   )
-  const dropdownsRef = useRef<HTMLDivElement>(null)
+  const dropdownsRef = useRef<HTMLElement>(null)
 
   const actions = order ? ACTIONS_BY_STATUS[order.status] : []
   const primaryActions = useMemo(
@@ -104,7 +104,11 @@ export function OrderDetailSidebar({
     return () => window.removeEventListener('keydown', onKey)
   }, [order, onClose, openGroup, pendingTerminate])
 
-  // Click anywhere outside both menus closes whichever is open.
+  // Click anywhere outside the sidebar closes whichever dropdown is
+  // open. Scoped to the aside (via dropdownsRef on the aside itself)
+  // so clicks on the pinned bottom group --- which lives outside the
+  // transition area --- still count as "inside" and don't dismiss
+  // Terminate's menu mid-pick.
   useEffect(() => {
     if (!openGroup) return
     function onClickOutside(e: MouseEvent) {
@@ -158,6 +162,7 @@ export function OrderDetailSidebar({
 
   return (
     <aside
+      ref={dropdownsRef}
       aria-hidden={!isOpen}
       className={`fixed right-0 top-0 z-40 flex h-full w-full max-w-sm flex-col border-l border-zinc-800 bg-zinc-950 shadow-xl transition-transform duration-200 ease-out motion-reduce:transition-none ${
         isOpen ? 'translate-x-0' : 'translate-x-full'
@@ -201,61 +206,57 @@ export function OrderDetailSidebar({
             )}
           </dl>
 
-          {/* Wrap both action groups in dropdownsRef so the click-
-              outside handler treats clicks on either group as "inside"
-              and doesn't close the dropdown mid-pick. The flex-1
-              spacer between them is what pins the bottom group to the
-              sidebar's bottom edge --- more robust than mt-auto, which
-              quietly stops working if a sibling somewhere up the tree
-              doesn't yield the height. */}
-          <div ref={dropdownsRef} className="flex flex-1 min-h-0 flex-col">
-            <div className="flex flex-col gap-2 px-5 py-4">
-              {primaryActions.length > 0 ? (
-                <ActionDropdown
-                  group="primary"
-                  label="Transition"
-                  actions={primaryActions}
-                  isOpen={openGroup === 'primary'}
-                  isPending={isPending}
-                  onToggle={() =>
-                    setOpenGroup((g) => (g === 'primary' ? null : 'primary'))
-                  }
-                  onPick={handleTransition}
-                />
-              ) : (
-                actions.length === 0 && (
-                  <p className="text-sm text-zinc-500">
-                    Terminal state — no further transitions.
-                  </p>
-                )
-              )}
-            </div>
-
-            <div aria-hidden className="flex-1" />
-
+          {/* Transition area: takes whatever vertical room is left
+              after header + dl, scrolls if it ever overflows. Padded
+              at the bottom so its content can never end up underneath
+              the absolutely-pinned action group below. */}
+          <div className="flex-1 min-h-0 overflow-y-auto px-5 py-4 pb-44">
+            {primaryActions.length > 0 ? (
+              <ActionDropdown
+                group="primary"
+                label="Transition"
+                actions={primaryActions}
+                isOpen={openGroup === 'primary'}
+                isPending={isPending}
+                onToggle={() =>
+                  setOpenGroup((g) => (g === 'primary' ? null : 'primary'))
+                }
+                onPick={handleTransition}
+              />
+            ) : (
+              actions.length === 0 && (
+                <p className="text-sm text-zinc-500">
+                  Terminal state — no further transitions.
+                </p>
+              )
+            )}
             {error && (
               <p
                 role="alert"
-                className="mx-5 mb-2 rounded border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-300"
+                className="mt-3 rounded border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-300"
               >
                 {error.message}
               </p>
             )}
+          </div>
 
-            {/* Bottom group: pt-4 anchors the buttons to the sidebar
-                rim with consistent breathing room, pb-14 reserves room
-                BELOW Terminate so its menu can drop downward (one item
-                plus the 4px mt-1 offset and 2px border ≈ 40px) without
-                clipping past the panel edge. */}
-            <div className="flex flex-col gap-2 px-5 pt-4 pb-14">
-              <button
-                type="button"
-                disabled={isPending}
-                onClick={handleDuplicate}
-                className="rounded border border-zinc-700 bg-transparent px-3 py-2 text-sm font-medium text-zinc-200 hover:bg-zinc-800 disabled:cursor-wait disabled:opacity-60"
-              >
-                Duplicate to new draft
-              </button>
+          {/* Pinned bottom group --- absolutely positioned at the
+              aside's rim so it can't drift when content above changes
+              height. pt-4 + pb-14 leaves the open Terminate menu a
+              56px landing zone below its trigger; the Terminate slot
+              uses min-h to hold its place across statuses without
+              danger actions, and `flex justify-end` right-justifies
+              the dropdown to the panel's right rim. */}
+          <div className="absolute inset-x-0 bottom-0 flex flex-col gap-2 border-t border-zinc-800 bg-zinc-950 px-5 pt-4 pb-14">
+            <button
+              type="button"
+              disabled={isPending}
+              onClick={handleDuplicate}
+              className="rounded border border-zinc-700 bg-transparent px-3 py-2 text-sm font-medium text-zinc-200 hover:bg-zinc-800 disabled:cursor-wait disabled:opacity-60"
+            >
+              Duplicate to new draft
+            </button>
+            <div className="flex min-h-9 justify-end">
               {dangerActions.length > 0 && (
                 <ActionDropdown
                   group="danger"

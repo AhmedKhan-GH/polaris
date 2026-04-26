@@ -40,10 +40,12 @@ export function KanbanColumn({
     count: totalSlots,
     getScrollElement: () => scrollRef.current,
     estimateSize: () => SLOT_HEIGHT,
-    // Higher overscan masks single-page latency on fast scrolls --- by
-    // the time the user reaches the rendered edge, the next page has
-    // usually arrived.
-    overscan: 12,
+    // Big overscan band so a fast fling-scroll always finds rendered
+    // DOM (real card OR shell) under it instead of empty space. 30
+    // slots ≈ 1800px of pre-render in each direction, which covers a
+    // multi-viewport fling and still costs ~60 light skeleton nodes
+    // per column at the extreme.
+    overscan: 30,
   })
 
   const { unseenCount, reset: resetUnseen } = useScrollAnchor(
