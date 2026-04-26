@@ -1,64 +1,17 @@
 import { redirect } from 'next/navigation'
 import { getServerSupabase } from '@/lib/supabase/server'
-import { log } from '@/lib/log'
+import { LoginForm } from './LoginForm'
 
-async function signIn(formData: FormData) {
-  'use server'
-  const email = String(formData.get('email'))
-  const password = String(formData.get('password'))
+export default async function LoginPage() {
   const supabase = await getServerSupabase()
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  })
-  if (error) {
-    log.warn({ email, reason: error.message }, 'login failed')
-    redirect(`/login?error=${encodeURIComponent(error.message)}`)
-  }
-  log.info({ email, userId: data.user?.id }, 'login succeeded')
-  redirect('/')
-}
-
-export default async function LoginPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ error?: string }>
-}) {
-  const { error } = await searchParams
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (user) redirect('/')
   return (
     <main className="mx-auto mt-32 w-full max-w-sm px-6">
       <h1 className="mb-6 text-xl font-semibold text-zinc-50">Sign in</h1>
-      {error && (
-        <p className="mb-3 text-sm text-red-400">{decodeURIComponent(error)}</p>
-      )}
-      <form
-        action={signIn}
-        className="flex flex-col gap-3"
-        suppressHydrationWarning
-      >
-        <input
-          name="email"
-          type="email"
-          required
-          placeholder="Email"
-          autoComplete="email"
-          className="rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-zinc-50 placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
-        />
-        <input
-          name="password"
-          type="password"
-          required
-          placeholder="Password"
-          autoComplete="current-password"
-          className="rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-zinc-50 placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
-        />
-        <button
-          type="submit"
-          className="rounded bg-zinc-100 px-3 py-2 text-sm font-medium text-zinc-900 transition-opacity hover:bg-zinc-200"
-        >
-          Sign in
-        </button>
-      </form>
+      <LoginForm />
     </main>
   )
 }
