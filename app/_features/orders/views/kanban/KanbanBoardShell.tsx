@@ -4,12 +4,13 @@ import { Fragment, type ReactNode } from 'react'
 // that moves cards out of that column into the next one. Index N = label
 // above column N. The Archiving column's outbound move closes the order
 // into the terminal 'archived' state, which is hidden from the kanban
-// (visible in the spreadsheet only), so its label is an invisible spacer.
+// (visible in the spreadsheet only); the 'Archive →' label still names
+// the verb even though the destination column isn't drawn here.
 const TRANSITION_LABELS = [
   'Submit →',
   'Invoice →',
+  'Complete →',
   'Archive →',
-  undefined,
 ] as const
 
 interface KanbanBoardShellProps {

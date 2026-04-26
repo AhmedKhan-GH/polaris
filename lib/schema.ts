@@ -12,18 +12,20 @@ import {
 } from "drizzle-orm/pg-core";
 
 // Active states are the operational pipeline; the three terminal sinks
-// (deleted, cancelled, voided) are forward-only exits enforced by the
+// (discarded, cancelled, voided) are forward-only exits enforced by the
 // orders_forward_status trigger. Reverts happen by duplicating into a
 // new draft, never by walking back. 'archiving' is a holding step
 // between invoiced and the terminal 'archived' --- post-fulfillment but
-// not yet fully closed out.
+// not yet fully closed out. 'discarded' is a draft thrown away by its
+// author (soft delete kept for audit); a true 'deleted' admin operation
+// would be a separate, harder action layered on top later.
 export const orderStatus = pgEnum("order_status", [
   "draft",
   "submitted",
   "invoiced",
   "archiving",
   "archived",
-  "deleted",
+  "discarded",
   "cancelled",
   "voided",
 ]);

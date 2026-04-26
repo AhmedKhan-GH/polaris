@@ -6,7 +6,7 @@ const TONES: Record<OrderStatus, string> = {
   invoiced:  'bg-violet-500/15 text-violet-300',
   archiving: 'bg-emerald-500/15 text-emerald-300',
   archived:  'bg-zinc-800 text-zinc-400',
-  deleted:   'bg-red-500/15 text-red-300',
+  discarded: 'bg-red-500/15 text-red-300',
   cancelled: 'bg-amber-500/15 text-amber-300',
   voided:    'bg-rose-500/15 text-rose-300',
 }

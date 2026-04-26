@@ -4,7 +4,7 @@ import { log } from '@/lib/log'
 import type { Order, OrderStatus } from '@/lib/domain/order'
 import {
   countOrders,
-  deleteDraftOrder,
+  discardDraftOrder,
   duplicateOrder,
   findOrdersPage,
   transitionOrderStatus,
@@ -63,19 +63,19 @@ export async function transitionOrderAction(args: {
   }
 }
 
-export async function deleteDraftOrderAction(args: {
+export async function discardDraftOrderAction(args: {
   orderId: string
   reason?: string
 }): Promise<Order> {
   const actor = await getActorId()
   try {
-    return await deleteDraftOrder({
+    return await discardDraftOrder({
       orderId: args.orderId,
       changedBy: actor,
       reason: args.reason,
     })
   } catch (err) {
-    log.warn({ err, orderId: args.orderId }, 'deleteDraftOrderAction rejected')
+    log.warn({ err, orderId: args.orderId }, 'discardDraftOrderAction rejected')
     throw err
   }
 }

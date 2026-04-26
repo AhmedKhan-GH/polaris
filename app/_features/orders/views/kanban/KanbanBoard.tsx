@@ -38,7 +38,7 @@ export function KanbanBoard({
       invoiced: [],
       archiving: [],
       archived: [],
-      deleted: [],
+      discarded: [],
       cancelled: [],
       voided: [],
     }

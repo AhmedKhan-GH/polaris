@@ -85,6 +85,13 @@
       "when": 1777184698233,
       "tag": "0011_archiving_transitions",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1777186300725,
+      "tag": "0012_rename_deleted_to_discarded",
+      "breakpoints": true
     }
   ]
 }

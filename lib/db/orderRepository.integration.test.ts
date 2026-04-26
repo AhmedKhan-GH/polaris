@@ -270,7 +270,7 @@ describe('orderRepository (integration)', () => {
       const order = await repo.insertOrder()
       await repo.transitionOrderStatus({
         orderId: order.id,
-        toStatus: 'deleted',
+        toStatus: 'discarded',
         changedBy: ACTOR,
       })
 
@@ -365,23 +365,23 @@ describe('orderRepository (integration)', () => {
     })
   })
 
-  describe('deleteDraftOrder', () => {
+  describe('discardDraftOrder', () => {
     const ACTOR = '22222222-2222-2222-2222-222222222222'
 
-    test('soft-deletes a draft, leaving the row in place', async () => {
+    test('discards a draft, leaving the row in place for audit', async () => {
       const order = await repo.insertOrder()
-      const deleted = await repo.deleteDraftOrder({
+      const discarded = await repo.discardDraftOrder({
         orderId: order.id,
         changedBy: ACTOR,
       })
 
-      expect(deleted.status).toBe('deleted')
+      expect(discarded.status).toBe('discarded')
 
       const stillThere = await repo.findOrderById(order.id)
-      expect(stillThere?.status).toBe('deleted')
+      expect(stillThere?.status).toBe('discarded')
     })
 
-    test('refuses to delete a submitted order', async () => {
+    test('refuses to discard a submitted order', async () => {
       const order = await repo.insertOrder()
       await repo.transitionOrderStatus({
         orderId: order.id,
@@ -390,7 +390,7 @@ describe('orderRepository (integration)', () => {
       })
 
       await expect(
-        repo.deleteDraftOrder({ orderId: order.id, changedBy: ACTOR }),
+        repo.discardDraftOrder({ orderId: order.id, changedBy: ACTOR }),
       ).rejects.toBeInstanceOf(repo.InvalidTransitionError)
     })
   })
@@ -440,11 +440,11 @@ describe('orderRepository (integration)', () => {
     })
 
     test('works from any source state, including terminal ones', async () => {
-      for (const terminal of ['deleted', 'cancelled', 'voided', 'archived'] as const) {
+      for (const terminal of ['discarded', 'cancelled', 'voided', 'archived'] as const) {
         const source = await repo.insertOrder()
-        if (terminal === 'deleted') {
+        if (terminal === 'discarded') {
           await repo.transitionOrderStatus({
-            orderId: source.id, toStatus: 'deleted', changedBy: ACTOR,
+            orderId: source.id, toStatus: 'discarded', changedBy: ACTOR,
           })
         } else if (terminal === 'cancelled') {
           await repo.transitionOrderStatus({

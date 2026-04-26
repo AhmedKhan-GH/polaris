@@ -17,27 +17,29 @@ interface ActionConfig {
 
 // Mirrors VALID_TRANSITIONS in lib/db/orderRepository.ts. Forward
 // transitions render as "primary" (continue the pipeline); terminal
-// exits render as "danger" so the cancel/void/delete sinks stand
+// exits render as "danger" so the discard/cancel/void sinks stand
 // apart from the happy-path moves. archiving is the post-fulfillment
-// holding step before the terminal archived state.
+// holding step before the terminal archived state. 'Discard' is the
+// author-driven soft delete on a draft; an admin 'Delete' (hard) is
+// out of scope here.
 const ACTIONS_BY_STATUS: Record<OrderStatus, ActionConfig[]> = {
   draft: [
-    { label: 'Submit',  toStatus: 'submitted', tone: 'primary' },
-    { label: 'Delete',  toStatus: 'deleted',   tone: 'danger'  },
+    { label: 'Submit',   toStatus: 'submitted', tone: 'primary' },
+    { label: 'Discard',  toStatus: 'discarded', tone: 'danger'  },
   ],
   submitted: [
-    { label: 'Invoice', toStatus: 'invoiced',  tone: 'primary' },
-    { label: 'Cancel',  toStatus: 'cancelled', tone: 'danger'  },
+    { label: 'Invoice',  toStatus: 'invoiced',  tone: 'primary' },
+    { label: 'Cancel',   toStatus: 'cancelled', tone: 'danger'  },
   ],
   invoiced: [
-    { label: 'Archive', toStatus: 'archiving', tone: 'primary' },
-    { label: 'Void',    toStatus: 'voided',    tone: 'danger'  },
+    { label: 'Complete', toStatus: 'archiving', tone: 'primary' },
+    { label: 'Void',     toStatus: 'voided',    tone: 'danger'  },
   ],
   archiving: [
-    { label: 'Close',   toStatus: 'archived',  tone: 'primary' },
+    { label: 'Archive',  toStatus: 'archived',  tone: 'primary' },
   ],
   archived:  [],
-  deleted:   [],
+  discarded: [],
   cancelled: [],
   voided:    [],
 }
@@ -49,7 +51,7 @@ export function OrderDetailSidebar({
   order: Order | null
   onClose: () => void
 }) {
-  const { transition, deleteDraft, duplicate, isPending, error } =
+  const { transition, discardDraft, duplicate, isPending, error } =
     useOrderActions()
 
   // Esc closes the panel — gives keyboard parity with the X button.
@@ -67,8 +69,8 @@ export function OrderDetailSidebar({
 
   async function handleTransition(action: ActionConfig) {
     if (!order) return
-    if (action.toStatus === 'deleted') {
-      await deleteDraft({ orderId: order.id }).catch(() => {})
+    if (action.toStatus === 'discarded') {
+      await discardDraft({ orderId: order.id }).catch(() => {})
     } else {
       await transition({
         orderId: order.id,

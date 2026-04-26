@@ -6,7 +6,7 @@ import {
   type InfiniteData,
 } from '@tanstack/react-query'
 import {
-  deleteDraftOrderAction,
+  discardDraftOrderAction,
   duplicateOrderAction,
   transitionOrderAction,
 } from './actions'
@@ -41,7 +41,7 @@ export interface UseOrderActionsResult {
     toStatus: OrderStatus
     reason?: string
   }) => Promise<Order>
-  deleteDraft: (args: { orderId: string; reason?: string }) => Promise<Order>
+  discardDraft: (args: { orderId: string; reason?: string }) => Promise<Order>
   duplicate: (args: { sourceOrderId: string }) => Promise<Order>
   isPending: boolean
   error: Error | null
@@ -74,14 +74,14 @@ export function useOrderActions(): UseOrderActionsResult {
     },
   })
 
-  const deleteDraft = useMutation({
-    mutationFn: deleteDraftOrderAction,
+  const discardDraft = useMutation({
+    mutationFn: discardDraftOrderAction,
     onMutate: async (args) => {
       await queryClient.cancelQueries({ queryKey: ORDERS_QUERY_KEY })
       const previous = queryClient.getQueryData<OrdersCache>(ORDERS_QUERY_KEY)
       queryClient.setQueryData<OrdersCache>(ORDERS_QUERY_KEY, (old) =>
         patchOrder(old, args.orderId, {
-          status: 'deleted',
+          status: 'discarded',
           statusUpdatedAt: new Date(),
         }),
       )
@@ -110,13 +110,13 @@ export function useOrderActions(): UseOrderActionsResult {
   })
 
   const isPending =
-    transition.isPending || deleteDraft.isPending || duplicate.isPending
+    transition.isPending || discardDraft.isPending || duplicate.isPending
   const error =
-    transition.error ?? deleteDraft.error ?? duplicate.error ?? null
+    transition.error ?? discardDraft.error ?? duplicate.error ?? null
 
   return {
     transition: (args) => transition.mutateAsync(args),
-    deleteDraft: (args) => deleteDraft.mutateAsync(args),
+    discardDraft: (args) => discardDraft.mutateAsync(args),
     duplicate: (args) => duplicate.mutateAsync(args),
     isPending,
     error,
