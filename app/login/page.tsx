@@ -9,7 +9,10 @@ export default async function LoginPage() {
   } = await supabase.auth.getUser()
   if (user) redirect('/')
   return (
-    <main className="mx-auto mt-32 w-full max-w-sm px-6">
+    <main
+      className="mx-auto mt-32 w-full max-w-sm px-6"
+      suppressHydrationWarning
+    >
       <h1 className="mb-6 text-xl font-semibold text-zinc-50">Sign in</h1>
       <LoginForm />
     </main>
