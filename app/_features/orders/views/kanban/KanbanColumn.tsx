@@ -6,6 +6,7 @@ import type { OrderStatus } from '@/lib/domain/order'
 import { useOrdersByStatus } from '../../useOrdersByStatus'
 import { useScrollAnchor } from '../../useScrollAnchor'
 import { KanbanCard } from './KanbanCard'
+import { KanbanCardShell } from './KanbanCardShell'
 import { KanbanColumnShell } from './KanbanColumnShell'
 
 // Fixed slot height: 52px tile + 8px gap = 60px. Tiles are uniform
@@ -144,7 +145,39 @@ export function KanbanColumn({
         >
           {items.map((vi) => {
             const order = cards[vi.index]
-            if (!order) return null
+            // Slot exists in the virtualizer (the column reserved
+            // totalSlots = max(loaded, expectedTotal) of them) but the
+            // page that backs it hasn't landed yet --- typical when
+            // the user flings the column past its loaded boundary.
+            // Render a loading skeleton in the same slot so there's no
+            // jarring blank gap while pagination catches up.
+            if (!order) {
+              return (
+                <div
+                  key={`shell-${vi.index}`}
+                  className="absolute left-0 right-0"
+                  style={{
+                    transform: `translateY(${vi.start}px)`,
+                    height: vi.size,
+                  }}
+                >
+                  <KanbanCardShell loading>
+                    {/* Two stacked bars sized to match the actual
+                        KanbanCard's content: a 16px row for the
+                        font-mono order number (≈8 mono chars wide)
+                        and a 12px row for the timestamp subtitle
+                        (≈formatCreatedAt's full width). leading-tight
+                        + a 2px gap mirror the real card so the shell
+                        occupies the same vertical footprint inside
+                        the 52px tile, not a flat two-line stripe. */}
+                    <div className="flex flex-col gap-[2px] leading-tight">
+                      <span className="block h-4 w-20 rounded bg-zinc-700" />
+                      <span className="block h-3 w-36 rounded bg-zinc-700/70" />
+                    </div>
+                  </KanbanCardShell>
+                </div>
+              )
+            }
             return (
               <div
                 key={order.id}
