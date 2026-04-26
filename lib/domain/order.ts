@@ -1,19 +1,46 @@
 import { z } from 'zod'
 
+export const ORDER_STATUSES = [
+  'draft',
+  'submitted',
+  'invoiced',
+  'archived',
+  'deleted',
+  'cancelled',
+  'voided',
+] as const
+
+export type OrderStatus = (typeof ORDER_STATUSES)[number]
+
+export const ACTIVE_ORDER_STATUSES: readonly OrderStatus[] = [
+  'draft',
+  'submitted',
+  'invoiced',
+]
+
 export type Order = {
   id: string
   orderNumber: number
+  status: OrderStatus
+  statusUpdatedAt: Date
+  duplicatedFromOrderId: string | null
   createdAt: Date
 }
 
 export function toOrder(row: {
   id: string
   orderNumber: number
+  status: OrderStatus
+  statusUpdatedAt: Date
+  duplicatedFromOrderId: string | null
   createdAt: Date
 }): Order {
   return {
     id: row.id,
     orderNumber: row.orderNumber,
+    status: row.status,
+    statusUpdatedAt: row.statusUpdatedAt,
+    duplicatedFromOrderId: row.duplicatedFromOrderId,
     createdAt: row.createdAt,
   }
 }
@@ -27,11 +54,17 @@ export const orderRowSchema = z
     order_number: z
       .union([z.number(), z.string()])
       .transform((v) => (typeof v === 'number' ? v : Number(v))),
+    status: z.enum(ORDER_STATUSES),
+    status_updated_at: z.string().transform((s) => new Date(s)),
+    duplicated_from_order_id: z.string().uuid().nullable(),
     created_at: z.string().transform((s) => new Date(s)),
   })
   .transform((row): Order => ({
     id: row.id,
     orderNumber: row.order_number,
+    status: row.status,
+    statusUpdatedAt: row.status_updated_at,
+    duplicatedFromOrderId: row.duplicated_from_order_id,
     createdAt: row.created_at,
   }))
 

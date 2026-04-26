@@ -64,6 +64,13 @@
       "when": 1777094054657,
       "tag": "0008_amazing_cloak",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1777183500440,
+      "tag": "0009_order_lifecycle",
+      "breakpoints": true
     }
   ]
 }

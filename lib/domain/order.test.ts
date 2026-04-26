@@ -12,6 +12,9 @@ describe('toOrder', () => {
   const baseRow = {
     id: '7c16d5b1-6f83-45a2-9a9d-1f0dc1f1a2e4',
     orderNumber: 1_000_000,
+    status: 'draft' as const,
+    statusUpdatedAt: new Date('2026-04-19T12:00:00Z'),
+    duplicatedFromOrderId: null,
     createdAt: new Date('2026-04-19T12:00:00Z'),
   }
 
@@ -38,6 +41,9 @@ describe('parseOrderRow', () => {
   const validRow = {
     id: '7c16d5b1-6f83-45a2-9a9d-1f0dc1f1a2e4',
     order_number: '1000001',
+    status: 'draft',
+    status_updated_at: '2026-04-19T12:00:00Z',
+    duplicated_from_order_id: null,
     created_at: '2026-04-19T12:00:00Z',
   }
 
@@ -45,6 +51,9 @@ describe('parseOrderRow', () => {
     expect(parseOrderRow(validRow)).toEqual({
       id: validRow.id,
       orderNumber: 1_000_001,
+      status: 'draft',
+      statusUpdatedAt: new Date('2026-04-19T12:00:00Z'),
+      duplicatedFromOrderId: null,
       createdAt: new Date('2026-04-19T12:00:00Z'),
     })
   })
@@ -62,14 +71,22 @@ describe('parseOrderRow', () => {
     expect(() => parseOrderRow({ ...validRow, id: 'not-a-uuid' })).toThrow()
   })
 
-  test.each(['id', 'order_number', 'created_at'] as const)(
-    'throws when required field %s is missing',
-    (field) => {
-      const partial: Record<string, unknown> = { ...validRow }
-      delete partial[field]
-      expect(() => parseOrderRow(partial)).toThrow()
-    },
-  )
+  test('rejects an unknown status', () => {
+    expect(() => parseOrderRow({ ...validRow, status: 'paid' })).toThrow()
+  })
+
+  test.each([
+    'id',
+    'order_number',
+    'status',
+    'status_updated_at',
+    'duplicated_from_order_id',
+    'created_at',
+  ] as const)('throws when required field %s is missing', (field) => {
+    const partial: Record<string, unknown> = { ...validRow }
+    delete partial[field]
+    expect(() => parseOrderRow(partial)).toThrow()
+  })
 })
 
 describe('safeParseOrder', () => {
@@ -89,6 +106,9 @@ describe('safeParseOrder', () => {
         {
           id: '7c16d5b1-6f83-45a2-9a9d-1f0dc1f1a2e4',
           order_number: '1000001',
+          status: 'draft',
+          status_updated_at: '2026-04-19T12:00:00Z',
+          duplicated_from_order_id: null,
           created_at: '2026-04-19T12:00:00Z',
         },
         'insert',
@@ -96,6 +116,9 @@ describe('safeParseOrder', () => {
     ).toEqual({
       id: '7c16d5b1-6f83-45a2-9a9d-1f0dc1f1a2e4',
       orderNumber: 1_000_001,
+      status: 'draft',
+      statusUpdatedAt: new Date('2026-04-19T12:00:00Z'),
+      duplicatedFromOrderId: null,
       createdAt: new Date('2026-04-19T12:00:00Z'),
     })
   })
