@@ -61,6 +61,12 @@ export function OrderDetailSidebar({
   // dropdowns so a hover or fat-finger on one path can't possibly land
   // on the other --- the structural separation is the point.
   const [openGroup, setOpenGroup] = useState<DropdownGroup>(null)
+  // Picking a danger action defers to a confirmation modal instead of
+  // firing the transition straight away. The picked action is parked
+  // here while the modal is up; null means no termination is pending.
+  const [pendingTerminate, setPendingTerminate] = useState<ActionConfig | null>(
+    null,
+  )
   const dropdownsRef = useRef<HTMLDivElement>(null)
 
   const actions = order ? ACTIONS_BY_STATUS[order.status] : []
@@ -76,14 +82,19 @@ export function OrderDetailSidebar({
   // Reset the open menu whenever the panel switches to a different order.
   useEffect(() => {
     setOpenGroup(null)
+    setPendingTerminate(null)
   }, [order?.id])
 
-  // Esc layers: dropdown first, then the panel itself.
+  // Esc layers: confirm modal first, then any open dropdown, then the
+  // panel itself --- innermost wins so a single Esc never crosses two
+  // boundaries at once.
   useEffect(() => {
     if (!order) return
     function onKey(e: KeyboardEvent) {
       if (e.key !== 'Escape') return
-      if (openGroup) {
+      if (pendingTerminate) {
+        setPendingTerminate(null)
+      } else if (openGroup) {
         setOpenGroup(null)
       } else {
         onClose()
@@ -91,7 +102,7 @@ export function OrderDetailSidebar({
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [order, onClose, openGroup])
+  }, [order, onClose, openGroup, pendingTerminate])
 
   // Click anywhere outside both menus closes whichever is open.
   useEffect(() => {
@@ -107,9 +118,8 @@ export function OrderDetailSidebar({
 
   const isOpen = order !== null
 
-  async function handleTransition(action: ActionConfig) {
+  async function runTransition(action: ActionConfig) {
     if (!order) return
-    setOpenGroup(null)
     if (action.toStatus === 'discarded') {
       await discardDraft({ orderId: order.id }).catch(() => {})
     } else {
@@ -118,6 +128,27 @@ export function OrderDetailSidebar({
         toStatus: action.toStatus,
       }).catch(() => {})
     }
+  }
+
+  async function handleTransition(action: ActionConfig) {
+    if (!order) return
+    setOpenGroup(null)
+    // Danger actions defer to the confirmation modal --- a forward
+    // primary move is still cheap to undo (transition again), but the
+    // discard/reject/void exits drop the order into a terminal state
+    // with no path back, so we gate them behind an explicit Yes/No.
+    if (action.tone === 'danger') {
+      setPendingTerminate(action)
+      return
+    }
+    await runTransition(action)
+  }
+
+  async function handleConfirmTerminate() {
+    const action = pendingTerminate
+    if (!action) return
+    setPendingTerminate(null)
+    await runTransition(action)
   }
 
   async function handleDuplicate() {
@@ -196,10 +227,9 @@ export function OrderDetailSidebar({
               )}
             </div>
 
-            {/* Duplicate + Terminate group is pushed toward the bottom
-                via mt-auto, but a fixed-height reserve under it (the
-                empty spacer) leaves room for Terminate's menu to drop
-                downward without clipping past the panel edge. */}
+            {/* Duplicate + Terminate sit flush at the bottom edge.
+                Terminate's menu opens UP so it doesn't need a reserved
+                spacer below the buttons to dodge the panel rim. */}
             <div className="mt-auto flex flex-col gap-2 px-5 py-4">
               <button
                 type="button"
@@ -214,6 +244,7 @@ export function OrderDetailSidebar({
                   group="danger"
                   label="Terminate"
                   actions={dangerActions}
+                  direction="up"
                   isOpen={openGroup === 'danger'}
                   isPending={isPending}
                   onToggle={() =>
@@ -223,7 +254,6 @@ export function OrderDetailSidebar({
                 />
               )}
             </div>
-            <div aria-hidden className="h-10 shrink-0" />
           </div>
 
           {error && (
@@ -236,7 +266,74 @@ export function OrderDetailSidebar({
           )}
         </>
       )}
+      {pendingTerminate && order && (
+        <ConfirmTerminateModal
+          action={pendingTerminate}
+          orderNumber={order.orderNumber}
+          isPending={isPending}
+          onConfirm={handleConfirmTerminate}
+          onCancel={() => setPendingTerminate(null)}
+        />
+      )}
     </aside>
+  )
+}
+
+function ConfirmTerminateModal({
+  action,
+  orderNumber,
+  isPending,
+  onConfirm,
+  onCancel,
+}: {
+  action: ActionConfig
+  orderNumber: number
+  isPending: boolean
+  onConfirm: () => void
+  onCancel: () => void
+}) {
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="confirm-terminate-title"
+      onClick={onCancel}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-sm rounded-lg border border-zinc-800 bg-zinc-950 p-5 shadow-2xl"
+      >
+        <h3
+          id="confirm-terminate-title"
+          className="text-base font-semibold text-zinc-50"
+        >
+          {action.label} order #{orderNumber}?
+        </h3>
+        <p className="mt-2 text-sm text-zinc-400">
+          The order will be marked as <span className="font-medium text-zinc-200">{action.toStatus}</span>. Terminal states cannot be reversed.
+        </p>
+        <div className="mt-5 flex justify-end gap-2">
+          <button
+            type="button"
+            disabled={isPending}
+            onClick={onCancel}
+            className="rounded border border-zinc-700 bg-transparent px-3 py-2 text-sm font-medium text-zinc-200 hover:bg-zinc-800 disabled:cursor-wait disabled:opacity-60"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            disabled={isPending}
+            onClick={onConfirm}
+            autoFocus
+            className="rounded border border-red-500/40 bg-red-500/15 px-3 py-2 text-sm font-medium text-red-300 hover:bg-red-500/25 disabled:cursor-wait disabled:opacity-60"
+          >
+            {action.label}
+          </button>
+        </div>
+      </div>
+    </div>
   )
 }
 
