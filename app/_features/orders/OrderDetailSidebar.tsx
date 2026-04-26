@@ -170,56 +170,60 @@ export function OrderDetailSidebar({
             )}
           </dl>
 
-          <div ref={dropdownsRef} className="flex flex-col gap-2 px-5 py-4">
-            {primaryActions.length > 0 ? (
-              <ActionDropdown
-                group="primary"
-                label={
-                  primaryActions.length === 1
-                    ? primaryActions[0].label
-                    : 'Move forward'
-                }
-                actions={primaryActions}
-                isOpen={openGroup === 'primary'}
-                isPending={isPending}
-                onToggle={() =>
-                  setOpenGroup((g) => (g === 'primary' ? null : 'primary'))
-                }
-                onPick={handleTransition}
-              />
-            ) : (
-              actions.length === 0 && (
-                <p className="text-sm text-zinc-500">
-                  Terminal state — no further transitions.
-                </p>
-              )
-            )}
-            <button
-              type="button"
-              disabled={isPending}
-              onClick={handleDuplicate}
-              className="rounded border border-zinc-700 bg-transparent px-3 py-2 text-sm font-medium text-zinc-200 hover:bg-zinc-800 disabled:cursor-wait disabled:opacity-60"
-            >
-              Duplicate to new draft
-            </button>
-            {dangerActions.length > 0 && (
-              <ActionDropdown
-                group="danger"
-                label={
-                  dangerActions.length === 1
-                    ? dangerActions[0].label
-                    : 'Stop'
-                }
-                actions={dangerActions}
-                isOpen={openGroup === 'danger'}
-                isPending={isPending}
-                direction="up"
-                onToggle={() =>
-                  setOpenGroup((g) => (g === 'danger' ? null : 'danger'))
-                }
-                onPick={handleTransition}
-              />
-            )}
+          <div ref={dropdownsRef} className="flex flex-1 min-h-0 flex-col">
+            {/* Transition lives at the top of the action region. Forward
+                moves are the everyday case --- visible on first glance,
+                no scroll. */}
+            <div className="flex flex-col gap-2 px-5 py-4">
+              {primaryActions.length > 0 ? (
+                <ActionDropdown
+                  group="primary"
+                  label="Transition"
+                  actions={primaryActions}
+                  isOpen={openGroup === 'primary'}
+                  isPending={isPending}
+                  onToggle={() =>
+                    setOpenGroup((g) => (g === 'primary' ? null : 'primary'))
+                  }
+                  onPick={handleTransition}
+                />
+              ) : (
+                actions.length === 0 && (
+                  <p className="text-sm text-zinc-500">
+                    Terminal state — no further transitions.
+                  </p>
+                )
+              )}
+            </div>
+
+            {/* Duplicate + Terminate group is pushed toward the bottom
+                via mt-auto, but a fixed-height reserve under it (the
+                empty spacer) leaves room for Terminate's menu to drop
+                downward without clipping past the panel edge. */}
+            <div className="mt-auto flex flex-col gap-2 px-5 py-4">
+              <button
+                type="button"
+                disabled={isPending}
+                onClick={handleDuplicate}
+                className="rounded border border-zinc-700 bg-transparent px-3 py-2 text-sm font-medium text-zinc-200 hover:bg-zinc-800 disabled:cursor-wait disabled:opacity-60"
+              >
+                Duplicate to new draft
+              </button>
+              {dangerActions.length > 0 && (
+                <ActionDropdown
+                  group="danger"
+                  label="Terminate"
+                  actions={dangerActions}
+                  isOpen={openGroup === 'danger'}
+                  isPending={isPending}
+                  onToggle={() =>
+                    setOpenGroup((g) => (g === 'danger' ? null : 'danger'))
+                  }
+                  onPick={handleTransition}
+                />
+              )}
+            </div>
+            <div aria-hidden className="h-32 shrink-0" />
           </div>
 
           {error && (
