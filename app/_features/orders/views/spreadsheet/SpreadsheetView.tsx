@@ -133,38 +133,39 @@ export function SpreadsheetView({
       aria-rowcount={totalCount}
       className="flex-1 min-h-0 flex flex-col overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900"
     >
-      {/* "↑ N new" sits inline above the column headers as part of the
-          table's header strip. Renders only when rows arrived while
-          the user was scrolled away from the top; clicking jumps back
-          and resets the counter. */}
-      {unseenCount > 0 && (
-        <div className="flex shrink-0 justify-center border-b border-zinc-800 bg-zinc-900 px-4 py-1.5">
-          <button
-            type="button"
-            onClick={handleUnseenClick}
-            className="rounded-full bg-blue-500/15 px-3 py-1 text-[11px] font-medium text-blue-300 transition-colors hover:bg-blue-500/25"
-          >
-            ↑ {unseenCount} new
-          </button>
-        </div>
-      )}
       {/* Header sits outside the scroll container so the vertical
           scrollbar track only spans the body rows --- it can't run
           alongside the header band the way it would inside a sticky
-          layout. */}
+          layout. The "↑ N new" pill is tucked beside the first column
+          (Order #) when rows have arrived while the user was scrolled
+          away; clicking jumps back and resets the counter. */}
       {headerGroups.map((headerGroup) => (
         <div
           key={headerGroup.id}
           role="row"
           className="grid grid-cols-[120px_140px_1fr] text-left text-xs uppercase tracking-wider text-zinc-400 shadow-[inset_0_-1px_0_0_rgb(39,39,42)]"
         >
-          {headerGroup.headers.map((header) => (
+          {headerGroup.headers.map((header, index) => (
             <div
               key={header.id}
               role="columnheader"
-              className="truncate px-4 py-3 font-semibold"
+              className="flex min-w-0 items-center gap-2 px-4 py-3 font-semibold"
             >
-              {flexRender(header.column.columnDef.header, header.getContext())}
+              <span className="truncate">
+                {flexRender(
+                  header.column.columnDef.header,
+                  header.getContext(),
+                )}
+              </span>
+              {index === 0 && unseenCount > 0 && (
+                <button
+                  type="button"
+                  onClick={handleUnseenClick}
+                  className="shrink-0 rounded-full bg-blue-500/15 px-2 py-0.5 text-[10px] font-medium normal-case tracking-normal text-blue-300 transition-colors hover:bg-blue-500/25"
+                >
+                  ↑ {unseenCount} new
+                </button>
+              )}
             </div>
           ))}
         </div>
