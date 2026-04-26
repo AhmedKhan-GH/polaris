@@ -4,7 +4,11 @@ import {
   QueryClient,
   dehydrate,
 } from '@tanstack/react-query'
-import { countOrders, findOrdersPage } from '@/lib/db/orderRepository'
+import {
+  countOrders,
+  countOrdersByStatus,
+  findOrdersPage,
+} from '@/lib/db/orderRepository'
 import { OrdersHeaderShell } from './_features/orders/OrdersHeaderShell'
 import { OrdersPageShell } from './_features/orders/OrdersPageShell'
 import { OrdersPage } from './_features/orders/OrdersPage'
@@ -12,6 +16,7 @@ import {
   ORDERS_COUNT_QUERY_KEY,
   ORDERS_PAGE_SIZE,
   ORDERS_QUERY_KEY,
+  ORDERS_STATUS_COUNTS_QUERY_KEY,
 } from './_features/orders/queryKeys'
 import { KanbanBoardShell } from './_features/orders/views/kanban/KanbanBoardShell'
 import { KanbanColumnShell } from './_features/orders/views/kanban/KanbanColumnShell'
@@ -54,6 +59,10 @@ async function OrdersPageData() {
     queryClient.prefetchQuery({
       queryKey: ORDERS_COUNT_QUERY_KEY,
       queryFn: () => countOrders(),
+    }),
+    queryClient.prefetchQuery({
+      queryKey: ORDERS_STATUS_COUNTS_QUERY_KEY,
+      queryFn: () => countOrdersByStatus(),
     }),
   ])
   return (

@@ -5,3 +5,7 @@
 export const ORDERS_PAGE_SIZE = 50
 export const ORDERS_QUERY_KEY = ['orders'] as const
 export const ORDERS_COUNT_QUERY_KEY = ['orders', 'count'] as const
+export const ORDERS_STATUS_COUNTS_QUERY_KEY = [
+  'orders',
+  'status-counts',
+] as const

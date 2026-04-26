@@ -3,6 +3,7 @@ import { db } from '../db'
 import { log } from '../log'
 import { orders, orderStatusHistory } from '../schema'
 import {
+  ORDER_STATUSES,
   toOrder,
   type Order,
   type OrderStatus,
@@ -96,6 +97,27 @@ export async function countOrders(): Promise<number> {
   const n = Number(row.value)
   log.debug({ count: n, raw: row.value, type: typeof row.value }, 'countOrders')
   return Number.isFinite(n) ? n : 0
+}
+
+export type OrderStatusCounts = Record<OrderStatus, number>
+
+// Single GROUP BY pass returns each present status's row count; missing
+// statuses default to 0. The kanban uses this to size each column's
+// scrollbar to the per-status total instead of just the loaded subset.
+export async function countOrdersByStatus(): Promise<OrderStatusCounts> {
+  const rows = await db
+    .select({ status: orders.status, value: count() })
+    .from(orders)
+    .groupBy(orders.status)
+
+  const result = Object.fromEntries(
+    ORDER_STATUSES.map((s) => [s, 0]),
+  ) as OrderStatusCounts
+  for (const row of rows) {
+    result[row.status] = Number(row.value)
+  }
+  log.debug({ counts: result }, 'countOrdersByStatus')
+  return result
 }
 
 export async function transitionOrderStatus(args: {

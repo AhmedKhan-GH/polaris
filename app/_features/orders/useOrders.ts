@@ -11,6 +11,7 @@ import {
 import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js'
 import {
   countOrdersAction,
+  countOrdersByStatusAction,
   createOrderAction,
   findOrdersPageAction,
 } from './actions'
@@ -18,16 +19,21 @@ import {
   ORDERS_COUNT_QUERY_KEY,
   ORDERS_PAGE_SIZE,
   ORDERS_QUERY_KEY,
+  ORDERS_STATUS_COUNTS_QUERY_KEY,
 } from './queryKeys'
 import { getSupabaseClient } from '@/lib/supabase/browser'
 import { safeParseOrder, type Order } from '@/lib/domain/order'
-import type { OrdersCursor } from '@/lib/db/orderRepository'
+import type {
+  OrderStatusCounts,
+  OrdersCursor,
+} from '@/lib/db/orderRepository'
 
 type OrdersCache = InfiniteData<Order[], OrdersCursor | null>
 
 export interface UseOrdersResult {
   orders: Order[]
   totalCount: number
+  statusCounts: OrderStatusCounts | undefined
   isCreating: boolean
   createOrder: () => void
   fetchNextPage: () => void
@@ -60,6 +66,11 @@ export function useOrders(): UseOrdersResult {
     queryFn: () => countOrdersAction(),
   })
 
+  const statusCounts = useQuery({
+    queryKey: ORDERS_STATUS_COUNTS_QUERY_KEY,
+    queryFn: () => countOrdersByStatusAction(),
+  })
+
   // Realtime mutates the cache directly. No eviction means cards[i]
   // always equals global row i, so the cache-based idempotency check
   // is enough --- a redelivered INSERT for any loaded row is caught
@@ -87,6 +98,13 @@ export function useOrders(): UseOrdersResult {
             queryClient.setQueryData<number>(ORDERS_COUNT_QUERY_KEY, (n) =>
               (n ?? 0) + 1,
             )
+            queryClient.setQueryData<OrderStatusCounts>(
+              ORDERS_STATUS_COUNTS_QUERY_KEY,
+              (counts) =>
+                counts
+                  ? { ...counts, [row.status]: (counts[row.status] ?? 0) + 1 }
+                  : counts,
+            )
           } else if (payload.eventType === 'UPDATE') {
             const row = safeParseOrder(payload.new, 'update')
             if (!row) return
@@ -98,6 +116,12 @@ export function useOrders(): UseOrdersResult {
                   page.map((o) => (o.id === row.id ? row : o)),
                 ),
               }
+            })
+            // Status may have changed; payload.old only carries the PK
+            // by default, so we can't compute the diff locally. Refetch
+            // is the simplest path that keeps counts honest.
+            void queryClient.invalidateQueries({
+              queryKey: ORDERS_STATUS_COUNTS_QUERY_KEY,
             })
           } else if (payload.eventType === 'DELETE') {
             const oldId = (payload.old as { id?: string }).id
@@ -112,6 +136,9 @@ export function useOrders(): UseOrdersResult {
             queryClient.setQueryData<number>(ORDERS_COUNT_QUERY_KEY, (n) =>
               Math.max(0, (n ?? 0) - 1),
             )
+            void queryClient.invalidateQueries({
+              queryKey: ORDERS_STATUS_COUNTS_QUERY_KEY,
+            })
           }
         },
       )
@@ -142,6 +169,7 @@ export function useOrders(): UseOrdersResult {
   return {
     orders,
     totalCount,
+    statusCounts: statusCounts.data,
     isCreating: create.isPending,
     createOrder: () => create.mutate(),
     fetchNextPage: () => {

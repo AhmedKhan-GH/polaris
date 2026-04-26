@@ -55,12 +55,12 @@ export function KanbanColumn({
   const items = virtualizer.getVirtualItems()
   const totalSize = totalSlots * SLOT_HEIGHT
 
-  // Scroll-driven pagination: only fetch the next page once the user has
-  // actually scrolled close to the bottom of this column's loaded set.
-  // A purely structural check (lastIndex >= cards.length - 1) would trip
-  // immediately on first paint whenever the column is tall enough to
-  // render every loaded card --- that's how the kanban was eagerly
-  // pulling page after page on initial load.
+  // The virtualizer reserves space for `totalSlots` (per-status DB
+  // count) so the scrollbar reflects the full set even though only
+  // `cards.length` slots have data. Pagination should fire when the
+  // user scrolls within reach of the *loaded* boundary (cards.length *
+  // SLOT_HEIGHT), NOT the full scroll bottom --- otherwise the user has
+  // to scroll past every empty slot to load more.
   useEffect(() => {
     const el = scrollRef.current
     if (!el) return
@@ -71,9 +71,10 @@ export function KanbanColumn({
 
       if (cards.length === 0) return
       if (!hasNextPage || isFetchingNextPage) return
-      const distanceFromBottom =
-        el.scrollHeight - el.scrollTop - el.clientHeight
-      if (distanceFromBottom < SLOT_HEIGHT * 3) {
+      const loadedBottomPx = cards.length * SLOT_HEIGHT
+      const distanceFromLoadedBottom =
+        loadedBottomPx - el.scrollTop - el.clientHeight
+      if (distanceFromLoadedBottom < SLOT_HEIGHT * 3) {
         fetchNextPage()
       }
     }

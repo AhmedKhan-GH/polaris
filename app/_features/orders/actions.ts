@@ -4,10 +4,12 @@ import { log } from '@/lib/log'
 import type { Order, OrderStatus } from '@/lib/domain/order'
 import {
   countOrders,
+  countOrdersByStatus,
   discardDraftOrder,
   duplicateOrder,
   findOrdersPage,
   transitionOrderStatus,
+  type OrderStatusCounts,
   type OrdersCursor,
 } from '@/lib/db/orderRepository'
 import { createOrder } from '@/lib/services/orderService'
@@ -39,6 +41,10 @@ export async function findOrdersPageAction(
 
 export async function countOrdersAction(): Promise<number> {
   return await countOrders()
+}
+
+export async function countOrdersByStatusAction(): Promise<OrderStatusCounts> {
+  return await countOrdersByStatus()
 }
 
 export async function transitionOrderAction(args: {

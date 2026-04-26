@@ -13,6 +13,7 @@ export function OrdersPage() {
   const {
     orders,
     totalCount,
+    statusCounts,
     isCreating,
     createOrder,
     hasNextPage,
@@ -54,6 +55,7 @@ export function OrdersPage() {
       >
         <KanbanBoard
           orders={orders}
+          statusCounts={statusCounts}
           selectedId={selectedId}
           onSelect={handleSelect}
           {...pagination}

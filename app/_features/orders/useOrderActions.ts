@@ -13,9 +13,13 @@ import {
 import {
   ORDERS_COUNT_QUERY_KEY,
   ORDERS_QUERY_KEY,
+  ORDERS_STATUS_COUNTS_QUERY_KEY,
 } from './queryKeys'
 import type { Order, OrderStatus } from '@/lib/domain/order'
-import type { OrdersCursor } from '@/lib/db/orderRepository'
+import type {
+  OrderStatusCounts,
+  OrdersCursor,
+} from '@/lib/db/orderRepository'
 
 type OrdersCache = InfiniteData<Order[], OrdersCursor | null>
 
@@ -33,6 +37,30 @@ function patchOrder(
       ),
     ),
   }
+}
+
+function findOrderStatus(
+  cache: OrdersCache | undefined,
+  orderId: string,
+): OrderStatus | null {
+  if (!cache) return null
+  for (const page of cache.pages) {
+    const found = page.find((o) => o.id === orderId)
+    if (found) return found.status
+  }
+  return null
+}
+
+function shiftStatusCount(
+  counts: OrderStatusCounts | undefined,
+  from: OrderStatus | null,
+  to: OrderStatus | null,
+): OrderStatusCounts | undefined {
+  if (!counts) return counts
+  const next = { ...counts }
+  if (from) next[from] = Math.max(0, (next[from] ?? 0) - 1)
+  if (to) next[to] = (next[to] ?? 0) + 1
+  return next
 }
 
 export interface UseOrderActionsResult {
@@ -59,17 +87,31 @@ export function useOrderActions(): UseOrderActionsResult {
     onMutate: async (args) => {
       await queryClient.cancelQueries({ queryKey: ORDERS_QUERY_KEY })
       const previous = queryClient.getQueryData<OrdersCache>(ORDERS_QUERY_KEY)
+      const previousStatus = findOrderStatus(previous, args.orderId)
+      const previousCounts = queryClient.getQueryData<OrderStatusCounts>(
+        ORDERS_STATUS_COUNTS_QUERY_KEY,
+      )
       queryClient.setQueryData<OrdersCache>(ORDERS_QUERY_KEY, (old) =>
         patchOrder(old, args.orderId, {
           status: args.toStatus,
           statusUpdatedAt: new Date(),
         }),
       )
-      return { previous }
+      queryClient.setQueryData<OrderStatusCounts>(
+        ORDERS_STATUS_COUNTS_QUERY_KEY,
+        (counts) => shiftStatusCount(counts, previousStatus, args.toStatus),
+      )
+      return { previous, previousCounts }
     },
     onError: (_err, _args, ctx) => {
       if (ctx?.previous) {
         queryClient.setQueryData(ORDERS_QUERY_KEY, ctx.previous)
+      }
+      if (ctx?.previousCounts) {
+        queryClient.setQueryData(
+          ORDERS_STATUS_COUNTS_QUERY_KEY,
+          ctx.previousCounts,
+        )
       }
     },
   })
@@ -79,17 +121,31 @@ export function useOrderActions(): UseOrderActionsResult {
     onMutate: async (args) => {
       await queryClient.cancelQueries({ queryKey: ORDERS_QUERY_KEY })
       const previous = queryClient.getQueryData<OrdersCache>(ORDERS_QUERY_KEY)
+      const previousStatus = findOrderStatus(previous, args.orderId)
+      const previousCounts = queryClient.getQueryData<OrderStatusCounts>(
+        ORDERS_STATUS_COUNTS_QUERY_KEY,
+      )
       queryClient.setQueryData<OrdersCache>(ORDERS_QUERY_KEY, (old) =>
         patchOrder(old, args.orderId, {
           status: 'discarded',
           statusUpdatedAt: new Date(),
         }),
       )
-      return { previous }
+      queryClient.setQueryData<OrderStatusCounts>(
+        ORDERS_STATUS_COUNTS_QUERY_KEY,
+        (counts) => shiftStatusCount(counts, previousStatus, 'discarded'),
+      )
+      return { previous, previousCounts }
     },
     onError: (_err, _args, ctx) => {
       if (ctx?.previous) {
         queryClient.setQueryData(ORDERS_QUERY_KEY, ctx.previous)
+      }
+      if (ctx?.previousCounts) {
+        queryClient.setQueryData(
+          ORDERS_STATUS_COUNTS_QUERY_KEY,
+          ctx.previousCounts,
+        )
       }
     },
   })
@@ -105,6 +161,10 @@ export function useOrderActions(): UseOrderActionsResult {
       })
       queryClient.setQueryData<number>(ORDERS_COUNT_QUERY_KEY, (n) =>
         (n ?? 0) + 1,
+      )
+      queryClient.setQueryData<OrderStatusCounts>(
+        ORDERS_STATUS_COUNTS_QUERY_KEY,
+        (counts) => shiftStatusCount(counts, null, created.status),
       )
     },
   })

@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react'
 import type { Order, OrderStatus } from '@/lib/domain/order'
+import type { OrderStatusCounts } from '@/lib/db/orderRepository'
 import { KanbanBoardShell } from './KanbanBoardShell'
 import { KanbanColumn } from './KanbanColumn'
 
@@ -14,6 +15,7 @@ const KANBAN_COLUMNS: ReadonlyArray<{ name: string; status: OrderStatus }> = [
 
 export function KanbanBoard({
   orders,
+  statusCounts,
   hasNextPage,
   isFetchingNextPage,
   fetchNextPage,
@@ -21,6 +23,7 @@ export function KanbanBoard({
   onSelect,
 }: {
   orders: Order[]
+  statusCounts: OrderStatusCounts | undefined
   hasNextPage: boolean
   isFetchingNextPage: boolean
   fetchNextPage: () => void
@@ -61,6 +64,7 @@ export function KanbanBoard({
           key={status}
           name={name}
           cards={buckets[status]}
+          expectedTotal={statusCounts?.[status]}
           showUnseenIndicator={idx === 0}
           selectedId={selectedId}
           onSelect={onSelect}
