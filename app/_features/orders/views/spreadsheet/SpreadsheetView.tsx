@@ -137,21 +137,22 @@ export function SpreadsheetView({
     <div
       role="table"
       aria-rowcount={totalCount}
-      className="relative flex-1 min-h-0 flex flex-col overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900"
+      className="flex-1 min-h-0 flex flex-col overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900"
     >
-      {/* The "↑ N new" indicator floats above the scroll area when
-          rows have arrived while the user was scrolled away from the
-          top --- click it to jump back and reset the counter. Same
-          shape as the kanban Drafting column's pill, just centered
-          horizontally above the table body. */}
+      {/* "↑ N new" sits inline above the column headers as part of the
+          table's header strip. Renders only when rows arrived while
+          the user was scrolled away from the top; clicking jumps back
+          and resets the counter. */}
       {unseenCount > 0 && (
-        <button
-          type="button"
-          onClick={handleUnseenClick}
-          className="absolute left-1/2 top-12 z-10 -translate-x-1/2 rounded-full bg-blue-500/15 px-3 py-1 text-[11px] font-medium text-blue-300 shadow-lg transition-colors hover:bg-blue-500/25"
-        >
-          ↑ {unseenCount} new
-        </button>
+        <div className="flex shrink-0 justify-center border-b border-zinc-800 bg-zinc-900 px-4 py-1.5">
+          <button
+            type="button"
+            onClick={handleUnseenClick}
+            className="rounded-full bg-blue-500/15 px-3 py-1 text-[11px] font-medium text-blue-300 transition-colors hover:bg-blue-500/25"
+          >
+            ↑ {unseenCount} new
+          </button>
+        </div>
       )}
       {/* Header sits outside the scroll container so the vertical
           scrollbar track only spans the body rows --- it can't run
