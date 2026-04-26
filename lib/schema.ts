@@ -14,11 +14,14 @@ import {
 // Active states are the operational pipeline; the three terminal sinks
 // (deleted, cancelled, voided) are forward-only exits enforced by the
 // orders_forward_status trigger. Reverts happen by duplicating into a
-// new draft, never by walking back.
+// new draft, never by walking back. 'archiving' is a holding step
+// between invoiced and the terminal 'archived' --- post-fulfillment but
+// not yet fully closed out.
 export const orderStatus = pgEnum("order_status", [
   "draft",
   "submitted",
   "invoiced",
+  "archiving",
   "archived",
   "deleted",
   "cancelled",
@@ -52,10 +55,14 @@ export const orders = pgTable(
       table.id.desc(),
     ),
     // Operational view: only active rows, kept compact regardless of
-    // how big the terminal-state archive grows.
+    // how big the terminal-state archive grows. 'archiving' is the
+    // post-fulfillment holding step and counts as active until it
+    // graduates to the terminal 'archived'.
     index("orders_active_idx")
       .on(table.createdAt.desc(), table.id.desc())
-      .where(sql`status IN ('draft', 'submitted', 'invoiced')`),
+      .where(
+        sql`status IN ('draft', 'submitted', 'invoiced', 'archiving')`,
+      ),
     foreignKey({
       columns: [table.duplicatedFromOrderId],
       foreignColumns: [table.id],

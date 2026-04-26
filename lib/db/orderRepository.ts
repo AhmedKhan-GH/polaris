@@ -10,13 +10,14 @@ import {
 
 export type OrdersCursor = { createdAt: string; id: string }
 
-// Forward-only graph. Mirrors the enforce_forward_status trigger in
-// drizzle/0009_order_lifecycle.sql. Keep the two in lockstep --- if you
-// change the graph, change both.
+// Forward-only graph. Mirrors enforce_forward_status as last updated in
+// drizzle/0011_archiving_transitions.sql. Keep the two in lockstep ---
+// if you change the graph, change both.
 export const VALID_TRANSITIONS: Record<OrderStatus, readonly OrderStatus[]> = {
   draft:     ['submitted', 'deleted'],
   submitted: ['invoiced',  'cancelled'],
-  invoiced:  ['archived',  'voided'],
+  invoiced:  ['archiving', 'voided'],
+  archiving: ['archived'],
   archived:  [],
   deleted:   [],
   cancelled: [],

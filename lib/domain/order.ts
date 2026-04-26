@@ -4,6 +4,7 @@ export const ORDER_STATUSES = [
   'draft',
   'submitted',
   'invoiced',
+  'archiving',
   'archived',
   'deleted',
   'cancelled',
@@ -16,6 +17,7 @@ export const ACTIVE_ORDER_STATUSES: readonly OrderStatus[] = [
   'draft',
   'submitted',
   'invoiced',
+  'archiving',
 ]
 
 export type Order = {

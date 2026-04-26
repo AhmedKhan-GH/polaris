@@ -321,6 +321,11 @@ describe('orderRepository (integration)', () => {
       })
       await repo.transitionOrderStatus({
         orderId: order.id,
+        toStatus: 'archiving',
+        changedBy: ACTOR,
+      })
+      await repo.transitionOrderStatus({
+        orderId: order.id,
         toStatus: 'archived',
         changedBy: ACTOR,
       })
@@ -332,8 +337,31 @@ describe('orderRepository (integration)', () => {
       expect(rows).toEqual([
         { from_status: 'draft', to_status: 'submitted' },
         { from_status: 'submitted', to_status: 'invoiced' },
-        { from_status: 'invoiced', to_status: 'archived' },
+        { from_status: 'invoiced', to_status: 'archiving' },
+        { from_status: 'archiving', to_status: 'archived' },
       ])
+    })
+
+    test('rejects skipping the archiving holding step (invoiced -> archived)', async () => {
+      const order = await repo.insertOrder()
+      await repo.transitionOrderStatus({
+        orderId: order.id,
+        toStatus: 'submitted',
+        changedBy: ACTOR,
+      })
+      await repo.transitionOrderStatus({
+        orderId: order.id,
+        toStatus: 'invoiced',
+        changedBy: ACTOR,
+      })
+
+      await expect(
+        repo.transitionOrderStatus({
+          orderId: order.id,
+          toStatus: 'archived',
+          changedBy: ACTOR,
+        }),
+      ).rejects.toBeInstanceOf(repo.InvalidTransitionError)
     })
   })
 
@@ -441,6 +469,9 @@ describe('orderRepository (integration)', () => {
           })
           await repo.transitionOrderStatus({
             orderId: source.id, toStatus: 'invoiced', changedBy: ACTOR,
+          })
+          await repo.transitionOrderStatus({
+            orderId: source.id, toStatus: 'archiving', changedBy: ACTOR,
           })
           await repo.transitionOrderStatus({
             orderId: source.id, toStatus: 'archived', changedBy: ACTOR,
