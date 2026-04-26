@@ -17,7 +17,7 @@ const ArchiveCabinetIcon = () => (
     strokeWidth="2"
     strokeLinecap="round"
     strokeLinejoin="round"
-    className="shrink-0"
+    className="ml-1 shrink-0"
   >
     <rect x="2" y="3" width="20" height="5" rx="1" />
     <path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8" />
@@ -29,11 +29,14 @@ const TRANSITION_LABELS: ReadonlyArray<ReactNode> = [
   'Submit →',
   'Invoice →',
   'Complete →',
-  // Inline-flex (not a fragment) so the icon stays on the label's line
-  // even when the column squeezes; no gap so the natural word spaces
-  // around "→" are the only spacing, matching "Submit →" / "Invoice
-  // →" / "Complete →" exactly.
-  <span key="archive" className="inline-flex items-center">Archive → <ArchiveCabinetIcon /></span>,
+  // "Archive →" keeps its natural in-text space around the arrow to
+  // match the other column labels; the cabinet glyph carries its own
+  // ml-1 (4px) so the spacing between arrow and icon doesn't depend on
+  // a flex `gap` on this wrapper.
+  <span key="archive" className="inline-flex items-center">
+    <span>Archive →</span>
+    <ArchiveCabinetIcon />
+  </span>,
 ]
 
 interface KanbanBoardShellProps {
