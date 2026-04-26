@@ -9,6 +9,7 @@ const KANBAN_COLUMNS: ReadonlyArray<{ name: string; status: OrderStatus }> = [
   { name: 'Drafting',   status: 'draft' },
   { name: 'Reviewing',  status: 'submitted' },
   { name: 'Fulfilling', status: 'invoiced' },
+  { name: 'Archiving',  status: 'archiving' },
 ]
 
 export function KanbanBoard({
@@ -35,6 +36,7 @@ export function KanbanBoard({
       draft: [],
       submitted: [],
       invoiced: [],
+      archiving: [],
       archived: [],
       deleted: [],
       cancelled: [],

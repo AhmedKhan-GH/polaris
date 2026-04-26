@@ -2,12 +2,13 @@ import { Fragment, type ReactNode } from 'react'
 
 // Transition labels sit at the top of each column, naming the action
 // that moves cards out of that column into the next one. Index N = label
-// above column N. The last column has no outbound transition rendered
-// here (archived is hidden from kanban, surfaced only in the spreadsheet),
-// so it gets an invisible spacer to keep all sections top-aligned.
+// above column N. The Archiving column's outbound move closes the order
+// into the terminal 'archived' state, which is hidden from the kanban
+// (visible in the spreadsheet only), so its label is an invisible spacer.
 const TRANSITION_LABELS = [
   'Submit →',
   'Invoice →',
+  'Archive →',
   undefined,
 ] as const
 

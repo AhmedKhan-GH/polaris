@@ -9,6 +9,7 @@ import {
   useReactTable,
 } from '@tanstack/react-table'
 import { formatCreatedAt, type Order } from '@/lib/domain/order'
+import { StatusBadge } from '../../StatusBadge'
 import { useScrollAnchor } from '../../useScrollAnchor'
 
 const ROW_HEIGHT = 44
@@ -30,6 +31,11 @@ const columns = [
     header: 'Order #',
     cell: (info) => info.getValue(),
     meta: { cellClassName: 'font-mono text-zinc-50' },
+  }),
+  columnHelper.accessor('status', {
+    header: 'Status',
+    cell: (info) => <StatusBadge status={info.getValue()} />,
+    meta: { cellClassName: 'text-zinc-300' },
   }),
   columnHelper.accessor('createdAt', {
     header: 'Created',
@@ -125,7 +131,7 @@ export function SpreadsheetView({
         <div
           key={headerGroup.id}
           role="row"
-          className="grid grid-cols-2 text-left text-xs uppercase tracking-wider text-zinc-400 shadow-[inset_0_-1px_0_0_rgb(39,39,42)]"
+          className="grid grid-cols-[120px_140px_1fr] text-left text-xs uppercase tracking-wider text-zinc-400 shadow-[inset_0_-1px_0_0_rgb(39,39,42)]"
         >
           {headerGroup.headers.map((header) => (
             <div
@@ -172,7 +178,7 @@ export function SpreadsheetView({
                   onSelect(row.original.id)
                 }
               }}
-              className={`absolute left-0 right-0 grid cursor-pointer grid-cols-2 border-b border-zinc-800 ${selectionClass} ${transitionClass}`}
+              className={`absolute left-0 right-0 grid cursor-pointer grid-cols-[120px_140px_1fr] border-b border-zinc-800 ${selectionClass} ${transitionClass}`}
               style={{
                 transform: `translateY(${vi.start}px)`,
                 height: vi.size,

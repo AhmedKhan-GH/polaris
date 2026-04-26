@@ -6,6 +6,7 @@ import {
   type Order,
   type OrderStatus,
 } from '@/lib/domain/order'
+import { StatusBadge } from './StatusBadge'
 import { useOrderActions } from './useOrderActions'
 
 interface ActionConfig {
@@ -17,34 +18,28 @@ interface ActionConfig {
 // Mirrors VALID_TRANSITIONS in lib/db/orderRepository.ts. Forward
 // transitions render as "primary" (continue the pipeline); terminal
 // exits render as "danger" so the cancel/void/delete sinks stand
-// apart from the happy-path submit/invoice/archive moves.
+// apart from the happy-path moves. archiving is the post-fulfillment
+// holding step before the terminal archived state.
 const ACTIONS_BY_STATUS: Record<OrderStatus, ActionConfig[]> = {
   draft: [
-    { label: 'Submit', toStatus: 'submitted', tone: 'primary' },
-    { label: 'Delete', toStatus: 'deleted', tone: 'danger' },
+    { label: 'Submit',  toStatus: 'submitted', tone: 'primary' },
+    { label: 'Delete',  toStatus: 'deleted',   tone: 'danger'  },
   ],
   submitted: [
-    { label: 'Invoice', toStatus: 'invoiced', tone: 'primary' },
-    { label: 'Cancel', toStatus: 'cancelled', tone: 'danger' },
+    { label: 'Invoice', toStatus: 'invoiced',  tone: 'primary' },
+    { label: 'Cancel',  toStatus: 'cancelled', tone: 'danger'  },
   ],
   invoiced: [
-    { label: 'Archive', toStatus: 'archived', tone: 'primary' },
-    { label: 'Void', toStatus: 'voided', tone: 'danger' },
+    { label: 'Archive', toStatus: 'archiving', tone: 'primary' },
+    { label: 'Void',    toStatus: 'voided',    tone: 'danger'  },
   ],
-  archived: [],
-  deleted: [],
+  archiving: [
+    { label: 'Close',   toStatus: 'archived',  tone: 'primary' },
+  ],
+  archived:  [],
+  deleted:   [],
   cancelled: [],
-  voided: [],
-}
-
-const STATUS_BADGE: Record<OrderStatus, string> = {
-  draft: 'bg-zinc-700/50 text-zinc-200',
-  submitted: 'bg-blue-500/15 text-blue-300',
-  invoiced: 'bg-violet-500/15 text-violet-300',
-  archived: 'bg-zinc-800 text-zinc-400',
-  deleted: 'bg-red-500/15 text-red-300',
-  cancelled: 'bg-amber-500/15 text-amber-300',
-  voided: 'bg-rose-500/15 text-rose-300',
+  voided:    [],
 }
 
 export function OrderDetailSidebar({
@@ -101,11 +96,7 @@ export function OrderDetailSidebar({
               <span className="font-mono text-base font-medium text-zinc-50">
                 #{order.orderNumber}
               </span>
-              <span
-                className={`rounded-full px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide ${STATUS_BADGE[order.status]}`}
-              >
-                {order.status}
-              </span>
+              <StatusBadge status={order.status} />
             </div>
             <button
               type="button"
