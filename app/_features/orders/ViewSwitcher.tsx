@@ -18,7 +18,7 @@ export function ViewSwitcher({
     <div
       role="tablist"
       aria-label="Orders view"
-      className="inline-flex overflow-hidden rounded-md border border-zinc-700 bg-zinc-900"
+      className="inline-flex shrink-0 overflow-hidden rounded-md border border-zinc-700 bg-zinc-900"
     >
       {VIEWS.map((view) => {
         const active = view.value === current
@@ -31,8 +31,8 @@ export function ViewSwitcher({
             aria-selected={active}
             className={
               active
-                ? 'px-3 py-1.5 text-sm font-medium bg-zinc-100 text-zinc-900'
-                : 'px-3 py-1.5 text-sm font-medium text-zinc-300 hover:bg-zinc-800'
+                ? 'shrink-0 truncate whitespace-nowrap px-3 py-1.5 text-sm font-medium bg-zinc-100 text-zinc-900'
+                : 'shrink-0 truncate whitespace-nowrap px-3 py-1.5 text-sm font-medium text-zinc-300 hover:bg-zinc-800'
             }
           >
             {view.label}

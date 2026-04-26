@@ -21,11 +21,11 @@ interface SignOutFormProps {
 
 export function SignOutForm({ email }: SignOutFormProps) {
   return (
-    <form action={signOut} className="flex items-center gap-3">
-      <span className="text-sm text-zinc-400">{email}</span>
+    <form action={signOut} className="flex shrink-0 items-center gap-3">
+      <span className="whitespace-nowrap text-sm text-zinc-400">{email}</span>
       <button
         type="submit"
-        className="text-sm text-zinc-500 hover:text-zinc-300 transition-colors"
+        className="shrink-0 whitespace-nowrap text-sm text-zinc-500 hover:text-zinc-300 transition-colors"
       >
         Sign out
       </button>
