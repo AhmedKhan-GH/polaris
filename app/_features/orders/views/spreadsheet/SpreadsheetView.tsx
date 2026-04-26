@@ -76,15 +76,21 @@ export function SpreadsheetView({
     overscan: 8,
   })
 
-  useScrollAnchor(scrollRef, totalCount, ROW_HEIGHT)
+  const { unseenCount, reset: resetUnseen } = useScrollAnchor(
+    scrollRef,
+    totalCount,
+    ROW_HEIGHT,
+  )
 
   const [isAtTop, setIsAtTop] = useState(true)
 
   const items = virtualizer.getVirtualItems()
-  // Each rendered row reports its real height back via measureElement,
-  // so the running total respects content scaling at zoom levels and
-  // unloaded rows fall back to ROW_HEIGHT as the estimate.
-  const totalSize = virtualizer.getTotalSize()
+  // Fixed slot height keeps every row's transform predictable, which
+  // is what the inter-row "↑ N new" pushdown animation depends on ---
+  // measureElement would jitter vi.start as rows reported their actual
+  // sizes back, snapping the transition mid-slide. Cells are already
+  // truncated, so the row stays one line at any zoom level.
+  const totalSize = totalCount * ROW_HEIGHT
 
   // Scroll-driven pagination: fetch the next page only when the user has
   // actually scrolled near the bottom of the loaded rows. A purely
@@ -96,6 +102,7 @@ export function SpreadsheetView({
     const onScroll = () => {
       const atTop = el.scrollTop === 0
       setIsAtTop((prev) => (prev === atTop ? prev : atTop))
+      if (atTop) resetUnseen()
 
       if (orders.length === 0) return
       if (!hasNextPage || isFetchingNextPage) return
@@ -108,7 +115,12 @@ export function SpreadsheetView({
     }
     el.addEventListener('scroll', onScroll, { passive: true })
     return () => el.removeEventListener('scroll', onScroll)
-  }, [orders.length, hasNextPage, isFetchingNextPage, fetchNextPage])
+  }, [orders.length, hasNextPage, isFetchingNextPage, fetchNextPage, resetUnseen])
+
+  function handleUnseenClick() {
+    scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
+    resetUnseen()
+  }
 
   if (totalCount === 0) {
     return (
@@ -125,8 +137,22 @@ export function SpreadsheetView({
     <div
       role="table"
       aria-rowcount={totalCount}
-      className="flex-1 min-h-0 flex flex-col overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900"
+      className="relative flex-1 min-h-0 flex flex-col overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900"
     >
+      {/* The "↑ N new" indicator floats above the scroll area when
+          rows have arrived while the user was scrolled away from the
+          top --- click it to jump back and reset the counter. Same
+          shape as the kanban Drafting column's pill, just centered
+          horizontally above the table body. */}
+      {unseenCount > 0 && (
+        <button
+          type="button"
+          onClick={handleUnseenClick}
+          className="absolute left-1/2 top-12 z-10 -translate-x-1/2 rounded-full bg-blue-500/15 px-3 py-1 text-[11px] font-medium text-blue-300 shadow-lg transition-colors hover:bg-blue-500/25"
+        >
+          ↑ {unseenCount} new
+        </button>
+      )}
       {/* Header sits outside the scroll container so the vertical
           scrollbar track only spans the body rows --- it can't run
           alongside the header band the way it would inside a sticky
@@ -171,8 +197,6 @@ export function SpreadsheetView({
           return (
             <div
               key={row.id}
-              data-index={vi.index}
-              ref={virtualizer.measureElement}
               role="row"
               aria-rowindex={vi.index + 1}
               aria-selected={isSelected}
@@ -187,6 +211,7 @@ export function SpreadsheetView({
               className={`absolute left-0 right-0 grid cursor-pointer grid-cols-[120px_140px_1fr] border-b border-zinc-800 ${selectionClass} ${transitionClass}`}
               style={{
                 transform: `translateY(${vi.start}px)`,
+                height: vi.size,
               }}
             >
               {row.getVisibleCells().map((cell) => (
