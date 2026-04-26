@@ -82,29 +82,30 @@ export function SpreadsheetView({
 
   const items = virtualizer.getVirtualItems()
   const totalSize = totalCount * ROW_HEIGHT
-  const lastIndex = items.length > 0 ? items[items.length - 1].index : -1
 
-  useEffect(() => {
-    if (lastIndex < 0) return
-    if (
-      lastIndex >= orders.length - 1 &&
-      hasNextPage &&
-      !isFetchingNextPage
-    ) {
-      fetchNextPage()
-    }
-  }, [lastIndex, orders.length, hasNextPage, isFetchingNextPage, fetchNextPage])
-
+  // Scroll-driven pagination: fetch the next page only when the user has
+  // actually scrolled near the bottom of the loaded rows. A purely
+  // structural check would trip immediately whenever the viewport could
+  // render more rows than are loaded.
   useEffect(() => {
     const el = scrollRef.current
     if (!el) return
     const onScroll = () => {
       const atTop = el.scrollTop === 0
       setIsAtTop((prev) => (prev === atTop ? prev : atTop))
+
+      if (orders.length === 0) return
+      if (!hasNextPage || isFetchingNextPage) return
+      const loadedHeight = orders.length * ROW_HEIGHT
+      const distanceFromLoadedBottom =
+        loadedHeight - el.scrollTop - el.clientHeight
+      if (distanceFromLoadedBottom < ROW_HEIGHT * 5) {
+        fetchNextPage()
+      }
     }
     el.addEventListener('scroll', onScroll, { passive: true })
     return () => el.removeEventListener('scroll', onScroll)
-  }, [])
+  }, [orders.length, hasNextPage, isFetchingNextPage, fetchNextPage])
 
   if (totalCount === 0) {
     return (

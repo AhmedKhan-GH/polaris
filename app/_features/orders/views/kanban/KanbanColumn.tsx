@@ -54,20 +54,13 @@ export function KanbanColumn({
 
   const items = virtualizer.getVirtualItems()
   const totalSize = totalSlots * SLOT_HEIGHT
-  const lastIndex = items.length > 0 ? items[items.length - 1].index : -1
 
-  useEffect(() => {
-    if (cards.length === 0) return
-    if (lastIndex < 0) return
-    if (
-      lastIndex >= cards.length - 1 &&
-      hasNextPage &&
-      !isFetchingNextPage
-    ) {
-      fetchNextPage()
-    }
-  }, [lastIndex, cards.length, hasNextPage, isFetchingNextPage, fetchNextPage])
-
+  // Scroll-driven pagination: only fetch the next page once the user has
+  // actually scrolled close to the bottom of this column's loaded set.
+  // A purely structural check (lastIndex >= cards.length - 1) would trip
+  // immediately on first paint whenever the column is tall enough to
+  // render every loaded card --- that's how the kanban was eagerly
+  // pulling page after page on initial load.
   useEffect(() => {
     const el = scrollRef.current
     if (!el) return
@@ -75,10 +68,24 @@ export function KanbanColumn({
       const atTop = el.scrollTop === 0
       setIsAtTop((prev) => (prev === atTop ? prev : atTop))
       if (atTop) resetUnseen()
+
+      if (cards.length === 0) return
+      if (!hasNextPage || isFetchingNextPage) return
+      const distanceFromBottom =
+        el.scrollHeight - el.scrollTop - el.clientHeight
+      if (distanceFromBottom < SLOT_HEIGHT * 3) {
+        fetchNextPage()
+      }
     }
     el.addEventListener('scroll', onScroll, { passive: true })
     return () => el.removeEventListener('scroll', onScroll)
-  }, [resetUnseen])
+  }, [
+    cards.length,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+    resetUnseen,
+  ])
 
   function handleUnseenClick() {
     scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
