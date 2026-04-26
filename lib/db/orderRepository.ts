@@ -1,10 +1,48 @@
 import { and, count, desc, eq, lt, or, sql } from 'drizzle-orm'
 import { db } from '../db'
 import { log } from '../log'
-import { orders } from '../schema'
-import { toOrder, type Order } from '../domain/order'
+import { orders, orderStatusHistory } from '../schema'
+import {
+  toOrder,
+  type Order,
+  type OrderStatus,
+} from '../domain/order'
 
 export type OrdersCursor = { createdAt: string; id: string }
+
+// Forward-only graph. Mirrors the enforce_forward_status trigger in
+// drizzle/0009_order_lifecycle.sql. Keep the two in lockstep --- if you
+// change the graph, change both.
+export const VALID_TRANSITIONS: Record<OrderStatus, readonly OrderStatus[]> = {
+  draft:     ['submitted', 'deleted'],
+  submitted: ['invoiced',  'cancelled'],
+  invoiced:  ['archived',  'voided'],
+  archived:  [],
+  deleted:   [],
+  cancelled: [],
+  voided:    [],
+}
+
+export function isValidTransition(from: OrderStatus, to: OrderStatus): boolean {
+  return VALID_TRANSITIONS[from].includes(to)
+}
+
+export class OrderNotFoundError extends Error {
+  constructor(orderId: string) {
+    super(`Order not found: ${orderId}`)
+    this.name = 'OrderNotFoundError'
+  }
+}
+
+export class InvalidTransitionError extends Error {
+  constructor(
+    public readonly from: OrderStatus,
+    public readonly to: OrderStatus,
+  ) {
+    super(`Invalid order status transition: ${from} -> ${to}`)
+    this.name = 'InvalidTransitionError'
+  }
+}
 
 export async function findOrderById(id: string): Promise<Order | null> {
   const rows = await db.select().from(orders).where(eq(orders.id, id)).limit(1)
@@ -57,4 +95,101 @@ export async function countOrders(): Promise<number> {
   const n = Number(row.value)
   log.debug({ count: n, raw: row.value, type: typeof row.value }, 'countOrders')
   return Number.isFinite(n) ? n : 0
+}
+
+export async function transitionOrderStatus(args: {
+  orderId: string
+  toStatus: OrderStatus
+  changedBy: string | null
+  reason?: string
+}): Promise<Order> {
+  const { orderId, toStatus, changedBy, reason } = args
+  return db.transaction(async (tx) => {
+    const [current] = await tx
+      .select()
+      .from(orders)
+      .where(eq(orders.id, orderId))
+      .for('update')
+    if (!current) throw new OrderNotFoundError(orderId)
+
+    if (!isValidTransition(current.status, toStatus)) {
+      throw new InvalidTransitionError(current.status, toStatus)
+    }
+
+    const [updated] = await tx
+      .update(orders)
+      .set({ status: toStatus, statusUpdatedAt: new Date() })
+      .where(eq(orders.id, orderId))
+      .returning()
+
+    await tx.insert(orderStatusHistory).values({
+      orderId,
+      fromStatus: current.status,
+      toStatus,
+      changedBy,
+      reason,
+    })
+
+    log.info(
+      {
+        orderId,
+        from: current.status,
+        to: toStatus,
+        changedBy,
+      },
+      'order status transitioned',
+    )
+    return toOrder(updated)
+  })
+}
+
+export async function deleteDraftOrder(args: {
+  orderId: string
+  changedBy: string | null
+  reason?: string
+}): Promise<Order> {
+  return transitionOrderStatus({
+    ...args,
+    toStatus: 'deleted',
+  })
+}
+
+export async function duplicateOrder(args: {
+  sourceOrderId: string
+  changedBy: string | null
+}): Promise<Order> {
+  const { sourceOrderId, changedBy } = args
+  return db.transaction(async (tx) => {
+    const [source] = await tx
+      .select()
+      .from(orders)
+      .where(eq(orders.id, sourceOrderId))
+      .limit(1)
+    if (!source) throw new OrderNotFoundError(sourceOrderId)
+
+    const [created] = await tx
+      .insert(orders)
+      .values({ duplicatedFromOrderId: source.id })
+      .returning()
+
+    await tx.insert(orderStatusHistory).values({
+      orderId: created.id,
+      fromStatus: null,
+      toStatus: 'draft',
+      changedBy,
+      reason: `Duplicated from order #${source.orderNumber}`,
+    })
+
+    log.info(
+      {
+        newOrderId: created.id,
+        newOrderNumber: created.orderNumber,
+        sourceOrderId: source.id,
+        sourceOrderNumber: source.orderNumber,
+        changedBy,
+      },
+      'order duplicated',
+    )
+    return toOrder(created)
+  })
 }
