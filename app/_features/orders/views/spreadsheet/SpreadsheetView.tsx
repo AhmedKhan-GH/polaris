@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import {
   createColumnHelper,
@@ -82,14 +82,10 @@ export function SpreadsheetView({
     ROW_HEIGHT,
   )
 
-  const [isAtTop, setIsAtTop] = useState(true)
-
   const items = virtualizer.getVirtualItems()
-  // Fixed slot height keeps every row's transform predictable, which
-  // is what the inter-row "↑ N new" pushdown animation depends on ---
-  // measureElement would jitter vi.start as rows reported their actual
-  // sizes back, snapping the transition mid-slide. Cells are already
-  // truncated, so the row stays one line at any zoom level.
+  // Fixed slot height (cells already truncate to one line) so vi.start
+  // values are predictable for accurate scroll-anchor compensation when
+  // rows are prepended.
   const totalSize = totalCount * ROW_HEIGHT
 
   // Scroll-driven pagination: fetch the next page only when the user has
@@ -100,9 +96,7 @@ export function SpreadsheetView({
     const el = scrollRef.current
     if (!el) return
     const onScroll = () => {
-      const atTop = el.scrollTop === 0
-      setIsAtTop((prev) => (prev === atTop ? prev : atTop))
-      if (atTop) resetUnseen()
+      if (el.scrollTop === 0) resetUnseen()
 
       if (orders.length === 0) return
       if (!hasNextPage || isFetchingNextPage) return
@@ -188,9 +182,6 @@ export function SpreadsheetView({
         {items.map((vi) => {
           const row = rows[vi.index]
           if (!row) return null
-          const transitionClass = isAtTop
-            ? 'transition-transform duration-200 ease-out motion-reduce:transition-none'
-            : ''
           const isSelected = row.original.id === selectedId
           const selectionClass = isSelected
             ? 'bg-blue-500/10 ring-1 ring-inset ring-blue-400/40'
@@ -209,7 +200,7 @@ export function SpreadsheetView({
                   onSelect(row.original.id)
                 }
               }}
-              className={`absolute left-0 right-0 grid cursor-pointer grid-cols-[120px_140px_1fr] border-b border-zinc-800 ${selectionClass} ${transitionClass}`}
+              className={`absolute left-0 right-0 grid cursor-pointer grid-cols-[120px_140px_1fr] border-b border-zinc-800 ${selectionClass}`}
               style={{
                 transform: `translateY(${vi.start}px)`,
                 height: vi.size,
