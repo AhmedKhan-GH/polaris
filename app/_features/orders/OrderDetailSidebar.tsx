@@ -201,10 +201,14 @@ export function OrderDetailSidebar({
             )}
           </dl>
 
+          {/* Wrap both action groups in dropdownsRef so the click-
+              outside handler treats clicks on either group as "inside"
+              and doesn't close the dropdown mid-pick. The flex-1
+              spacer between them is what pins the bottom group to the
+              sidebar's bottom edge --- more robust than mt-auto, which
+              quietly stops working if a sibling somewhere up the tree
+              doesn't yield the height. */}
           <div ref={dropdownsRef} className="flex flex-1 min-h-0 flex-col">
-            {/* Transition lives at the top of the action region. Forward
-                moves are the everyday case --- visible on first glance,
-                no scroll. */}
             <div className="flex flex-col gap-2 px-5 py-4">
               {primaryActions.length > 0 ? (
                 <ActionDropdown
@@ -227,10 +231,23 @@ export function OrderDetailSidebar({
               )}
             </div>
 
-            {/* Duplicate + Terminate sit flush at the bottom edge.
-                Terminate's menu opens UP so it doesn't need a reserved
-                spacer below the buttons to dodge the panel rim. */}
-            <div className="mt-auto flex flex-col gap-2 px-5 py-4">
+            <div aria-hidden className="flex-1" />
+
+            {error && (
+              <p
+                role="alert"
+                className="mx-5 mb-2 rounded border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-300"
+              >
+                {error.message}
+              </p>
+            )}
+
+            {/* Bottom group: pt-4 anchors the buttons to the sidebar
+                rim with consistent breathing room, pb-14 reserves room
+                BELOW Terminate so its menu can drop downward (one item
+                plus the 4px mt-1 offset and 2px border ≈ 40px) without
+                clipping past the panel edge. */}
+            <div className="flex flex-col gap-2 px-5 pt-4 pb-14">
               <button
                 type="button"
                 disabled={isPending}
@@ -244,7 +261,6 @@ export function OrderDetailSidebar({
                   group="danger"
                   label="Terminate"
                   actions={dangerActions}
-                  direction="up"
                   isOpen={openGroup === 'danger'}
                   isPending={isPending}
                   onToggle={() =>
@@ -255,15 +271,6 @@ export function OrderDetailSidebar({
               )}
             </div>
           </div>
-
-          {error && (
-            <p
-              role="alert"
-              className="mx-5 mb-4 rounded border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-300"
-            >
-              {error.message}
-            </p>
-          )}
         </>
       )}
       {pendingTerminate && order && (
@@ -292,33 +299,40 @@ function ConfirmTerminateModal({
   onConfirm: () => void
   onCancel: () => void
 }) {
+  // Scoped to the parent <aside>: absolute inset-0 covers the sidebar
+  // pane only, not the entire viewport. The aside's `position: fixed`
+  // already establishes the containing block for absolute descendants,
+  // so this dialog dims and gates the sidebar without blacking out the
+  // rest of the app.
   return (
     <div
       role="dialog"
       aria-modal="true"
       aria-labelledby="confirm-terminate-title"
       onClick={onCancel}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+      className="absolute inset-0 z-10 flex items-center justify-center bg-black/70 p-4"
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-sm rounded-lg border border-zinc-800 bg-zinc-950 p-5 shadow-2xl"
+        className="w-full rounded-lg border border-zinc-700 bg-zinc-900 p-4 shadow-2xl"
       >
         <h3
           id="confirm-terminate-title"
-          className="text-base font-semibold text-zinc-50"
+          className="text-sm font-semibold text-zinc-50"
         >
           {action.label} order #{orderNumber}?
         </h3>
-        <p className="mt-2 text-sm text-zinc-400">
-          The order will be marked as <span className="font-medium text-zinc-200">{action.toStatus}</span>. Terminal states cannot be reversed.
+        <p className="mt-2 text-xs text-zinc-400">
+          The order will be marked as{' '}
+          <span className="font-medium text-zinc-200">{action.toStatus}</span>.
+          Terminal states cannot be reversed.
         </p>
-        <div className="mt-5 flex justify-end gap-2">
+        <div className="mt-4 flex justify-end gap-2">
           <button
             type="button"
             disabled={isPending}
             onClick={onCancel}
-            className="rounded border border-zinc-700 bg-transparent px-3 py-2 text-sm font-medium text-zinc-200 hover:bg-zinc-800 disabled:cursor-wait disabled:opacity-60"
+            className="rounded border border-zinc-700 bg-transparent px-3 py-1.5 text-xs font-medium text-zinc-200 hover:bg-zinc-800 disabled:cursor-wait disabled:opacity-60"
           >
             Cancel
           </button>
@@ -327,7 +341,7 @@ function ConfirmTerminateModal({
             disabled={isPending}
             onClick={onConfirm}
             autoFocus
-            className="rounded border border-red-500/40 bg-red-500/15 px-3 py-2 text-sm font-medium text-red-300 hover:bg-red-500/25 disabled:cursor-wait disabled:opacity-60"
+            className="rounded border border-red-500/40 bg-red-500/15 px-3 py-1.5 text-xs font-medium text-red-300 hover:bg-red-500/25 disabled:cursor-wait disabled:opacity-60"
           >
             {action.label}
           </button>
