@@ -4,7 +4,7 @@ import { useMemo } from 'react'
 import { useInfiniteQuery, type InfiniteData } from '@tanstack/react-query'
 import { findOrdersPageByStatusAction } from './actions'
 import { ORDERS_PAGE_SIZE, ordersByStatusQueryKey } from './queryKeys'
-import type { Order, OrderStatus } from '@/lib/domain/order'
+import { dedupeById, type Order, type OrderStatus } from '@/lib/domain/order'
 import type { OrdersCursor } from '@/lib/db/orderRepository'
 
 type Cache = InfiniteData<Order[], OrdersCursor | null>
@@ -42,7 +42,7 @@ export function useOrdersByStatus(
   })
 
   const cards = useMemo(
-    () => query.data?.pages.flat() ?? [],
+    () => dedupeById(query.data?.pages.flat() ?? []),
     [query.data],
   )
 

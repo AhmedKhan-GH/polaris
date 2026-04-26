@@ -102,6 +102,15 @@ export function mergeById<T extends { id: string }>(list: T[], next: T): T[] {
   return copy
 }
 
+export function dedupeById<T extends { id: string }>(list: readonly T[]): T[] {
+  const seen = new Set<string>()
+  return list.filter((item) => {
+    if (seen.has(item.id)) return false
+    seen.add(item.id)
+    return true
+  })
+}
+
 // Locale + options pinned so server-rendered output matches the client's
 // first paint --- otherwise hydration mismatches on the comma/space and
 // 12h vs 24h based on the user's system. Shared between the kanban

@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import {
+  dedupeById,
   formatCreatedAt,
   mergeById,
   parseOrderRow,
@@ -197,6 +198,22 @@ describe('mergeById', () => {
     const list = [a, b]
     mergeById(list, c)
     expect(list).toEqual([a, b])
+  })
+})
+
+describe('dedupeById', () => {
+  test('keeps the first occurrence of each id and drops later duplicates', () => {
+    const firstA = { id: 'a', value: 1 }
+    const firstB = { id: 'b', value: 2 }
+    const secondA = { id: 'a', value: 3 }
+
+    expect(dedupeById([firstA, firstB, secondA])).toEqual([firstA, firstB])
+  })
+
+  test('does not mutate the input list', () => {
+    const list = [{ id: 'a', value: 1 }, { id: 'a', value: 2 }]
+    dedupeById(list)
+    expect(list).toEqual([{ id: 'a', value: 1 }, { id: 'a', value: 2 }])
   })
 })
 

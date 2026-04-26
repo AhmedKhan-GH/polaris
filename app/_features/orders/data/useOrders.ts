@@ -31,6 +31,7 @@ import {
 } from './cacheHelpers'
 import { getSupabaseClient } from '@/lib/supabase/browser'
 import {
+  dedupeById,
   ORDER_STATUSES,
   safeParseOrder,
   type Order,
@@ -198,7 +199,7 @@ export function useOrders(): UseOrdersResult {
   })
 
   const orders = useMemo(
-    () => pages.data?.pages.flat() ?? [],
+    () => dedupeById(pages.data?.pages.flat() ?? []),
     [pages.data],
   )
 
