@@ -7,9 +7,10 @@ import { useScrollAnchor } from '../../useScrollAnchor'
 import { KanbanCard } from './KanbanCard'
 import { KanbanColumnShell } from './KanbanColumnShell'
 
-// Card now has two text lines (order number + datetime subtitle).
-// ~52px card + 8px gap below = 60px slot. KanbanCard renders top-
-// aligned in its slot; the trailing space is the inter-card gap.
+// Initial estimate before any tile has been measured. The virtualizer
+// re-measures each rendered slot via `measureElement` (data-index) and
+// uses the actual height for layout, so this estimate just seeds the
+// first render and the size of unloaded placeholder slots.
 const SLOT_HEIGHT = 60
 
 export function KanbanColumn({
@@ -53,7 +54,11 @@ export function KanbanColumn({
   const [isAtTop, setIsAtTop] = useState(true)
 
   const items = virtualizer.getVirtualItems()
-  const totalSize = totalSlots * SLOT_HEIGHT
+  // Virtualizer's running total respects measured tile heights (varies
+  // slightly with text scaling at zoom levels) plus the estimated size
+  // for unloaded slots. Sizing the inner box to this keeps the
+  // scrollbar honest as soon as a few slots have been measured.
+  const totalSize = virtualizer.getTotalSize()
 
   // The virtualizer reserves space for `totalSlots` (per-status DB
   // count) so the scrollbar reflects the full set even though only
@@ -128,10 +133,15 @@ export function KanbanColumn({
             return (
               <div
                 key={order.id}
-                className={`absolute left-0 right-0 ${itemTransitionClass}`}
+                data-index={vi.index}
+                ref={virtualizer.measureElement}
+                // pb-2 places the inter-card gap inside this slot,
+                // structurally below the tile, so the tile's border
+                // surrounds its own content and the gap doesn't drift
+                // with content height at zoom levels.
+                className={`absolute left-0 right-0 pb-2 ${itemTransitionClass}`}
                 style={{
                   transform: `translateY(${vi.start}px)`,
-                  height: vi.size,
                 }}
               >
                 <KanbanCard
