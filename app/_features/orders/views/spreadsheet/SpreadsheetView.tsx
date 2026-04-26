@@ -136,38 +136,42 @@ export function SpreadsheetView({
       {/* Header sits outside the scroll container so the vertical
           scrollbar track only spans the body rows --- it can't run
           alongside the header band the way it would inside a sticky
-          layout. The "↑ N new" pill is tucked beside the first column
-          (Order #) when rows have arrived while the user was scrolled
-          away; clicking jumps back and resets the counter. */}
+          layout. The "↑ N new" pill rides at the far right of the
+          header row (inside the last column header, pushed by ml-auto)
+          when rows have arrived while the user was scrolled away;
+          clicking jumps back and resets the counter. */}
       {headerGroups.map((headerGroup) => (
         <div
           key={headerGroup.id}
           role="row"
           className="grid grid-cols-[120px_140px_1fr] text-left text-xs uppercase tracking-wider text-zinc-400 shadow-[inset_0_-1px_0_0_rgb(39,39,42)]"
         >
-          {headerGroup.headers.map((header, index) => (
-            <div
-              key={header.id}
-              role="columnheader"
-              className="flex min-w-0 items-center gap-2 px-4 py-3 font-semibold"
-            >
-              <span className="truncate">
-                {flexRender(
-                  header.column.columnDef.header,
-                  header.getContext(),
+          {headerGroup.headers.map((header, index, arr) => {
+            const isLast = index === arr.length - 1
+            return (
+              <div
+                key={header.id}
+                role="columnheader"
+                className="flex min-w-0 items-center gap-2 px-4 py-3 font-semibold"
+              >
+                <span className="truncate">
+                  {flexRender(
+                    header.column.columnDef.header,
+                    header.getContext(),
+                  )}
+                </span>
+                {isLast && unseenCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleUnseenClick}
+                    className="ml-auto shrink-0 rounded-full bg-blue-500/15 px-2 py-0.5 text-[10px] font-medium normal-case tracking-normal text-blue-300 transition-colors hover:bg-blue-500/25"
+                  >
+                    ↑ {unseenCount} new
+                  </button>
                 )}
-              </span>
-              {index === 0 && unseenCount > 0 && (
-                <button
-                  type="button"
-                  onClick={handleUnseenClick}
-                  className="shrink-0 rounded-full bg-blue-500/15 px-2 py-0.5 text-[10px] font-medium normal-case tracking-normal text-blue-300 transition-colors hover:bg-blue-500/25"
-                >
-                  ↑ {unseenCount} new
-                </button>
-              )}
-            </div>
-          ))}
+              </div>
+            )
+          })}
         </div>
       ))}
 
