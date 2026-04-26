@@ -205,7 +205,7 @@ export function SpreadsheetView({
                   onSelect(row.original.id)
                 }
               }}
-              className={`absolute left-0 right-0 grid cursor-pointer grid-cols-[120px_140px_1fr] border-b border-zinc-800 ${selectionClass}`}
+              className={`absolute left-0 right-0 grid cursor-pointer grid-cols-[120px_140px_1fr] items-center border-b border-zinc-800 ${selectionClass}`}
               style={{
                 transform: `translateY(${vi.start}px)`,
                 height: vi.size,

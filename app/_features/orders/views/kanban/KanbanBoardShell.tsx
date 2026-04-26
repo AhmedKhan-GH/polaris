@@ -29,7 +29,11 @@ const TRANSITION_LABELS: ReadonlyArray<ReactNode> = [
   'Submit →',
   'Invoice →',
   'Complete →',
-  <span key="archive" className="inline-flex items-center gap-1">Archive → <ArchiveCabinetIcon /></span>,
+  // Inline-flex (not a fragment) so the icon stays on the label's line
+  // even when the column squeezes; no gap so the natural word spaces
+  // around "→" are the only spacing, matching "Submit →" / "Invoice
+  // →" / "Complete →" exactly.
+  <span key="archive" className="inline-flex items-center">Archive → <ArchiveCabinetIcon /></span>,
 ]
 
 interface KanbanBoardShellProps {
@@ -42,17 +46,23 @@ export function KanbanBoardShell({ columns }: KanbanBoardShellProps) {
       <div className="flex flex-1 min-h-0 items-stretch">
         {columns.map((col, i) => {
           const label = TRANSITION_LABELS[i]
+          // Inner columns get a divider on their right; the last
+          // column has no such buffer, so its label hugs the board's
+          // outer edge. Pad it out so the trailing arrow + cabinet
+          // glyph have room to breathe instead of jamming the rim.
+          const isLast = i === columns.length - 1
+          const labelPadding = isLast ? 'pl-1 pr-3' : 'px-1'
           return (
             <Fragment key={i}>
               <div className="flex min-h-0 flex-1 flex-col gap-2">
                 {label ? (
-                  <span className="px-1 text-right text-sm font-semibold uppercase tracking-wider text-zinc-400 whitespace-nowrap">
+                  <span className={`${labelPadding} text-right text-sm font-semibold uppercase tracking-wider text-zinc-400 whitespace-nowrap`}>
                     {label}
                   </span>
                 ) : (
                   <span
                     aria-hidden
-                    className="px-1 text-right text-sm font-semibold uppercase tracking-wider text-transparent whitespace-nowrap select-none"
+                    className={`${labelPadding} text-right text-sm font-semibold uppercase tracking-wider text-transparent whitespace-nowrap select-none`}
                   >
                     &nbsp;
                   </span>

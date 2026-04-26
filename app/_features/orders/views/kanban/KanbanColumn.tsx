@@ -20,14 +20,12 @@ export function KanbanColumn({
   name,
   status,
   expectedTotal,
-  showUnseenIndicator = false,
   selectedId,
   onSelect,
 }: {
   name: string
   status: OrderStatus
   expectedTotal?: number
-  showUnseenIndicator?: boolean
   selectedId: string | null
   onSelect: (id: string) => void
 }) {
@@ -120,7 +118,7 @@ export function KanbanColumn({
     : ''
 
   const headerAlert =
-    showUnseenIndicator && unseenCount > 0 ? (
+    unseenCount > 0 ? (
       <button
         type="button"
         onClick={handleUnseenClick}

@@ -26,13 +26,12 @@ export function KanbanBoard({
   // column, so this board is a thin shell over the per-column views.
   return (
     <KanbanBoardShell
-      columns={KANBAN_COLUMNS.map(({ name, status }, idx) => (
+      columns={KANBAN_COLUMNS.map(({ name, status }) => (
         <KanbanColumn
           key={status}
           name={name}
           status={status}
           expectedTotal={statusCounts?.[status]}
-          showUnseenIndicator={idx === 0}
           selectedId={selectedId}
           onSelect={onSelect}
         />
