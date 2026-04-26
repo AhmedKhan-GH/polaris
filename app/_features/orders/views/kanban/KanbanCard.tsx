@@ -19,11 +19,11 @@ export const KanbanCard = memo(function KanbanCard({
   )
   return (
     <KanbanCardShell isSelected={isSelected} onClick={handleClick}>
-      <div className="flex flex-col leading-tight">
-        <span className="font-mono text-sm font-medium text-zinc-50">
+      <div className="flex min-w-0 flex-col leading-tight">
+        <span className="truncate font-mono text-sm font-medium text-zinc-50">
           {order.orderNumber}
         </span>
-        <span className="text-[11px] text-zinc-400">
+        <span className="truncate text-[11px] text-zinc-400">
           {formatCreatedAt(order.createdAt)}
         </span>
       </div>
