@@ -19,7 +19,7 @@ import { ACTIVE_ORDER_STATUSES } from '../lib/domain/order'
 // Run with: npm run sim:other-user. Ctrl+C to stop.
 
 const INTERVAL_MS = 1_000
-const CREATE_PROBABILITY = 0.3
+const CREATE_PROBABILITY = 0.1
 
 async function insertOne() {
   const [row] = await db.insert(orders).values({}).returning()

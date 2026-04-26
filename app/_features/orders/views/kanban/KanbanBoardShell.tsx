@@ -4,14 +4,33 @@ import { Fragment, type ReactNode } from 'react'
 // that moves cards out of that column into the next one. Index N = label
 // above column N. The Archiving column's outbound move closes the order
 // into the terminal 'archived' state, which is hidden from the kanban
-// (visible in the spreadsheet only); the 'Archive →' label still names
-// the verb even though the destination column isn't drawn here.
-const TRANSITION_LABELS = [
+// (visible in the spreadsheet only); the trailing cabinet icon stands in
+// for that destination column since it isn't drawn here.
+const ArchiveCabinetIcon = () => (
+  <svg
+    aria-hidden
+    viewBox="0 0 24 24"
+    width="14"
+    height="14"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className="shrink-0"
+  >
+    <rect x="2" y="3" width="20" height="5" rx="1" />
+    <path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8" />
+    <path d="M10 12h4" />
+  </svg>
+)
+
+const TRANSITION_LABELS: ReadonlyArray<ReactNode> = [
   'Submit →',
   'Invoice →',
   'Complete →',
-  'Archive →',
-] as const
+  <span key="archive" className="inline-flex items-center gap-1">Archive → <ArchiveCabinetIcon /></span>,
+]
 
 interface KanbanBoardShellProps {
   columns: ReactNode[]
