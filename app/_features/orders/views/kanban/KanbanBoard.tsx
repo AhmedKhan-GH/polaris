@@ -10,12 +10,16 @@ export function KanbanBoard({
   hasNextPage,
   isFetchingNextPage,
   fetchNextPage,
+  selectedId,
+  onSelect,
 }: {
   orders: Order[]
   totalCount: number
   hasNextPage: boolean
   isFetchingNextPage: boolean
   fetchNextPage: () => void
+  selectedId: string | null
+  onSelect: (id: string) => void
 }) {
   const pagination = {
     hasNextPage,
@@ -31,11 +35,34 @@ export function KanbanBoard({
           cards={orders}
           expectedTotal={totalCount}
           showUnseenIndicator
+          selectedId={selectedId}
+          onSelect={onSelect}
           {...pagination}
         />,
-        <KanbanColumn key="reviewing" name="Reviewing" cards={[]} {...pagination} />,
-        <KanbanColumn key="fulfilling" name="Fulfilling" cards={[]} {...pagination} />,
-        <KanbanColumn key="archiving" name="Archiving" cards={[]} {...pagination} />,
+        <KanbanColumn
+          key="reviewing"
+          name="Reviewing"
+          cards={[]}
+          selectedId={selectedId}
+          onSelect={onSelect}
+          {...pagination}
+        />,
+        <KanbanColumn
+          key="fulfilling"
+          name="Fulfilling"
+          cards={[]}
+          selectedId={selectedId}
+          onSelect={onSelect}
+          {...pagination}
+        />,
+        <KanbanColumn
+          key="archiving"
+          name="Archiving"
+          cards={[]}
+          selectedId={selectedId}
+          onSelect={onSelect}
+          {...pagination}
+        />,
       ]}
     />
   )

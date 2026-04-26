@@ -20,6 +20,8 @@ export function KanbanColumn({
   hasNextPage,
   isFetchingNextPage,
   fetchNextPage,
+  selectedId,
+  onSelect,
 }: {
   name: string
   cards: Order[]
@@ -28,6 +30,8 @@ export function KanbanColumn({
   hasNextPage: boolean
   isFetchingNextPage: boolean
   fetchNextPage: () => void
+  selectedId: string | null
+  onSelect: (id: string) => void
 }) {
   const scrollRef = useRef<HTMLDivElement>(null)
 
@@ -122,7 +126,11 @@ export function KanbanColumn({
                   height: vi.size,
                 }}
               >
-                <KanbanCard order={order} />
+                <KanbanCard
+                  order={order}
+                  isSelected={order.id === selectedId}
+                  onSelect={onSelect}
+                />
               </div>
             )
           })}

@@ -44,12 +44,16 @@ export function SpreadsheetView({
   hasNextPage,
   isFetchingNextPage,
   fetchNextPage,
+  selectedId,
+  onSelect,
 }: {
   orders: Order[]
   totalCount: number
   hasNextPage: boolean
   isFetchingNextPage: boolean
   fetchNextPage: () => void
+  selectedId: string | null
+  onSelect: (id: string) => void
 }) {
   const scrollRef = useRef<HTMLDivElement>(null)
 
@@ -150,12 +154,25 @@ export function SpreadsheetView({
           const transitionClass = isAtTop
             ? 'transition-transform duration-200 ease-out motion-reduce:transition-none'
             : ''
+          const isSelected = row.original.id === selectedId
+          const selectionClass = isSelected
+            ? 'bg-blue-500/10 ring-1 ring-inset ring-blue-400/40'
+            : 'hover:bg-zinc-800/50'
           return (
             <div
               key={row.id}
               role="row"
               aria-rowindex={vi.index + 1}
-              className={`absolute left-0 right-0 grid grid-cols-2 border-b border-zinc-800 hover:bg-zinc-800/50 ${transitionClass}`}
+              aria-selected={isSelected}
+              tabIndex={0}
+              onClick={() => onSelect(row.original.id)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  onSelect(row.original.id)
+                }
+              }}
+              className={`absolute left-0 right-0 grid cursor-pointer grid-cols-2 border-b border-zinc-800 ${selectionClass} ${transitionClass}`}
               style={{
                 transform: `translateY(${vi.start}px)`,
                 height: vi.size,

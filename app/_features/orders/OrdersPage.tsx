@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
+import { OrderDetailSidebar } from './OrderDetailSidebar'
 import { OrdersHeader } from './OrdersHeader'
 import { OrdersPageShell } from './OrdersPageShell'
 import { useOrders } from './useOrders'
@@ -19,6 +20,15 @@ export function OrdersPage() {
     fetchNextPage,
   } = useOrders()
   const [view, setView] = useState<View>('kanban')
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+
+  // Keep stable across renders so memoized rows/cards aren't busted.
+  const handleSelect = useCallback((id: string) => setSelectedId(id), [])
+  const handleClose = useCallback(() => setSelectedId(null), [])
+
+  const selectedOrder = selectedId
+    ? orders.find((o) => o.id === selectedId) ?? null
+    : null
 
   const pagination = {
     totalCount,
@@ -42,14 +52,25 @@ export function OrdersPage() {
         className={view === 'kanban' ? 'flex min-h-0 flex-1' : 'hidden'}
         aria-hidden={view !== 'kanban'}
       >
-        <KanbanBoard orders={orders} {...pagination} />
+        <KanbanBoard
+          orders={orders}
+          selectedId={selectedId}
+          onSelect={handleSelect}
+          {...pagination}
+        />
       </div>
       <div
         className={view === 'spreadsheet' ? 'flex min-h-0 flex-1' : 'hidden'}
         aria-hidden={view !== 'spreadsheet'}
       >
-        <SpreadsheetView orders={orders} {...pagination} />
+        <SpreadsheetView
+          orders={orders}
+          selectedId={selectedId}
+          onSelect={handleSelect}
+          {...pagination}
+        />
       </div>
+      <OrderDetailSidebar order={selectedOrder} onClose={handleClose} />
     </OrdersPageShell>
   )
 }

@@ -1,16 +1,24 @@
 'use client'
 
-import { memo } from 'react'
+import { memo, useCallback } from 'react'
 import { formatCreatedAt, type Order } from '@/lib/domain/order'
 import { KanbanCardShell } from './KanbanCardShell'
 
 export const KanbanCard = memo(function KanbanCard({
   order,
+  isSelected,
+  onSelect,
 }: {
   order: Order
+  isSelected: boolean
+  onSelect: (id: string) => void
 }) {
+  const handleClick = useCallback(
+    () => onSelect(order.id),
+    [onSelect, order.id],
+  )
   return (
-    <KanbanCardShell>
+    <KanbanCardShell isSelected={isSelected} onClick={handleClick}>
       <div className="flex flex-col leading-tight">
         <span className="font-mono text-sm font-medium text-zinc-50">
           {order.orderNumber}
