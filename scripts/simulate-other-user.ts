@@ -18,7 +18,7 @@ import { ACTIVE_ORDER_STATUSES } from '../lib/domain/order'
 //
 // Run with: npm run sim:other-user. Ctrl+C to stop.
 
-const INTERVAL_MS = 5_000
+const INTERVAL_MS = 1_000
 const CREATE_PROBABILITY = 0.3
 
 async function insertOne() {
