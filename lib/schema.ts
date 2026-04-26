@@ -6,6 +6,7 @@ import {
   pgEnum,
   pgSequence,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   uuid,
@@ -93,4 +94,19 @@ export const orderStatusHistory = pgTable(
       table.changedAt,
     ),
   ],
+);
+
+// Trigger-maintained counter table: one row per status, holding the
+// live count. Reads are O(1) lookups against eight rows; writes happen
+// inside an AFTER trigger on `orders` so the kanban column counts stay
+// honest without anyone running a GROUP BY scan on every refresh. The
+// table is also part of the supabase_realtime publication so deltas
+// stream straight into the browser instead of being polled.
+export const orderStatusCounts = pgTable(
+  "order_status_counts",
+  {
+    status: orderStatus("status").notNull(),
+    count: bigint("count", { mode: "number" }).notNull().default(0),
+  },
+  (table) => [primaryKey({ columns: [table.status] })],
 );

@@ -1,7 +1,7 @@
 import { and, count, desc, eq, lt, or, sql } from 'drizzle-orm'
 import { db } from '../db'
 import { log } from '../log'
-import { orders, orderStatusHistory } from '../schema'
+import { orders, orderStatusCounts, orderStatusHistory } from '../schema'
 import {
   ORDER_STATUSES,
   toOrder,
@@ -132,20 +132,21 @@ export async function countOrders(): Promise<number> {
 
 export type OrderStatusCounts = Record<OrderStatus, number>
 
-// Single GROUP BY pass returns each present status's row count; missing
-// statuses default to 0. The kanban uses this to size each column's
-// scrollbar to the per-status total instead of just the loaded subset.
+// O(1)-ish lookup against the trigger-maintained order_status_counts
+// table (one row per enum value, ~8 rows total). The trigger on
+// `orders` keeps this table in lockstep with INSERT/UPDATE/DELETE in
+// the same transaction, so the read here is always consistent with
+// committed state without a GROUP BY scan over the orders table.
 export async function countOrdersByStatus(): Promise<OrderStatusCounts> {
   const rows = await db
-    .select({ status: orders.status, value: count() })
-    .from(orders)
-    .groupBy(orders.status)
+    .select({ status: orderStatusCounts.status, count: orderStatusCounts.count })
+    .from(orderStatusCounts)
 
   const result = Object.fromEntries(
     ORDER_STATUSES.map((s) => [s, 0]),
   ) as OrderStatusCounts
   for (const row of rows) {
-    result[row.status] = Number(row.value)
+    result[row.status] = Number(row.count)
   }
   log.debug({ counts: result }, 'countOrdersByStatus')
   return result

@@ -30,7 +30,12 @@ import {
   type OrdersCache,
 } from './cacheHelpers'
 import { getSupabaseClient } from '@/lib/supabase/browser'
-import { safeParseOrder, type Order } from '@/lib/domain/order'
+import {
+  ORDER_STATUSES,
+  safeParseOrder,
+  type Order,
+  type OrderStatus,
+} from '@/lib/domain/order'
 import type {
   OrderStatusCounts,
   OrdersCursor,
@@ -77,10 +82,12 @@ export function useOrders(): UseOrdersResult {
     queryFn: () => countOrdersByStatusAction(),
   })
 
-  // Single channel, single writer. The handler fans each event out to
-  // the global cache (spreadsheet view) AND the per-status cache the
-  // row belongs to (kanban columns), keeping all five in lockstep so
-  // that any consumer reading from any cache sees the same row state.
+  // Single channel, two table subscriptions. Row-shaped events on
+  // `orders` fan out to the global cache (spreadsheet view) AND the
+  // per-status cache the row belongs to (kanban columns); count deltas
+  // on `order_status_counts` (maintained by the trigger added in
+  // 0014_small_nighthawk.sql) stream straight into the column-header
+  // counts cache --- no GROUP BY refetch on every change.
   useEffect(() => {
     const supabase = getSupabaseClient()
     const channel = supabase
@@ -105,13 +112,8 @@ export function useOrders(): UseOrdersResult {
             queryClient.setQueryData<number>(ORDERS_COUNT_QUERY_KEY, (n) =>
               (n ?? 0) + 1,
             )
-            queryClient.setQueryData<OrderStatusCounts>(
-              ORDERS_STATUS_COUNTS_QUERY_KEY,
-              (counts) =>
-                counts
-                  ? { ...counts, [row.status]: (counts[row.status] ?? 0) + 1 }
-                  : counts,
-            )
+            // Status counts arrive separately on the order_status_counts
+            // stream below.
           } else if (payload.eventType === 'UPDATE') {
             const row = safeParseOrder(payload.new, 'update')
             if (!row) return
@@ -140,9 +142,6 @@ export function useOrders(): UseOrdersResult {
                 (old) => insertSortedIfInWindow(old, row),
               )
             }
-            void queryClient.invalidateQueries({
-              queryKey: ORDERS_STATUS_COUNTS_QUERY_KEY,
-            })
           } else if (payload.eventType === 'DELETE') {
             const oldId = (payload.old as { id?: string }).id
             if (!oldId) return
@@ -159,10 +158,32 @@ export function useOrders(): UseOrdersResult {
             queryClient.setQueryData<number>(ORDERS_COUNT_QUERY_KEY, (n) =>
               Math.max(0, (n ?? 0) - 1),
             )
-            void queryClient.invalidateQueries({
-              queryKey: ORDERS_STATUS_COUNTS_QUERY_KEY,
-            })
           }
+        },
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'order_status_counts' },
+        (payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => {
+          // The trigger emits one UPDATE per status whose count moved.
+          // INSERT events show up only on the very first migration seed.
+          // Either way we just take the canonical (status, count) pair
+          // from payload.new and overwrite that single slot in the
+          // status-counts cache --- no refetch, no race against the
+          // optimistic shifts from useOrderActions.
+          if (payload.eventType !== 'UPDATE' && payload.eventType !== 'INSERT') {
+            return
+          }
+          const row = payload.new as { status?: string; count?: number | string }
+          if (!row.status || row.count === undefined || row.count === null) return
+          const status = row.status as OrderStatus
+          if (!ORDER_STATUSES.includes(status)) return
+          const next = Number(row.count)
+          if (!Number.isFinite(next)) return
+          queryClient.setQueryData<OrderStatusCounts>(
+            ORDERS_STATUS_COUNTS_QUERY_KEY,
+            (counts) => (counts ? { ...counts, [status]: next } : counts),
+          )
         },
       )
       .subscribe()
