@@ -9,7 +9,7 @@ const KANBAN_COLUMNS: ReadonlyArray<{ name: string; status: OrderStatus }> = [
   { name: 'Drafted',   status: 'drafted' },
   { name: 'Submitted', status: 'submitted' },
   { name: 'Invoiced',  status: 'invoiced' },
-  { name: 'Completed', status: 'completed' },
+  { name: 'Closed',    status: 'closed' },
 ]
 
 export function KanbanBoard({

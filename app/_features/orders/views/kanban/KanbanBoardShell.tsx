@@ -2,7 +2,7 @@ import { Fragment, type ReactNode } from 'react'
 
 // Transition labels sit at the top of each column, naming the action
 // that moves cards out of that column into the next one. Index N = label
-// above column N. The Completed column's outbound move archives the order
+// above column N. The Closed column's outbound move archives the order
 // into the terminal 'archived' state, which is hidden from the kanban
 // (visible in the spreadsheet only); the trailing cabinet icon stands in
 // for that destination column since it isn't drawn here.
@@ -28,7 +28,7 @@ const ArchiveCabinetIcon = () => (
 const TRANSITION_LABELS: ReadonlyArray<ReactNode> = [
   'Submit →',
   'Invoice →',
-  'Complete →',
+  'Close →',
   // "Archive →" keeps its natural in-text space around the arrow to
   // match the other column labels; the cabinet glyph carries its own
   // ml-1 (4px) so the spacing between arrow and icon doesn't depend on

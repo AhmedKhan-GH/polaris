@@ -321,7 +321,7 @@ describe('orderRepository (integration)', () => {
       })
       await repo.transitionOrderStatus({
         orderId: order.id,
-        toStatus: 'completed',
+        toStatus: 'closed',
         changedBy: ACTOR,
       })
       await repo.transitionOrderStatus({
@@ -337,12 +337,12 @@ describe('orderRepository (integration)', () => {
       expect(rows).toEqual([
         { from_status: 'drafted', to_status: 'submitted' },
         { from_status: 'submitted', to_status: 'invoiced' },
-        { from_status: 'invoiced', to_status: 'completed' },
-        { from_status: 'completed', to_status: 'archived' },
+        { from_status: 'invoiced', to_status: 'closed' },
+        { from_status: 'closed', to_status: 'archived' },
       ])
     })
 
-    test('rejects skipping the completed holding step (invoiced -> archived)', async () => {
+    test('rejects skipping the closed holding step (invoiced -> archived)', async () => {
       const order = await repo.insertOrder()
       await repo.transitionOrderStatus({
         orderId: order.id,
@@ -471,7 +471,7 @@ describe('orderRepository (integration)', () => {
             orderId: source.id, toStatus: 'invoiced', changedBy: ACTOR,
           })
           await repo.transitionOrderStatus({
-            orderId: source.id, toStatus: 'completed', changedBy: ACTOR,
+            orderId: source.id, toStatus: 'closed', changedBy: ACTOR,
           })
           await repo.transitionOrderStatus({
             orderId: source.id, toStatus: 'archived', changedBy: ACTOR,

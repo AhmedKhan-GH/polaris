@@ -19,8 +19,8 @@ const ACTION_DESCRIPTIONS: Record<OrderStatus, string> = {
   drafted:   '',
   submitted: 'This submits the order to administrators for final review and approval before invoicing.',
   invoiced:  'This invoices the order to accounting and operational staff for billing and fulfillment.',
-  completed: 'This marks the order as completed, files it with administrators for records processing, and queues it for archiving.',
-  archived:  'This archives the completed order and removes it from the active pipeline.',
+  closed:    'This marks the order as closed, files it with administrators for records processing, and queues it for archiving.',
+  archived:  'This archives the closed order and removes it from the active pipeline.',
   discarded: 'Discarding is for users to abandon the drafting of an order.',
   rejected:  'Rejection is for admins to disregard the submission of an order.',
   voided:    'Voiding is for the accountable cancellation of an active invoice.',
@@ -40,11 +40,11 @@ const ACTIONS_BY_STATUS: Record<OrderStatus, ActionConfig[]> = {
     { label: 'Reject',   toStatus: 'rejected',  tone: 'danger'  },
   ],
   invoiced: [
-    { label: 'Complete', toStatus: 'completed', tone: 'primary' },
-    { label: 'Void',     toStatus: 'voided',    tone: 'danger'  },
+    { label: 'Close',    toStatus: 'closed',   tone: 'primary' },
+    { label: 'Void',     toStatus: 'voided',   tone: 'danger'  },
   ],
-  completed: [
-    { label: 'Archive',  toStatus: 'archived',  tone: 'primary' },
+  closed: [
+    { label: 'Archive',  toStatus: 'archived', tone: 'primary' },
   ],
   archived:  [],
   discarded: [],

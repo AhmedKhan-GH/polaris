@@ -31,7 +31,7 @@ const KANBAN_STATUSES: ReadonlyArray<OrderStatus> = [
   'drafted',
   'submitted',
   'invoiced',
-  'completed',
+  'closed',
 ]
 
 const FALLBACK = (
@@ -44,7 +44,7 @@ const FALLBACK = (
         <KanbanColumnShell key="drafted"   loading name="Drafted"   count="—" />,
         <KanbanColumnShell key="submitted" loading name="Submitted" count="—" />,
         <KanbanColumnShell key="invoiced"  loading name="Invoiced"  count="—" />,
-        <KanbanColumnShell key="completed" loading name="Completed" count="—" />,
+        <KanbanColumnShell key="closed"    loading name="Closed"    count="—" />,
       ]}
     />
   </OrdersPageShell>

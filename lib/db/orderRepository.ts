@@ -12,13 +12,13 @@ import {
 export type OrdersCursor = { createdAt: string; id: string }
 
 // Forward-only graph. Mirrors enforce_forward_status as last updated in
-// drizzle/0015_rename_active_statuses.sql. Keep the two in lockstep
+// drizzle/0016_rename_completed_to_closed.sql. Keep the two in lockstep
 // --- if you change the graph, change both.
 export const VALID_TRANSITIONS: Record<OrderStatus, readonly OrderStatus[]> = {
   drafted:  ['submitted', 'discarded'],
   submitted: ['invoiced',  'rejected'],
-  invoiced:  ['completed', 'voided'],
-  completed: ['archived'],
+  invoiced:  ['closed',    'voided'],
+  closed:    ['archived'],
   archived:  [],
   discarded: [],
   rejected:  [],
@@ -84,7 +84,7 @@ export async function findOrdersPage(
 
 // Same cursor-ordered scan as findOrdersPage but filtered to a single
 // status. Each kanban column owns its own cursor through this so a
-// sparse status (Archiving) doesn't have to wait for the global newest-
+// sparse status (Closed) doesn't have to wait for the global newest-
 // first stream to walk past every fresher draft.
 export async function findOrdersPageByStatus(
   status: OrderStatus,
