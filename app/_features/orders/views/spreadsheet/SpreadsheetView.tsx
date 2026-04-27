@@ -1,7 +1,12 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { flushSync } from 'react-dom'
+import { Calendar as ShadCalendar } from '@/components/ui/calendar'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import {
   createColumnHelper,
@@ -441,68 +446,40 @@ function SpreadsheetRowShell({
   )
 }
 
-// Internal 'yyyy-mm-dd' state is the same shape as the displayed label
-// (military / ISO format) — keep it as-is so empty 'yyyy-mm-dd'
-// placeholder and filled '2026-04-19' value occupy identical 10-char
-// monospace slots.
-function formatDateDisplay(iso: string): string {
-  return iso
-}
-
-// Today's date in 'yyyy-mm-dd' (local) — used as a click-to-fill default
-// for empty date inputs so a user who just wants "today onward" can
-// engage the filter in a single click.
-function todayLocal(): string {
-  const d = new Date()
-  const y = d.getFullYear()
-  const m = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-  return `${y}-${m}-${day}`
-}
-
-// Current local time in 'hh:mm' — click-to-fill default for empty time
-// inputs.
-function nowLocal(): string {
-  const d = new Date()
-  const h = String(d.getHours()).padStart(2, '0')
-  const m = String(d.getMinutes()).padStart(2, '0')
-  return `${h}:${m}`
-}
-
-// Combine a date string ('yyyy-mm-dd') and a time string ('hh:mm', or
-// '' / malformed → fallback to start/end of day) into a millisecond
-// timestamp. The hour digits are padded so half-typed values like '9:30'
-// still parse cleanly. `kind` selects the inclusive boundary: 'start'
-// uses :00 seconds, 'end' uses :59.999 so an order at any second of the
-// final minute still passes.
+// Combine a date string ('yyyy-mm-dd') and a time string ('HH:MM' or
+// 'HH:MM:SS', or '' / malformed → fallback to start/end of day) into a
+// millisecond timestamp. Hours pad so half-typed '9:30' still parses;
+// seconds are optional. `kind` selects the inclusive boundary: 'start'
+// fills missing seconds with :00.000, 'end' fills with :59.999 so an
+// order anywhere in the final minute still passes.
 function boundToMs(
   date: string,
   time: string,
   kind: 'start' | 'end',
 ): number | null {
   if (!date) return null
-  const match = time.match(/^(\d{1,2}):(\d{2})$/)
+  const match = time.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/)
   let suffix: string
   if (match) {
     const h = match[1].padStart(2, '0')
     const m = match[2]
-    suffix = kind === 'end' ? `${h}:${m}:59.999` : `${h}:${m}:00`
+    const s = match[3]
+    if (s !== undefined) {
+      suffix = kind === 'end' ? `${h}:${m}:${s}.999` : `${h}:${m}:${s}.000`
+    } else {
+      suffix = kind === 'end' ? `${h}:${m}:59.999` : `${h}:${m}:00.000`
+    }
   } else {
-    suffix = kind === 'end' ? '23:59:59.999' : '00:00:00'
+    suffix = kind === 'end' ? '23:59:59.999' : '00:00:00.000'
   }
   const ms = new Date(`${date}T${suffix}`).getTime()
   return Number.isFinite(ms) ? ms : null
 }
 
-// Custom-rendered date field. The visible UI is a plain button that owns
-// the typography, width, and placeholder rendering; the actual <input
-// type="date"> sits behind it (opacity 0, pointer-events none) purely as
-// a hook for the browser's native calendar picker. We open the picker
-// via showPicker() on click, with a flushSync so the state-update for
-// the click-to-fill default lands before the picker reads `value`. This
-// makes the empty and filled widths byte-identical (both render through
-// the same monospace span) and removes every cross-browser "mm/dd/yyyy"
-// vs "01/15/2024" sizing surprise.
+// Date field built on shadcn/ui's Calendar (popover + react-day-picker).
+// Trigger button shows the ISO value or 'YYYY-MM-DD' placeholder; the
+// shadcn Calendar component owns all of the visual styling so it stays
+// in sync with the rest of the design system without bespoke CSS.
 function DateField({
   value,
   onChange,
@@ -516,58 +493,78 @@ function DateField({
   min?: string
   max?: string
 }) {
-  const hiddenRef = useRef<HTMLInputElement>(null)
-
-  function handleClick() {
-    if (!value) {
-      flushSync(() => onChange(todayLocal()))
-    }
-    try {
-      hiddenRef.current?.showPicker()
-    } catch {
-      // showPicker requires a user gesture and a non-disabled input —
-      // both true here. The catch is just defensive against older
-      // engines where showPicker isn't implemented.
-      hiddenRef.current?.focus()
-      hiddenRef.current?.click()
-    }
-  }
+  const [open, setOpen] = useState(false)
+  const empty = value === ''
+  const selected = isoToLocalDate(value)
+  const minDate = isoToLocalDate(min)
+  const maxDate = isoToLocalDate(max)
 
   return (
-    <span className="relative inline-block">
-      <button
-        type="button"
-        onClick={handleClick}
-        aria-label={ariaLabel}
-        className="w-[100px] rounded px-1 text-left font-mono text-sm hover:bg-zinc-800/50 focus:outline-none focus:ring-1 focus:ring-blue-400/40"
-      >
-        <span className={value ? 'text-zinc-200' : 'text-zinc-600'}>
-          {value ? formatDateDisplay(value) : 'yyyy-mm-dd'}
-        </span>
-      </button>
-      <input
-        ref={hiddenRef}
-        type="date"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        min={min}
-        max={max}
-        tabIndex={-1}
-        aria-hidden
-        autoComplete="off"
-        className="pointer-events-none absolute inset-0 h-full w-full opacity-0"
-      />
-    </span>
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          aria-label={ariaLabel}
+          className="flex h-7 items-center gap-1.5 rounded px-1 font-mono text-sm hover:bg-zinc-800/50 focus:outline-none focus:ring-1 focus:ring-blue-400/40"
+        >
+          <span className={empty ? 'text-zinc-600' : 'text-zinc-200'}>
+            {empty ? 'YYYY-MM-DD' : value}
+          </span>
+          <svg
+            aria-hidden
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="text-zinc-500"
+          >
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+            <line x1="16" y1="2" x2="16" y2="6" />
+            <line x1="8" y1="2" x2="8" y2="6" />
+            <line x1="3" y1="10" x2="21" y2="10" />
+          </svg>
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0" align="start">
+        <ShadCalendar
+          mode="single"
+          selected={selected}
+          defaultMonth={selected ?? minDate ?? maxDate ?? new Date()}
+          onSelect={(d) => {
+            if (d) onChange(localDateToIso(d))
+            setOpen(false)
+          }}
+          disabled={[
+            ...(minDate ? [{ before: minDate }] : []),
+            ...(maxDate ? [{ after: maxDate }] : []),
+          ]}
+        />
+      </PopoverContent>
+    </Popover>
   )
 }
 
-// Custom-rendered time field paralleling DateField. Default state is a
-// button rendering either the value or '--:--' through the same
-// monospace span — empty and filled occupy the same horizontal slot
-// down to the pixel. On click the button swaps to a text input prefilled
-// with the current time (or the existing value) and the contents are
-// auto-selected so a fresh keystroke replaces them. Blur or Enter exits
-// edit mode and restores the button display.
+function isoToLocalDate(iso: string | undefined): Date | undefined {
+  if (!iso) return undefined
+  const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+  if (!m) return undefined
+  return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]))
+}
+
+function localDateToIso(d: Date): string {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
+// Plain text input for time. Native focus/blur means clicking anywhere
+// else on the page blurs naturally — no edit-mode toggle, no document
+// listeners. Empty state shows '--:--' as a placeholder.
 function TimeField({
   value,
   onChange,
@@ -577,79 +574,24 @@ function TimeField({
   onChange: (next: string) => void
   ariaLabel: string
 }) {
-  const [editing, setEditing] = useState(false)
-  const inputRef = useRef<HTMLInputElement>(null)
-
-  function startEditing() {
-    if (!value) {
-      flushSync(() => onChange(nowLocal()))
-    }
-    setEditing(true)
-  }
-
-  // Auto-select once the input mounts so the user can immediately
-  // overtype without manually clearing.
-  useEffect(() => {
-    if (editing) inputRef.current?.select()
-  }, [editing])
-
-  // Native blur only fires when focus actually transfers away. A click on
-  // a non-focusable element (e.g. plain text in the filter bar or a
-  // status badge) does not transfer focus, so the input would otherwise
-  // stay in edit mode indefinitely. Bind a document-level listener while
-  // editing to force-exit on outside mousedown / Escape.
-  useEffect(() => {
-    if (!editing) return
-    function onMouseDown(e: MouseEvent) {
-      if (!inputRef.current?.contains(e.target as Node)) {
-        setEditing(false)
-      }
-    }
-    function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') setEditing(false)
-    }
-    document.addEventListener('mousedown', onMouseDown)
-    document.addEventListener('keydown', onKey)
-    return () => {
-      document.removeEventListener('mousedown', onMouseDown)
-      document.removeEventListener('keydown', onKey)
-    }
-  }, [editing])
-
-  if (editing) {
-    return (
-      <input
-        ref={inputRef}
-        type="text"
-        inputMode="numeric"
-        pattern="\d{1,2}:\d{2}"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        onBlur={() => setEditing(false)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === 'Escape') {
-            e.preventDefault()
-            ;(e.target as HTMLInputElement).blur()
-          }
-        }}
-        aria-label={ariaLabel}
-        autoComplete="off"
-        className="w-[55px] rounded px-1 text-left font-mono text-sm text-zinc-200 outline-none focus:ring-1 focus:ring-blue-400/40"
-      />
-    )
-  }
-
   return (
-    <button
-      type="button"
-      onClick={startEditing}
+    <input
+      type="text"
+      inputMode="numeric"
+      pattern="\d{1,2}:\d{2}(:\d{2})?"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === 'Escape') {
+          e.preventDefault()
+          ;(e.target as HTMLInputElement).blur()
+        }
+      }}
+      placeholder="HH:MM:SS"
       aria-label={ariaLabel}
-      className="w-[55px] rounded px-1 text-left font-mono text-sm hover:bg-zinc-800/50 focus:outline-none focus:ring-1 focus:ring-blue-400/40"
-    >
-      <span className={value ? 'text-zinc-200' : 'text-zinc-600'}>
-        {value || '--:--'}
-      </span>
-    </button>
+      autoComplete="off"
+      className="w-[75px] rounded bg-transparent px-1 font-mono text-sm text-zinc-200 outline-none placeholder:text-zinc-600 hover:bg-zinc-800/50 focus:ring-1 focus:ring-blue-400/40"
+    />
   )
 }
 
