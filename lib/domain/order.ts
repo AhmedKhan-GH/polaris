@@ -114,19 +114,21 @@ export function dedupeById<T extends { id: string }>(list: readonly T[]): T[] {
 // Locale + options pinned so server-rendered output matches the client's
 // first paint --- otherwise hydration mismatches on the comma/space and
 // 12h vs 24h based on the user's system. Shared between the kanban
-// card and the spreadsheet "Created" column.
+// card and the spreadsheet "Created" column. Date is composed manually
+// in the local timezone as ISO 'yyyy-mm-dd' (military / sortable form),
+// time uses hourCycle 'h23' so midnight reads as '00' rather than '24'
+// on the few locales that confuse hour12:false with hourCycle h24.
 export function formatCreatedAt(date: Date): string {
   const d = new Date(date)
-  const datePart = d.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  })
+  const yyyy = d.getFullYear()
+  const mm = String(d.getMonth() + 1).padStart(2, '0')
+  const dd = String(d.getDate()).padStart(2, '0')
+  const datePart = `${yyyy}-${mm}-${dd}`
   const timePart = d.toLocaleTimeString('en-US', {
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit',
-    hour12: false,
+    hourCycle: 'h23',
   })
   return `${datePart} · ${timePart}`
 }

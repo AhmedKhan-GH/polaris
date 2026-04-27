@@ -1,4 +1,4 @@
-DROP INDEX "orders_active_idx";--> statement-breakpoint
+DROP INDEX IF EXISTS "orders_active_idx";--> statement-breakpoint
 CREATE INDEX "orders_active_idx" ON "orders" USING btree ("created_at" DESC NULLS LAST,"id" DESC NULLS LAST) WHERE status IN ('draft', 'submitted', 'invoiced', 'archiving');--> statement-breakpoint
 CREATE OR REPLACE FUNCTION enforce_forward_status() RETURNS trigger
 LANGUAGE plpgsql AS $$
@@ -20,4 +20,8 @@ BEGIN
 
   RETURN NEW;
 END;
-$$;
+$$;--> statement-breakpoint
+DROP TRIGGER IF EXISTS "orders_forward_status" ON "orders";--> statement-breakpoint
+CREATE TRIGGER orders_forward_status
+  BEFORE UPDATE OF status ON "orders"
+  FOR EACH ROW EXECUTE FUNCTION enforce_forward_status();

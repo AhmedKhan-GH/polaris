@@ -222,34 +222,33 @@ describe('formatCreatedAt', () => {
     vi.restoreAllMocks()
   })
 
-  test('uses pinned locale options and joins the date and time parts', () => {
-    const dateSpy = vi
-      .spyOn(Date.prototype, 'toLocaleDateString')
-      .mockReturnValue('Apr 19, 2026')
+  test('joins ISO yyyy-mm-dd date with 24-hour time', () => {
+    // Pin only the time formatter; date is composed manually from the
+    // local-time getters so it doesn't depend on locale.
     const timeSpy = vi
       .spyOn(Date.prototype, 'toLocaleTimeString')
       .mockReturnValue('12:00:00')
+    vi.spyOn(Date.prototype, 'getFullYear').mockReturnValue(2026)
+    vi.spyOn(Date.prototype, 'getMonth').mockReturnValue(3) // April
+    vi.spyOn(Date.prototype, 'getDate').mockReturnValue(19)
 
     expect(formatCreatedAt(new Date('2026-04-19T12:00:00Z'))).toBe(
-      'Apr 19, 2026 · 12:00:00',
+      '2026-04-19 · 12:00:00',
     )
 
-    expect(dateSpy).toHaveBeenCalledWith('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    })
     expect(timeSpy).toHaveBeenCalledWith('en-US', {
       hour: '2-digit',
       minute: '2-digit',
       second: '2-digit',
-      hour12: false,
+      hourCycle: 'h23',
     })
   })
 
   test('does not mutate the input Date', () => {
-    vi.spyOn(Date.prototype, 'toLocaleDateString').mockReturnValue('Apr 19, 2026')
     vi.spyOn(Date.prototype, 'toLocaleTimeString').mockReturnValue('12:00:00')
+    vi.spyOn(Date.prototype, 'getFullYear').mockReturnValue(2026)
+    vi.spyOn(Date.prototype, 'getMonth').mockReturnValue(3)
+    vi.spyOn(Date.prototype, 'getDate').mockReturnValue(19)
 
     const input = new Date('2026-04-19T12:00:00Z')
     const before = input.getTime()

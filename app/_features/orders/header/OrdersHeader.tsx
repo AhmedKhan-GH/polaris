@@ -25,7 +25,7 @@ export function OrdersHeader({
           disabled={isCreating}
           className="shrink-0 whitespace-nowrap rounded-md bg-white px-3 py-1.5 text-sm font-medium text-zinc-900 transition-opacity hover:bg-zinc-200 disabled:cursor-wait disabled:opacity-40"
         >
-          New Order
+          Draft
         </button>
       }
       secondaryAction={

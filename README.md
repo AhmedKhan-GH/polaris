@@ -6,7 +6,7 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 npm install
 
 # Start Supabase locally (requires Docker)
-npx supabase start
+npm run dev:up
 
 # Add the printed DB URL to .env.local:
 # DATABASE_URL=postgresql://postgres:postgres@localhost:54322/postgres
@@ -19,11 +19,20 @@ npm run dev
 ## Starting up again
 
 ```bash
-npx supabase start   # if not already running
+npm run dev:up       # if not already running
 npm run dev          # runs db:migrate then starts the dev server
+
+# Or start both in one shot:
+npm run dev:all
 ```
 
 Open [http://localhost:3000](http://localhost:3000) to see the result.
+
+When you're done:
+
+```bash
+npm run dev:down
+```
 
 ## Database
 
@@ -35,6 +44,15 @@ npm run db:migrate   # apply migrations
 npm run db:studio    # open Drizzle Studio
 npm run db:seed      # seed the database
 ```
+
+## Testing
+
+```bash
+npm test                     # unit tests
+npm run test:integration     # explicit Testcontainers-backed integration tests
+```
+
+`dev:up` and `dev:down` only manage the local Supabase stack. Integration tests manage their own Testcontainers lifecycle.
 
 ## Learn More
 
