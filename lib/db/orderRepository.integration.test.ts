@@ -53,7 +53,7 @@ describe('orderRepository (integration)', () => {
   ) {
     await pool.query(
       'INSERT INTO orders (id, order_number, status, created_at) VALUES ($1, $2, $3, $4)',
-      [order.id, order.orderNumber, order.status ?? 'draft', order.createdAt],
+      [order.id, order.orderNumber, order.status ?? 'drafted', order.createdAt],
     )
   }
 
@@ -119,12 +119,12 @@ describe('orderRepository (integration)', () => {
     }
   })
 
-  test('insertOrder defaults status to draft with a fresh statusUpdatedAt', async () => {
+  test('insertOrder defaults status to drafted with a fresh statusUpdatedAt', async () => {
     const before = Date.now()
     const order = await repo.insertOrder()
     const after = Date.now()
 
-    expect(order.status).toBe('draft')
+    expect(order.status).toBe('drafted')
     expect(order.duplicatedFromOrderId).toBeNull()
     expect(order.statusUpdatedAt).toBeInstanceOf(Date)
     expect(order.statusUpdatedAt.getTime()).toBeGreaterThanOrEqual(before - 1_000)
@@ -211,7 +211,7 @@ describe('orderRepository (integration)', () => {
   describe('transitionOrderStatus', () => {
     const ACTOR = '11111111-1111-1111-1111-111111111111'
 
-    test('moves draft -> submitted, updates statusUpdatedAt, writes history', async () => {
+    test('moves drafted -> submitted, updates statusUpdatedAt, writes history', async () => {
       const order = await repo.insertOrder()
       const before = Date.now()
       const updated = await repo.transitionOrderStatus({
@@ -230,7 +230,7 @@ describe('orderRepository (integration)', () => {
       )
       expect(rows).toEqual([
         {
-          from_status: 'draft',
+          from_status: 'drafted',
           to_status: 'submitted',
           changed_by: ACTOR,
           reason: 'ready for fulfillment',
@@ -249,13 +249,13 @@ describe('orderRepository (integration)', () => {
       await expect(
         repo.transitionOrderStatus({
           orderId: order.id,
-          toStatus: 'draft',
+          toStatus: 'drafted',
           changedBy: ACTOR,
         }),
       ).rejects.toBeInstanceOf(repo.InvalidTransitionError)
     })
 
-    test('rejects a cross-branch transition (draft -> invoiced)', async () => {
+    test('rejects a cross-branch transition (drafted -> invoiced)', async () => {
       const order = await repo.insertOrder()
       await expect(
         repo.transitionOrderStatus({
@@ -321,7 +321,7 @@ describe('orderRepository (integration)', () => {
       })
       await repo.transitionOrderStatus({
         orderId: order.id,
-        toStatus: 'archiving',
+        toStatus: 'completed',
         changedBy: ACTOR,
       })
       await repo.transitionOrderStatus({
@@ -335,14 +335,14 @@ describe('orderRepository (integration)', () => {
         [order.id],
       )
       expect(rows).toEqual([
-        { from_status: 'draft', to_status: 'submitted' },
+        { from_status: 'drafted', to_status: 'submitted' },
         { from_status: 'submitted', to_status: 'invoiced' },
-        { from_status: 'invoiced', to_status: 'archiving' },
-        { from_status: 'archiving', to_status: 'archived' },
+        { from_status: 'invoiced', to_status: 'completed' },
+        { from_status: 'completed', to_status: 'archived' },
       ])
     })
 
-    test('rejects skipping the archiving holding step (invoiced -> archived)', async () => {
+    test('rejects skipping the completed holding step (invoiced -> archived)', async () => {
       const order = await repo.insertOrder()
       await repo.transitionOrderStatus({
         orderId: order.id,
@@ -413,7 +413,7 @@ describe('orderRepository (integration)', () => {
 
       expect(copy.id).not.toBe(source.id)
       expect(copy.orderNumber).toBe(source.orderNumber + 1)
-      expect(copy.status).toBe('draft')
+      expect(copy.status).toBe('drafted')
       expect(copy.duplicatedFromOrderId).toBe(source.id)
     })
 
@@ -471,7 +471,7 @@ describe('orderRepository (integration)', () => {
             orderId: source.id, toStatus: 'invoiced', changedBy: ACTOR,
           })
           await repo.transitionOrderStatus({
-            orderId: source.id, toStatus: 'archiving', changedBy: ACTOR,
+            orderId: source.id, toStatus: 'completed', changedBy: ACTOR,
           })
           await repo.transitionOrderStatus({
             orderId: source.id, toStatus: 'archived', changedBy: ACTOR,
@@ -482,7 +482,7 @@ describe('orderRepository (integration)', () => {
           sourceOrderId: source.id,
           changedBy: ACTOR,
         })
-        expect(copy.status).toBe('draft')
+        expect(copy.status).toBe('drafted')
         expect(copy.duplicatedFromOrderId).toBe(source.id)
       }
     })
@@ -501,7 +501,7 @@ describe('orderRepository (integration)', () => {
       expect(rows).toEqual([
         {
           from_status: null,
-          to_status: 'draft',
+          to_status: 'drafted',
           reason: `Duplicated from order #${source.orderNumber}`,
         },
       ])

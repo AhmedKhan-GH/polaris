@@ -12,13 +12,13 @@ import {
 export type OrdersCursor = { createdAt: string; id: string }
 
 // Forward-only graph. Mirrors enforce_forward_status as last updated in
-// drizzle/0013_rename_cancelled_to_rejected.sql. Keep the two in lockstep
+// drizzle/0015_rename_active_statuses.sql. Keep the two in lockstep
 // --- if you change the graph, change both.
 export const VALID_TRANSITIONS: Record<OrderStatus, readonly OrderStatus[]> = {
-  draft:     ['submitted', 'discarded'],
+  drafted:  ['submitted', 'discarded'],
   submitted: ['invoiced',  'rejected'],
-  invoiced:  ['archiving', 'voided'],
-  archiving: ['archived'],
+  invoiced:  ['completed', 'voided'],
+  completed: ['archived'],
   archived:  [],
   discarded: [],
   rejected:  [],
@@ -230,7 +230,7 @@ export async function duplicateOrder(args: {
     await tx.insert(orderStatusHistory).values({
       orderId: created.id,
       fromStatus: null,
-      toStatus: 'draft',
+      toStatus: 'drafted',
       changedBy,
       reason: `Duplicated from order #${source.orderNumber}`,
     })

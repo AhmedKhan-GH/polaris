@@ -13,7 +13,7 @@ describe('toOrder', () => {
   const baseRow = {
     id: '7c16d5b1-6f83-45a2-9a9d-1f0dc1f1a2e4',
     orderNumber: 1_000_000,
-    status: 'draft' as const,
+    status: 'drafted' as const,
     statusUpdatedAt: new Date('2026-04-19T12:00:00Z'),
     duplicatedFromOrderId: null,
     createdAt: new Date('2026-04-19T12:00:00Z'),
@@ -42,7 +42,7 @@ describe('parseOrderRow', () => {
   const validRow = {
     id: '7c16d5b1-6f83-45a2-9a9d-1f0dc1f1a2e4',
     order_number: '1000001',
-    status: 'draft',
+    status: 'drafted',
     status_updated_at: '2026-04-19T12:00:00Z',
     duplicated_from_order_id: null,
     created_at: '2026-04-19T12:00:00Z',
@@ -52,7 +52,7 @@ describe('parseOrderRow', () => {
     expect(parseOrderRow(validRow)).toEqual({
       id: validRow.id,
       orderNumber: 1_000_001,
-      status: 'draft',
+      status: 'drafted',
       statusUpdatedAt: new Date('2026-04-19T12:00:00Z'),
       duplicatedFromOrderId: null,
       createdAt: new Date('2026-04-19T12:00:00Z'),
@@ -107,7 +107,7 @@ describe('safeParseOrder', () => {
         {
           id: '7c16d5b1-6f83-45a2-9a9d-1f0dc1f1a2e4',
           order_number: '1000001',
-          status: 'draft',
+          status: 'drafted',
           status_updated_at: '2026-04-19T12:00:00Z',
           duplicated_from_order_id: null,
           created_at: '2026-04-19T12:00:00Z',
@@ -117,7 +117,7 @@ describe('safeParseOrder', () => {
     ).toEqual({
       id: '7c16d5b1-6f83-45a2-9a9d-1f0dc1f1a2e4',
       orderNumber: 1_000_001,
-      status: 'draft',
+      status: 'drafted',
       statusUpdatedAt: new Date('2026-04-19T12:00:00Z'),
       duplicatedFromOrderId: null,
       createdAt: new Date('2026-04-19T12:00:00Z'),

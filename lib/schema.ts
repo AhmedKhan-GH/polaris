@@ -15,17 +15,17 @@ import {
 // Active states are the operational pipeline; the three terminal sinks
 // (discarded, rejected, voided) are forward-only exits enforced by the
 // orders_forward_status trigger. Reverts happen by duplicating into a
-// new draft, never by walking back. 'archiving' is a holding step
+// new draft, never by walking back. 'completed' is a holding step
 // between invoiced and the terminal 'archived' --- post-fulfillment but
 // not yet fully closed out. 'discarded' is a draft thrown away by its
 // author (soft delete kept for audit); a true 'deleted' admin operation
 // would be a separate, harder action layered on top later. 'rejected'
 // is a submitted order that won't be fulfilled.
 export const orderStatus = pgEnum("order_status", [
-  "draft",
+  "drafted",
   "submitted",
   "invoiced",
-  "archiving",
+  "completed",
   "archived",
   "discarded",
   "rejected",
@@ -44,7 +44,7 @@ export const orders = pgTable(
       .notNull()
       .unique()
       .default(sql`nextval('order_number_seq')`),
-    status: orderStatus("status").notNull().default("draft"),
+    status: orderStatus("status").notNull().default("drafted"),
     statusUpdatedAt: timestamp("status_updated_at").notNull().defaultNow(),
     duplicatedFromOrderId: uuid("duplicated_from_order_id"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -59,13 +59,13 @@ export const orders = pgTable(
       table.id.desc(),
     ),
     // Operational view: only active rows, kept compact regardless of
-    // how big the terminal-state archive grows. 'archiving' is the
+    // how big the terminal-state archive grows. 'completed' is the
     // post-fulfillment holding step and counts as active until it
     // graduates to the terminal 'archived'.
     index("orders_active_idx")
       .on(table.createdAt.desc(), table.id.desc())
       .where(
-        sql`status IN ('draft', 'submitted', 'invoiced', 'archiving')`,
+        sql`status IN ('drafted', 'submitted', 'invoiced', 'completed')`,
       ),
     foreignKey({
       columns: [table.duplicatedFromOrderId],

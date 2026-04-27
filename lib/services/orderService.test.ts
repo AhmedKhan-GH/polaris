@@ -27,7 +27,7 @@ describe('createOrder', () => {
     const order: Order = {
       id: '7c16d5b1-6f83-45a2-9a9d-1f0dc1f1a2e4',
       orderNumber: 1_000_000,
-      status: 'draft',
+      status: 'drafted',
       statusUpdatedAt: new Date('2026-04-19T12:00:00Z'),
       duplicatedFromOrderId: null,
       createdAt: new Date('2026-04-19T12:00:00Z'),

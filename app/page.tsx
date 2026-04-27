@@ -28,10 +28,10 @@ import { KanbanColumnShell } from './_features/orders/views/kanban/KanbanColumnS
 // spreadsheet only). Each gets its own prefetch so columns paint with
 // real cards on first load instead of waiting for realtime to fill in.
 const KANBAN_STATUSES: ReadonlyArray<OrderStatus> = [
-  'draft',
+  'drafted',
   'submitted',
   'invoiced',
-  'archiving',
+  'completed',
 ]
 
 const FALLBACK = (
@@ -41,10 +41,10 @@ const FALLBACK = (
   >
     <KanbanBoardShell
       columns={[
-        <KanbanColumnShell key="drafting" loading name="Drafting" count="—" />,
-        <KanbanColumnShell key="reviewing" loading name="Reviewing" count="—" />,
-        <KanbanColumnShell key="fulfilling" loading name="Fulfilling" count="—" />,
-        <KanbanColumnShell key="archiving" loading name="Archiving" count="—" />,
+        <KanbanColumnShell key="drafted"   loading name="Drafted"   count="—" />,
+        <KanbanColumnShell key="submitted" loading name="Submitted" count="—" />,
+        <KanbanColumnShell key="invoiced"  loading name="Invoiced"  count="—" />,
+        <KanbanColumnShell key="completed" loading name="Completed" count="—" />,
       ]}
     />
   </OrdersPageShell>

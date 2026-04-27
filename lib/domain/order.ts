@@ -1,10 +1,10 @@
 import { z } from 'zod'
 
 export const ORDER_STATUSES = [
-  'draft',
+  'drafted',
   'submitted',
   'invoiced',
-  'archiving',
+  'completed',
   'archived',
   'discarded',
   'rejected',
@@ -14,10 +14,10 @@ export const ORDER_STATUSES = [
 export type OrderStatus = (typeof ORDER_STATUSES)[number]
 
 export const ACTIVE_ORDER_STATUSES: readonly OrderStatus[] = [
-  'draft',
+  'drafted',
   'submitted',
   'invoiced',
-  'archiving',
+  'completed',
 ]
 
 export type Order = {

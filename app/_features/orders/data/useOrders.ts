@@ -100,14 +100,14 @@ export function useOrders(): UseOrdersResult {
           if (payload.eventType === 'INSERT') {
             const row = safeParseOrder(payload.new, 'insert')
             if (!row) return
-            // New rows always start as 'draft' (DB default + insertOrder
+            // New rows always start as 'drafted' (DB default + insertOrder
             // / duplicateOrder both go through default values), so we
             // can hardcode the per-status target and skip the lookup.
             queryClient.setQueryData<OrdersCache>(ORDERS_QUERY_KEY, (old) =>
               prependToCache(old, row),
             )
             queryClient.setQueryData<OrdersCache>(
-              ordersByStatusQueryKey('draft'),
+              ordersByStatusQueryKey('drafted'),
               (old) => prependToCache(old, row),
             )
             queryClient.setQueryData<number>(ORDERS_COUNT_QUERY_KEY, (n) =>

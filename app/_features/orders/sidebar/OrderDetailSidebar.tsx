@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState, type RefObject } from 'react'
+import { useEffect, useState } from 'react'
 import {
   formatCreatedAt,
   type Order,
@@ -15,15 +15,23 @@ interface ActionConfig {
   tone: 'primary' | 'danger'
 }
 
+const ACTION_DESCRIPTIONS: Record<OrderStatus, string> = {
+  drafted:   '',
+  submitted: 'This submits the order to administrators for final review and approval before invoicing.',
+  invoiced:  'This invoices the order to accounting and operational staff for billing and fulfillment.',
+  completed: 'This marks the order as completed, files it with administrators for records processing, and queues it for archiving.',
+  archived:  'This archives the completed order and removes it from the active pipeline.',
+  discarded: 'Discarding is for users to abandon the drafting of an order.',
+  rejected:  'Rejection is for admins to disregard the submission of an order.',
+  voided:    'Voiding is for the accountable cancellation of an active invoice.',
+}
+
 // Mirrors VALID_TRANSITIONS in lib/db/orderRepository.ts. Forward
 // transitions render as "primary" (continue the pipeline); terminal
 // exits render as "danger" so the discard/reject/void sinks stand
-// apart from the happy-path moves. archiving is the post-fulfillment
-// holding step before the terminal archived state. 'Discard' is the
-// author-driven soft delete on a draft; an admin 'Delete' (hard) is
-// out of scope here.
+// apart from the happy-path moves.
 const ACTIONS_BY_STATUS: Record<OrderStatus, ActionConfig[]> = {
-  draft: [
+  drafted: [
     { label: 'Submit',   toStatus: 'submitted', tone: 'primary' },
     { label: 'Discard',  toStatus: 'discarded', tone: 'danger'  },
   ],
@@ -32,10 +40,10 @@ const ACTIONS_BY_STATUS: Record<OrderStatus, ActionConfig[]> = {
     { label: 'Reject',   toStatus: 'rejected',  tone: 'danger'  },
   ],
   invoiced: [
-    { label: 'Complete', toStatus: 'archiving', tone: 'primary' },
+    { label: 'Complete', toStatus: 'completed', tone: 'primary' },
     { label: 'Void',     toStatus: 'voided',    tone: 'danger'  },
   ],
-  archiving: [
+  completed: [
     { label: 'Archive',  toStatus: 'archived',  tone: 'primary' },
   ],
   archived:  [],
@@ -44,8 +52,6 @@ const ACTIONS_BY_STATUS: Record<OrderStatus, ActionConfig[]> = {
   voided:    [],
 }
 
-type DropdownGroup = 'primary' | 'danger' | null
-
 export function OrderDetailSidebar({
   order,
   onClose,
@@ -53,12 +59,10 @@ export function OrderDetailSidebar({
   order: Order | null
   onClose: () => void
 }) {
-  const dropdownsRef = useRef<HTMLElement>(null)
   const isOpen = order !== null
 
   return (
     <aside
-      ref={dropdownsRef}
       aria-hidden={!isOpen}
       className={`fixed right-0 top-0 z-40 flex h-full w-full max-w-sm flex-col border-l border-zinc-800 bg-zinc-950 shadow-xl transition-transform duration-200 ease-out motion-reduce:transition-none ${
         isOpen ? 'translate-x-0' : 'translate-x-full'
@@ -69,7 +73,6 @@ export function OrderDetailSidebar({
           key={order.id}
           order={order}
           onClose={onClose}
-          dropdownsRef={dropdownsRef}
         />
       )}
     </aside>
@@ -79,97 +82,66 @@ export function OrderDetailSidebar({
 function SidebarBody({
   order,
   onClose,
-  dropdownsRef,
 }: {
   order: Order
   onClose: () => void
-  dropdownsRef: RefObject<HTMLElement | null>
 }) {
   const { transition, discardDraft, duplicate, isPending, error } =
     useOrderActions()
 
-  // Two-step dropdown gate per group: the user opens a menu, then
-  // explicitly picks the item. Primary and danger live in separate
-  // dropdowns so a hover or fat-finger on one path can't possibly land
-  // on the other --- the structural separation is the point.
-  const [openGroup, setOpenGroup] = useState<DropdownGroup>(null)
-  // Picking a danger action defers to a confirmation modal instead of
-  // firing the transition straight away. The picked action is parked
-  // here while the modal is up; null means no termination is pending.
-  const [pendingTerminate, setPendingTerminate] = useState<ActionConfig | null>(
-    null,
-  )
+  const [pendingAction, setPendingAction] = useState<ActionConfig | null>(null)
+  const [duplicatePending, setDuplicatePending] = useState(false)
 
   const actions = ACTIONS_BY_STATUS[order.status]
-  const primaryActions = actions.filter((action) => action.tone === 'primary')
-  const dangerActions = actions.filter((action) => action.tone === 'danger')
+  const primaryAction = actions.find((a) => a.tone === 'primary') ?? null
+  const dangerAction  = actions.find((a) => a.tone === 'danger')  ?? null
 
-  // Esc layers: confirm modal first, then any open dropdown, then the
-  // panel itself --- innermost wins so a single Esc never crosses two
-  // boundaries at once.
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key !== 'Escape') return
-      if (pendingTerminate) {
-        setPendingTerminate(null)
-      } else if (openGroup) {
-        setOpenGroup(null)
+      if (pendingAction) {
+        setPendingAction(null)
+      } else if (duplicatePending) {
+        setDuplicatePending(false)
       } else {
         onClose()
       }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [onClose, openGroup, pendingTerminate])
+  }, [onClose, pendingAction, duplicatePending])
 
-  // Click anywhere outside the sidebar closes whichever dropdown is
-  // open. Scoped to the aside (via dropdownsRef on the aside itself)
-  // so clicks on the pinned bottom group --- which lives outside the
-  // transition area --- still count as "inside" and don't dismiss
-  // Terminate's menu mid-pick.
-  useEffect(() => {
-    if (!openGroup) return
-    function onClickOutside(e: MouseEvent) {
-      if (!dropdownsRef.current?.contains(e.target as Node)) {
-        setOpenGroup(null)
+  async function runTransition(action: ActionConfig): Promise<boolean> {
+    try {
+      if (action.toStatus === 'discarded') {
+        await discardDraft({ orderId: order.id })
+      } else {
+        await transition({
+          orderId: order.id,
+          toStatus: action.toStatus,
+        })
       }
-    }
-    document.addEventListener('mousedown', onClickOutside)
-    return () => document.removeEventListener('mousedown', onClickOutside)
-  }, [dropdownsRef, openGroup])
-
-  async function runTransition(action: ActionConfig) {
-    if (action.toStatus === 'discarded') {
-      await discardDraft({ orderId: order.id }).catch(() => {})
-    } else {
-      await transition({
-        orderId: order.id,
-        toStatus: action.toStatus,
-      }).catch(() => {})
+      return true
+    } catch {
+      return false
     }
   }
 
-  async function handleTransition(action: ActionConfig) {
-    setOpenGroup(null)
-    // Danger actions defer to the confirmation modal --- a forward
-    // primary move is still cheap to undo (transition again), but the
-    // discard/reject/void exits drop the order into a terminal state
-    // with no path back, so we gate them behind an explicit Yes/No.
-    if (action.tone === 'danger') {
-      setPendingTerminate(action)
-      return
-    }
-    await runTransition(action)
-  }
-
-  async function handleConfirmTerminate() {
-    const action = pendingTerminate
+  async function handleConfirmAction() {
+    const action = pendingAction
     if (!action) return
-    setPendingTerminate(null)
-    await runTransition(action)
+    setPendingAction(null)
+    const ok = await runTransition(action)
+    // Terminal destinations have no further transitions in ACTIONS_BY_STATUS.
+    // Closing on success keeps the sidebar open if the request fails so the
+    // error state stays visible.
+    if (ok && ACTIONS_BY_STATUS[action.toStatus].length === 0) {
+      onClose()
+    }
   }
 
-  async function handleDuplicate() {
+  async function handleConfirmDuplicate() {
+    setDuplicatePending(false)
     await duplicate({ sourceOrderId: order.id }).catch(() => {})
   }
 
@@ -211,107 +183,95 @@ function SidebarBody({
         )}
       </dl>
 
-      {/* The body stays in normal flex flow: Transition owns the
-          top of the remaining space, while the footer actions stay
-          pinned last without overlaying content above. */}
       <div className="flex min-h-0 flex-1 flex-col">
         <div className="flex-1 min-h-0 overflow-y-auto px-5 py-4">
-          {primaryActions.length > 0 ? (
-            <ActionDropdown
-              group="primary"
-              label="Transition"
-              actions={primaryActions}
-              isOpen={openGroup === 'primary'}
-              isPending={isPending}
-              onToggle={() =>
-                setOpenGroup((group) => (group === 'primary' ? null : 'primary'))
-              }
-              onPick={handleTransition}
-            />
-          ) : (
-            actions.length === 0 && (
-              <p className="text-sm text-zinc-500">
-                Terminal state — no further transitions.
-              </p>
-            )
-          )}
           {error && (
             <p
               role="alert"
-              className="mt-3 rounded border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-300"
+              className="rounded border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-300"
             >
               {error.message}
             </p>
           )}
         </div>
 
-        {/* Duplicate sits directly above the anchored Terminate
-            control. The danger menu opens upward because the
-            trigger is intentionally parked at the bottom rim. */}
-        <div className="flex flex-col gap-2 border-t border-zinc-800 bg-zinc-950 px-5 py-4">
-          <button
-            type="button"
-            disabled={isPending}
-            onClick={handleDuplicate}
-            className="rounded border border-zinc-700 bg-transparent px-3 py-2 text-sm font-medium text-zinc-200 hover:bg-zinc-800 disabled:cursor-wait disabled:opacity-60"
-          >
-            Duplicate to new draft
-          </button>
-          <div className="flex min-h-9 justify-end">
-            {dangerActions.length > 0 && (
-              <ActionDropdown
-                group="danger"
-                label="Terminate"
-                actions={dangerActions}
-                isOpen={openGroup === 'danger'}
-                isPending={isPending}
-                direction="up"
-                onToggle={() =>
-                  setOpenGroup((group) => (group === 'danger' ? null : 'danger'))
-                }
-                onPick={handleTransition}
-              />
+        <div className="flex gap-2 border-t border-zinc-800 bg-zinc-950 px-5 py-4">
+          <div className="flex-1">
+            {dangerAction && (
+              <button
+                type="button"
+                disabled={isPending}
+                onClick={() => setPendingAction(dangerAction)}
+                className="w-full rounded border border-red-500/40 bg-transparent px-3 py-2 text-sm font-medium text-red-300 hover:bg-red-500/10 disabled:cursor-wait disabled:opacity-60"
+              >
+                {dangerAction.label}
+              </button>
+            )}
+          </div>
+          <div className="flex-1">
+            <button
+              type="button"
+              disabled={isPending}
+              onClick={() => setDuplicatePending(true)}
+              className="w-full rounded border border-zinc-700 bg-transparent px-3 py-2 text-sm font-medium text-zinc-200 hover:bg-zinc-800 disabled:cursor-wait disabled:opacity-60"
+            >
+              Duplicate
+            </button>
+          </div>
+          <div className="flex-1">
+            {primaryAction && (
+              <button
+                type="button"
+                disabled={isPending}
+                onClick={() => setPendingAction(primaryAction)}
+                className="w-full rounded bg-zinc-100 px-3 py-2 text-sm font-medium text-zinc-900 hover:bg-zinc-200 disabled:cursor-wait disabled:opacity-60"
+              >
+                {primaryAction.label}
+              </button>
             )}
           </div>
         </div>
       </div>
 
-      {pendingTerminate && (
-        <ConfirmTerminateModal
-          action={pendingTerminate}
+      {pendingAction && (
+        <ConfirmActionModal
+          action={pendingAction}
+          currentStatus={order.status}
           orderNumber={order.orderNumber}
           isPending={isPending}
-          onConfirm={handleConfirmTerminate}
-          onCancel={() => setPendingTerminate(null)}
+          onConfirm={handleConfirmAction}
+          onCancel={() => setPendingAction(null)}
+        />
+      )}
+
+      {duplicatePending && (
+        <ConfirmDuplicateModal
+          orderNumber={order.orderNumber}
+          isPending={isPending}
+          onConfirm={handleConfirmDuplicate}
+          onCancel={() => setDuplicatePending(false)}
         />
       )}
     </>
   )
 }
 
-function ConfirmTerminateModal({
-  action,
+function ConfirmDuplicateModal({
   orderNumber,
   isPending,
   onConfirm,
   onCancel,
 }: {
-  action: ActionConfig
   orderNumber: number
   isPending: boolean
   onConfirm: () => void
   onCancel: () => void
 }) {
-  // Scoped to the parent <aside>: absolute inset-0 covers the sidebar
-  // pane only, not the entire viewport. The aside's `position: fixed`
-  // already establishes the containing block for absolute descendants,
-  // so this dialog dims and gates the sidebar without blacking out the
-  // rest of the app.
   return (
     <div
       role="dialog"
       aria-modal="true"
-      aria-labelledby="confirm-terminate-title"
+      aria-labelledby="confirm-duplicate-title"
       onClick={onCancel}
       className="absolute inset-0 z-10 flex items-center justify-center bg-black/70 p-4"
     >
@@ -320,17 +280,15 @@ function ConfirmTerminateModal({
         className="w-full rounded-lg border border-zinc-700 bg-zinc-900 p-4 shadow-2xl"
       >
         <h3
-          id="confirm-terminate-title"
+          id="confirm-duplicate-title"
           className="text-sm font-semibold text-zinc-50"
         >
-          {action.label} order #{orderNumber}?
+          Duplicate order #{orderNumber}?
         </h3>
         <p className="mt-2 text-xs text-zinc-400">
-          The order will be marked as{' '}
-          <span className="font-medium text-zinc-200">{action.toStatus}</span>.
-          Terminal states cannot be reversed.
+          This creates a new order in <span className="font-medium text-zinc-200">drafted</span> status, linked back to this one. The original order is unchanged.
         </p>
-        <div className="mt-4 flex justify-end gap-2">
+        <div className="mt-4 flex justify-between gap-2">
           <button
             type="button"
             disabled={isPending}
@@ -344,9 +302,9 @@ function ConfirmTerminateModal({
             disabled={isPending}
             onClick={onConfirm}
             autoFocus
-            className="rounded border border-red-500/40 bg-red-500/15 px-3 py-1.5 text-xs font-medium text-red-300 hover:bg-red-500/25 disabled:cursor-wait disabled:opacity-60"
+            className="rounded border border-zinc-100 bg-zinc-100 px-3 py-1.5 text-xs font-medium text-zinc-900 hover:bg-zinc-200 disabled:cursor-wait disabled:opacity-60"
           >
-            {action.label}
+            Duplicate
           </button>
         </div>
       </div>
@@ -354,78 +312,82 @@ function ConfirmTerminateModal({
   )
 }
 
-function ActionDropdown({
-  group,
-  label,
-  actions,
-  isOpen,
+function ConfirmActionModal({
+  action,
+  currentStatus,
+  orderNumber,
   isPending,
-  direction = 'down',
-  onToggle,
-  onPick,
+  onConfirm,
+  onCancel,
 }: {
-  group: 'primary' | 'danger'
-  label: string
-  actions: ActionConfig[]
-  isOpen: boolean
+  action: ActionConfig
+  currentStatus: OrderStatus
+  orderNumber: number
   isPending: boolean
-  direction?: 'up' | 'down'
-  onToggle: () => void
-  onPick: (action: ActionConfig) => void
+  onConfirm: () => void
+  onCancel: () => void
 }) {
-  const triggerClass =
-    group === 'primary'
-      ? 'flex w-full items-center justify-between rounded bg-zinc-100 px-3 py-2 text-sm font-medium text-zinc-900 hover:bg-zinc-200 disabled:cursor-wait disabled:opacity-60'
-      : 'flex w-full items-center justify-between rounded border border-red-500/40 bg-transparent px-3 py-2 text-sm font-medium text-red-300 hover:bg-red-500/10 disabled:cursor-wait disabled:opacity-60'
+  const isDanger = action.tone === 'danger'
+  const titleId = isDanger
+    ? 'confirm-terminate-title'
+    : 'confirm-transition-title'
+  const bodyCopy = ACTION_DESCRIPTIONS[action.toStatus]
+  const confirmButtonClass = isDanger
+    ? 'rounded border border-red-500/40 bg-red-500/15 px-3 py-1.5 text-xs font-medium text-red-300 hover:bg-red-500/25 disabled:cursor-wait disabled:opacity-60'
+    : 'rounded border border-zinc-100 bg-zinc-100 px-3 py-1.5 text-xs font-medium text-zinc-900 hover:bg-zinc-200 disabled:cursor-wait disabled:opacity-60'
+  const cardBorderClass = isDanger ? 'border-red-500/50' : 'border-zinc-700'
 
-  const menuClass =
-    direction === 'up'
-      ? 'absolute left-0 right-0 bottom-full z-10 mb-1 overflow-hidden rounded border border-zinc-700 bg-zinc-900 shadow-lg'
-      : 'absolute left-0 right-0 z-10 mt-1 overflow-hidden rounded border border-zinc-700 bg-zinc-900 shadow-lg'
-
-  const caret = isOpen
-    ? direction === 'up'
-      ? '▾'
-      : '▴'
-    : direction === 'up'
-      ? '▴'
-      : '▾'
-
+  // Scoped to the parent <aside>: absolute inset-0 covers the sidebar
+  // pane only, not the entire viewport.
   return (
-    <div className="relative">
-      <button
-        type="button"
-        disabled={isPending}
-        aria-haspopup="menu"
-        aria-expanded={isOpen}
-        onClick={onToggle}
-        className={triggerClass}
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={titleId}
+      onClick={onCancel}
+      className="absolute inset-0 z-10 flex items-center justify-center bg-black/70 p-4"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className={`w-full rounded-lg border ${cardBorderClass} bg-zinc-900 p-4 shadow-2xl`}
       >
-        <span>{label}</span>
-        <span aria-hidden className="text-xs opacity-70">
-          {caret}
-        </span>
-      </button>
-      {isOpen && (
-        <div role="menu" className={menuClass}>
-          {actions.map((action) => (
-            <button
-              key={action.toStatus}
-              type="button"
-              role="menuitem"
-              disabled={isPending}
-              onClick={() => onPick(action)}
-              className={
-                group === 'danger'
-                  ? 'block w-full px-3 py-2 text-left text-sm font-medium text-red-300 hover:bg-red-500/10 disabled:cursor-wait disabled:opacity-60'
-                  : 'block w-full px-3 py-2 text-left text-sm font-medium text-zinc-100 hover:bg-zinc-800 disabled:cursor-wait disabled:opacity-60'
-              }
-            >
-              {action.label}
-            </button>
-          ))}
+        <h3
+          id={titleId}
+          className="text-sm font-semibold text-zinc-50"
+        >
+          {action.label} order #{orderNumber}?
+        </h3>
+        <div className="mt-2 flex items-center gap-2">
+          <StatusBadge status={currentStatus} />
+          <span className="text-xs text-zinc-500">→</span>
+          <StatusBadge status={action.toStatus} />
         </div>
-      )}
+        <p className="mt-2 text-xs text-zinc-400">
+          {bodyCopy}{' '}
+          <span className="font-medium text-zinc-200">
+            This action is final and cannot be reversed.
+          </span>
+        </p>
+        <div className="mt-4 flex justify-between gap-2">
+          <button
+            type="button"
+            disabled={isPending}
+            onClick={onCancel}
+            className="rounded border border-zinc-700 bg-transparent px-3 py-1.5 text-xs font-medium text-zinc-200 hover:bg-zinc-800 disabled:cursor-wait disabled:opacity-60"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            disabled={isPending}
+            onClick={onConfirm}
+            autoFocus
+            className={confirmButtonClass}
+          >
+            {action.label}
+          </button>
+        </div>
+      </div>
     </div>
   )
 }
