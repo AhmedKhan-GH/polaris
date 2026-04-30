@@ -1,4 +1,9 @@
 import { defineConfig, devices } from "@playwright/test";
+import { config as loadEnv } from "dotenv";
+
+// Pull in the same .env.local Next dev uses, so E2E_TEST_EMAIL /
+// E2E_TEST_PASSWORD (and any future test-only knobs) live in one place.
+loadEnv({ path: ".env.local" });
 
 export default defineConfig({
   testDir: "./tests/e2e",
