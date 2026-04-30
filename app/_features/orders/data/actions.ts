@@ -3,13 +3,17 @@
 import { log } from '@/lib/log'
 import type { Order, OrderStatus } from '@/lib/domain/order'
 import {
+  countFilteredOrders,
+  countFilteredOrdersByStatus,
   countOrders,
   countOrdersByStatus,
   discardDraftOrder,
   duplicateOrder,
+  findFilteredOrdersPage,
   findOrdersPage,
   findOrdersPageByStatus,
   transitionOrderStatus,
+  type OrderFilters,
   type OrderStatusCounts,
   type OrdersCursor,
 } from '@/lib/db/orderRepository'
@@ -48,8 +52,28 @@ export async function findOrdersPageByStatusAction(
   return await findOrdersPageByStatus(status, cursor, limit)
 }
 
+export async function findFilteredOrdersPageAction(
+  filters: OrderFilters,
+  cursor: OrdersCursor | null,
+  limit: number,
+): Promise<Order[]> {
+  return await findFilteredOrdersPage(filters, cursor, limit)
+}
+
 export async function countOrdersAction(): Promise<number> {
   return await countOrders()
+}
+
+export async function countFilteredOrdersAction(
+  filters: OrderFilters,
+): Promise<number> {
+  return await countFilteredOrders(filters)
+}
+
+export async function countFilteredOrdersByStatusAction(
+  filters: OrderFilters,
+): Promise<OrderStatusCounts> {
+  return await countFilteredOrdersByStatus(filters)
 }
 
 export async function countOrdersByStatusAction(): Promise<OrderStatusCounts> {

@@ -1,4 +1,16 @@
-import { and, count, desc, eq, lt, or, sql } from 'drizzle-orm'
+import {
+  and,
+  count,
+  desc,
+  eq,
+  gte,
+  inArray,
+  lt,
+  lte,
+  or,
+  sql,
+  type SQL,
+} from 'drizzle-orm'
 import { db } from '../db'
 import { log } from '../log'
 import { orders, orderStatusCounts, orderStatusHistory } from '../schema'
@@ -10,6 +22,11 @@ import {
 } from '../domain/order'
 
 export type OrdersCursor = { createdAt: string; id: string }
+export type OrderFilters = {
+  statuses?: readonly OrderStatus[]
+  createdFrom?: string
+  createdTo?: string
+}
 
 // Forward-only graph. Mirrors enforce_forward_status as last updated in
 // drizzle/0016_rename_completed_to_closed.sql. Keep the two in lockstep
@@ -27,6 +44,50 @@ export const VALID_TRANSITIONS: Record<OrderStatus, readonly OrderStatus[]> = {
 
 export function isValidTransition(from: OrderStatus, to: OrderStatus): boolean {
   return VALID_TRANSITIONS[from].includes(to)
+}
+
+function cursorWhere(cursor: OrdersCursor | null): SQL | undefined {
+  return cursor
+    ? or(
+        lt(orders.createdAt, sql`${cursor.createdAt}::timestamp`),
+        and(
+          eq(orders.createdAt, sql`${cursor.createdAt}::timestamp`),
+          lt(orders.id, sql`${cursor.id}::uuid`),
+        ),
+      )
+    : undefined
+}
+
+function orderFiltersWhere(filters: OrderFilters): SQL | undefined {
+  const predicates: SQL[] = []
+  const statuses = [
+    ...new Set(
+      (filters.statuses ?? []).filter((status): status is OrderStatus =>
+        ORDER_STATUSES.includes(status),
+      ),
+    ),
+  ]
+
+  if (statuses.length === 1) {
+    predicates.push(eq(orders.status, statuses[0]))
+  } else if (statuses.length > 1) {
+    predicates.push(inArray(orders.status, statuses))
+  }
+  if (filters.createdFrom) {
+    predicates.push(gte(orders.createdAt, sql`${filters.createdFrom}::timestamp`))
+  }
+  if (filters.createdTo) {
+    predicates.push(lte(orders.createdAt, sql`${filters.createdTo}::timestamp`))
+  }
+
+  return predicates.length > 0 ? and(...predicates) : undefined
+}
+
+function orderPageWhere(
+  filters: OrderFilters,
+  cursor: OrdersCursor | null,
+): SQL | undefined {
+  return and(orderFiltersWhere(filters), cursorWhere(cursor))
 }
 
 export class OrderNotFoundError extends Error {
@@ -63,15 +124,7 @@ export async function findOrdersPage(
   cursor: OrdersCursor | null,
   limit: number,
 ): Promise<Order[]> {
-  const where = cursor
-    ? or(
-        lt(orders.createdAt, sql`${cursor.createdAt}::timestamp`),
-        and(
-          eq(orders.createdAt, sql`${cursor.createdAt}::timestamp`),
-          lt(orders.id, sql`${cursor.id}::uuid`),
-        ),
-      )
-    : undefined
+  const where = cursorWhere(cursor)
   const rows = await db
     .select()
     .from(orders)
@@ -91,18 +144,7 @@ export async function findOrdersPageByStatus(
   cursor: OrdersCursor | null,
   limit: number,
 ): Promise<Order[]> {
-  const cursorWhere = cursor
-    ? or(
-        lt(orders.createdAt, sql`${cursor.createdAt}::timestamp`),
-        and(
-          eq(orders.createdAt, sql`${cursor.createdAt}::timestamp`),
-          lt(orders.id, sql`${cursor.id}::uuid`),
-        ),
-      )
-    : undefined
-  const where = cursorWhere
-    ? and(eq(orders.status, status), cursorWhere)
-    : eq(orders.status, status)
+  const where = orderPageWhere({ statuses: [status] }, cursor)
   const rows = await db
     .select()
     .from(orders)
@@ -110,6 +152,22 @@ export async function findOrdersPageByStatus(
     .orderBy(desc(orders.createdAt), desc(orders.id))
     .limit(limit)
   log.debug({ status, cursor, limit, count: rows.length }, 'findOrdersPageByStatus')
+  return rows.map(toOrder)
+}
+
+export async function findFilteredOrdersPage(
+  filters: OrderFilters,
+  cursor: OrdersCursor | null,
+  limit: number,
+): Promise<Order[]> {
+  const where = orderPageWhere(filters, cursor)
+  const rows = await db
+    .select()
+    .from(orders)
+    .where(where)
+    .orderBy(desc(orders.createdAt), desc(orders.id))
+    .limit(limit)
+  log.debug({ filters, cursor, limit, count: rows.length }, 'findFilteredOrdersPage')
   return rows.map(toOrder)
 }
 
@@ -130,7 +188,38 @@ export async function countOrders(): Promise<number> {
   return Number.isFinite(n) ? n : 0
 }
 
+export async function countFilteredOrders(
+  filters: OrderFilters,
+): Promise<number> {
+  const [row] = await db
+    .select({ value: count() })
+    .from(orders)
+    .where(orderFiltersWhere(filters))
+  const n = Number(row.value)
+  log.debug({ filters, count: n, raw: row.value, type: typeof row.value }, 'countFilteredOrders')
+  return Number.isFinite(n) ? n : 0
+}
+
 export type OrderStatusCounts = Record<OrderStatus, number>
+
+export async function countFilteredOrdersByStatus(
+  filters: OrderFilters,
+): Promise<OrderStatusCounts> {
+  const rows = await db
+    .select({ status: orders.status, count: count() })
+    .from(orders)
+    .where(orderFiltersWhere(filters))
+    .groupBy(orders.status)
+
+  const result = Object.fromEntries(
+    ORDER_STATUSES.map((s) => [s, 0]),
+  ) as OrderStatusCounts
+  for (const row of rows) {
+    result[row.status] = Number(row.count)
+  }
+  log.debug({ filters, counts: result }, 'countFilteredOrdersByStatus')
+  return result
+}
 
 // O(1)-ish lookup against the trigger-maintained order_status_counts
 // table (one row per enum value, ~8 rows total). The trigger on

@@ -191,6 +191,124 @@ describe('orderRepository (integration)', () => {
     ])
   })
 
+  test('findFilteredOrdersPage filters before paginating', async () => {
+    await seedOrder({
+      id: '00000000-0000-0000-0000-000000000001',
+      orderNumber: 1_000_001,
+      status: 'drafted',
+      createdAt: new Date('2026-04-19T09:00:00Z'),
+    })
+    await seedOrder({
+      id: '00000000-0000-0000-0000-000000000002',
+      orderNumber: 1_000_002,
+      status: 'submitted',
+      createdAt: new Date('2026-04-19T10:00:00Z'),
+    })
+    await seedOrder({
+      id: '00000000-0000-0000-0000-000000000003',
+      orderNumber: 1_000_003,
+      status: 'submitted',
+      createdAt: new Date('2026-04-19T11:00:00Z'),
+    })
+    await seedOrder({
+      id: '00000000-0000-0000-0000-000000000004',
+      orderNumber: 1_000_004,
+      status: 'submitted',
+      createdAt: new Date('2026-04-19T12:00:00Z'),
+    })
+    await seedOrder({
+      id: '00000000-0000-0000-0000-000000000005',
+      orderNumber: 1_000_005,
+      status: 'closed',
+      createdAt: new Date('2026-04-19T13:00:00Z'),
+    })
+
+    const filters = {
+      statuses: ['submitted'] as const,
+      createdFrom: '2026-04-18 00:00:00.000',
+      createdTo: '2026-04-20 23:59:59.999',
+    }
+    const firstPage = await repo.findFilteredOrdersPage(filters, null, 2)
+    const cursor = {
+      createdAt: firstPage[1].createdAt.toISOString(),
+      id: firstPage[1].id,
+    }
+    const secondPage = await repo.findFilteredOrdersPage(filters, cursor, 2)
+
+    expect(firstPage.map((order) => order.id)).toEqual([
+      '00000000-0000-0000-0000-000000000004',
+      '00000000-0000-0000-0000-000000000003',
+    ])
+    expect(secondPage.map((order) => order.id)).toEqual([
+      '00000000-0000-0000-0000-000000000002',
+    ])
+  })
+
+  test('countFilteredOrders counts every matching row in the database', async () => {
+    await seedOrder({
+      id: '00000000-0000-0000-0000-000000000001',
+      orderNumber: 1_000_001,
+      status: 'submitted',
+      createdAt: new Date('2026-04-19T10:00:00Z'),
+    })
+    await seedOrder({
+      id: '00000000-0000-0000-0000-000000000002',
+      orderNumber: 1_000_002,
+      status: 'submitted',
+      createdAt: new Date('2026-04-19T11:00:00Z'),
+    })
+    await seedOrder({
+      id: '00000000-0000-0000-0000-000000000003',
+      orderNumber: 1_000_003,
+      status: 'drafted',
+      createdAt: new Date('2026-04-19T12:00:00Z'),
+    })
+
+    await expect(
+      repo.countFilteredOrders({
+        statuses: ['submitted'],
+        createdFrom: '2026-04-19 00:00:00.000',
+        createdTo: '2026-04-19 23:59:59.999',
+      }),
+    ).resolves.toBe(2)
+  })
+
+  test('countFilteredOrdersByStatus groups matching rows by status', async () => {
+    await seedOrder({
+      id: '00000000-0000-0000-0000-000000000001',
+      orderNumber: 1_000_001,
+      status: 'submitted',
+      createdAt: new Date('2026-04-19T10:00:00Z'),
+    })
+    await seedOrder({
+      id: '00000000-0000-0000-0000-000000000002',
+      orderNumber: 1_000_002,
+      status: 'submitted',
+      createdAt: new Date('2026-04-19T11:00:00Z'),
+    })
+    await seedOrder({
+      id: '00000000-0000-0000-0000-000000000003',
+      orderNumber: 1_000_003,
+      status: 'drafted',
+      createdAt: new Date('2026-04-19T12:00:00Z'),
+    })
+    await seedOrder({
+      id: '00000000-0000-0000-0000-000000000004',
+      orderNumber: 1_000_004,
+      status: 'voided',
+      createdAt: new Date('2026-04-21T12:00:00Z'),
+    })
+
+    const counts = await repo.countFilteredOrdersByStatus({
+      createdFrom: '2026-04-18 00:00:00.000',
+      createdTo: '2026-04-20 23:59:59.999',
+    })
+
+    expect(counts.submitted).toBe(2)
+    expect(counts.drafted).toBe(1)
+    expect(counts.voided).toBe(0)
+  })
+
   test('countOrders returns the number of rows in the table', async () => {
     await expect(repo.countOrders()).resolves.toBe(0)
 

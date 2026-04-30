@@ -5,10 +5,38 @@ import type { OrdersCursor } from '@/lib/db/orderRepository'
 import {
   ORDERS_PAGE_SIZE,
   ORDERS_QUERY_KEY,
+  SPREADSHEET_ORDERS_QUERY_KEY,
   ordersByStatusQueryKey,
 } from './queryKeys'
 
 export type OrdersCache = InfiniteData<Order[], OrdersCursor | null>
+
+function findInOrdersCache(
+  cache: OrdersCache | undefined,
+  orderId: string,
+): Order | null {
+  if (!cache) return null
+  for (const page of cache.pages) {
+    const found = page.find((o) => o.id === orderId)
+    if (found) return found
+  }
+  return null
+}
+
+function findInUnknownOrdersCache(data: unknown, orderId: string): Order | null {
+  if (!data || typeof data !== 'object' || !('pages' in data)) return null
+  const pages = (data as { pages?: unknown }).pages
+  if (!Array.isArray(pages)) return null
+  for (const page of pages) {
+    if (!Array.isArray(page)) continue
+    const found = page.find(
+      (o): o is Order =>
+        !!o && typeof o === 'object' && 'id' in o && o.id === orderId,
+    )
+    if (found) return found
+  }
+  return null
+}
 
 // Sort order matches findOrdersPage: createdAt DESC, id DESC. Returns
 // negative when `a` comes BEFORE `b` in the displayed list (newer first
@@ -136,21 +164,20 @@ export function findInCaches(
   orderId: string,
 ): Order | null {
   const global = queryClient.getQueryData<OrdersCache>(ORDERS_QUERY_KEY)
-  if (global) {
-    for (const page of global.pages) {
-      const found = page.find((o) => o.id === orderId)
-      if (found) return found
-    }
-  }
+  const globalMatch = findInOrdersCache(global, orderId)
+  if (globalMatch) return globalMatch
   for (const status of ORDER_STATUSES) {
     const data = queryClient.getQueryData<OrdersCache>(
       ordersByStatusQueryKey(status),
     )
-    if (!data) continue
-    for (const page of data.pages) {
-      const found = page.find((o) => o.id === orderId)
-      if (found) return found
-    }
+    const statusMatch = findInOrdersCache(data, orderId)
+    if (statusMatch) return statusMatch
+  }
+  for (const query of queryClient.getQueryCache().findAll({
+    queryKey: SPREADSHEET_ORDERS_QUERY_KEY,
+  })) {
+    const spreadsheetMatch = findInUnknownOrdersCache(query.state.data, orderId)
+    if (spreadsheetMatch) return spreadsheetMatch
   }
   return null
 }

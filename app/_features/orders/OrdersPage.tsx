@@ -65,6 +65,7 @@ export function OrdersPage() {
         <SpreadsheetView
           orders={orders}
           totalCount={totalCount}
+          statusCounts={statusCounts}
           hasNextPage={hasNextPage}
           isFetchingNextPage={isFetchingNextPage}
           fetchNextPage={fetchNextPage}

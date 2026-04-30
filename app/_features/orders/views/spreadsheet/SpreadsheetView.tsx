@@ -1,12 +1,17 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Calendar as ShadCalendar } from '@/components/ui/calendar'
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover'
+import {
+  useInfiniteQuery,
+  useQuery,
+  type InfiniteData,
+} from '@tanstack/react-query'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import {
   createColumnHelper,
@@ -15,16 +20,35 @@ import {
   useReactTable,
 } from '@tanstack/react-table'
 import {
+  dedupeById,
   formatCreatedAt,
   ORDER_STATUSES,
   type Order,
   type OrderStatus,
 } from '@/lib/domain/order'
+import type {
+  OrderFilters,
+  OrderStatusCounts,
+  OrdersCursor,
+} from '@/lib/db/orderRepository'
+import {
+  countFilteredOrdersAction,
+  countFilteredOrdersByStatusAction,
+  findFilteredOrdersPageAction,
+} from '../../data/actions'
+import {
+  ORDERS_PAGE_SIZE,
+  spreadsheetOrderStatusCountsQueryKey,
+  spreadsheetOrdersCountQueryKey,
+  spreadsheetOrdersQueryKey,
+} from '../../data/queryKeys'
 import { StatusBadge } from '../../shared/StatusBadge'
 import { useScrollAnchor } from '../../shared/useScrollAnchor'
 
 const ROW_HEIGHT = 44
 const GRID_COLUMNS = 'grid-cols-[120px_140px_1fr]'
+const ORDER_COUNT_FORMATTER = new Intl.NumberFormat('en-US')
+type SpreadsheetOrdersCache = InfiniteData<Order[], OrdersCursor | null>
 
 // Per-column meta: className applied to the <div role="cell"> wrapper
 // so each column can carry its own typography/colors without nesting
@@ -59,6 +83,7 @@ const columns = [
 export function SpreadsheetView({
   orders,
   totalCount,
+  statusCounts,
   hasNextPage,
   isFetchingNextPage,
   fetchNextPage,
@@ -67,6 +92,7 @@ export function SpreadsheetView({
 }: {
   orders: Order[]
   totalCount: number
+  statusCounts: OrderStatusCounts | undefined
   hasNextPage: boolean
   isFetchingNextPage: boolean
   fetchNextPage: () => void
@@ -76,9 +102,6 @@ export function SpreadsheetView({
   const scrollRef = useRef<HTMLDivElement>(null)
 
   // Multi-select status filter. Empty set = no filter (show everything).
-  // Filtering is client-side over the loaded orders window: pagination
-  // continues against the unfiltered server count, so as more pages
-  // arrive the filtered list grows naturally without a query rewrite.
   const [selectedStatuses, setSelectedStatuses] = useState<Set<OrderStatus>>(
     new Set(),
   )
@@ -92,42 +115,103 @@ export function SpreadsheetView({
   const [dateTo, setDateTo] = useState('')
   const [timeTo, setTimeTo] = useState('')
 
-  const filtersActive =
-    selectedStatuses.size > 0 || dateFrom !== '' || dateTo !== ''
+  const filters = useMemo<OrderFilters>(() => {
+    const next: OrderFilters = {}
+    const statuses = ORDER_STATUSES.filter((status) =>
+      selectedStatuses.has(status),
+    )
+    const createdFrom = boundToTimestamp(dateFrom, timeFrom, 'start')
+    const createdTo = boundToTimestamp(dateTo, timeTo, 'end')
 
-  const filteredOrders = useMemo(() => {
-    if (!filtersActive) return orders
-    const fromMs = boundToMs(dateFrom, timeFrom, 'start')
-    const toMs = boundToMs(dateTo, timeTo, 'end')
-    return orders.filter((o) => {
-      if (selectedStatuses.size > 0 && !selectedStatuses.has(o.status)) {
-        return false
-      }
-      if (fromMs !== null || toMs !== null) {
-        const t = o.createdAt.getTime()
-        if (fromMs !== null && t < fromMs) return false
-        if (toMs !== null && t > toMs) return false
-      }
-      return true
-    })
+    if (statuses.length > 0) next.statuses = statuses
+    if (createdFrom) next.createdFrom = createdFrom
+    if (createdTo) next.createdTo = createdTo
+    return next
   }, [
-    orders,
     selectedStatuses,
     dateFrom,
     timeFrom,
     dateTo,
     timeTo,
-    filtersActive,
   ])
 
-  // When filtering, the displayed count is the filtered length (every
-  // slot is backed by a real loaded row, no shells). When not filtering,
-  // we keep the server total so the virtualizer can render shells in
-  // unloaded slots as before.
-  const displayCount = filtersActive ? filteredOrders.length : totalCount
+  const filtersActive =
+    (filters.statuses?.length ?? 0) > 0 ||
+    filters.createdFrom !== undefined ||
+    filters.createdTo !== undefined
+  const dateFiltersActive =
+    filters.createdFrom !== undefined || filters.createdTo !== undefined
+  const statusCountFilters = useMemo<OrderFilters>(() => {
+    const next: OrderFilters = {}
+    if (filters.createdFrom) next.createdFrom = filters.createdFrom
+    if (filters.createdTo) next.createdTo = filters.createdTo
+    return next
+  }, [filters.createdFrom, filters.createdTo])
+
+  const filteredPages = useInfiniteQuery<
+    Order[],
+    Error,
+    SpreadsheetOrdersCache,
+    ReturnType<typeof spreadsheetOrdersQueryKey>,
+    OrdersCursor | null
+  >({
+    queryKey: spreadsheetOrdersQueryKey(filters),
+    queryFn: ({ pageParam }) =>
+      findFilteredOrdersPageAction(filters, pageParam, ORDERS_PAGE_SIZE),
+    initialPageParam: null,
+    getNextPageParam: (lastPage) => {
+      if (lastPage.length < ORDERS_PAGE_SIZE) return undefined
+      const last = lastPage[lastPage.length - 1]
+      return { createdAt: last.createdAt.toISOString(), id: last.id }
+    },
+    enabled: filtersActive,
+  })
+
+  const filteredTotal = useQuery({
+    queryKey: spreadsheetOrdersCountQueryKey(filters),
+    queryFn: () => countFilteredOrdersAction(filters),
+    enabled: filtersActive,
+  })
+  const dateFilteredStatusCounts = useQuery({
+    queryKey: spreadsheetOrderStatusCountsQueryKey(statusCountFilters),
+    queryFn: () => countFilteredOrdersByStatusAction(statusCountFilters),
+    enabled: dateFiltersActive,
+  })
+  const {
+    data: filteredPagesData,
+    hasNextPage: filteredHasNextPage,
+    isFetchingNextPage: filteredIsFetchingNextPage,
+    fetchNextPage: fetchNextFilteredPage,
+  } = filteredPages
+
+  const filteredOrders = useMemo(
+    () => dedupeById(filteredPagesData?.pages.flat() ?? []),
+    [filteredPagesData],
+  )
+
+  const visibleOrders = filtersActive ? filteredOrders : orders
+  const displayCount = filtersActive
+    ? Math.max(visibleOrders.length, filteredTotal.data ?? 0)
+    : totalCount
+  const activeHasNextPage = filtersActive ? filteredHasNextPage : hasNextPage
+  const activeIsFetchingNextPage = filtersActive
+    ? filteredIsFetchingNextPage
+    : isFetchingNextPage
+  const statusFilterCounts = dateFiltersActive
+    ? dateFilteredStatusCounts.data
+    : statusCounts
+  const statusFilterCountsPending =
+    dateFiltersActive && dateFilteredStatusCounts.data === undefined
+  const fetchNextVisiblePage = useCallback(() => {
+    if (filtersActive) {
+      void fetchNextFilteredPage()
+    } else {
+      fetchNextPage()
+    }
+  }, [filtersActive, fetchNextFilteredPage, fetchNextPage])
 
   const table = useReactTable({
-    data: filteredOrders,
+    data: visibleOrders,
     columns,
     getCoreRowModel: getCoreRowModel(),
   })
@@ -161,18 +245,24 @@ export function SpreadsheetView({
     const onScroll = () => {
       if (el.scrollTop === 0) resetUnseen()
 
-      if (orders.length === 0) return
-      if (!hasNextPage || isFetchingNextPage) return
-      const loadedHeight = orders.length * ROW_HEIGHT
+      if (visibleOrders.length === 0) return
+      if (!activeHasNextPage || activeIsFetchingNextPage) return
+      const loadedHeight = visibleOrders.length * ROW_HEIGHT
       const distanceFromLoadedBottom =
         loadedHeight - el.scrollTop - el.clientHeight
       if (distanceFromLoadedBottom < ROW_HEIGHT * 5) {
-        fetchNextPage()
+        fetchNextVisiblePage()
       }
     }
     el.addEventListener('scroll', onScroll, { passive: true })
     return () => el.removeEventListener('scroll', onScroll)
-  }, [orders.length, hasNextPage, isFetchingNextPage, fetchNextPage, resetUnseen])
+  }, [
+    visibleOrders.length,
+    activeHasNextPage,
+    activeIsFetchingNextPage,
+    fetchNextVisiblePage,
+    resetUnseen,
+  ])
 
   // Fast-scroll resilience. If the user flings past the loaded rows
   // while a fetch is in flight and then stops, shells may be visible
@@ -180,16 +270,21 @@ export function SpreadsheetView({
   // boundary check whenever loading settles or the loaded length grows
   // so pagination continues until the viewport is backed by real rows.
   useEffect(() => {
-    if (!hasNextPage || isFetchingNextPage) return
+    if (!activeHasNextPage || activeIsFetchingNextPage) return
     const el = scrollRef.current
-    if (!el || orders.length === 0) return
-    const loadedHeight = orders.length * ROW_HEIGHT
+    if (!el || visibleOrders.length === 0) return
+    const loadedHeight = visibleOrders.length * ROW_HEIGHT
     const distanceFromLoadedBottom =
       loadedHeight - el.scrollTop - el.clientHeight
     if (distanceFromLoadedBottom < ROW_HEIGHT * 5) {
-      fetchNextPage()
+      fetchNextVisiblePage()
     }
-  }, [orders.length, hasNextPage, isFetchingNextPage, fetchNextPage])
+  }, [
+    visibleOrders.length,
+    activeHasNextPage,
+    activeIsFetchingNextPage,
+    fetchNextVisiblePage,
+  ])
 
   function handleUnseenClick() {
     scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
@@ -206,6 +301,8 @@ export function SpreadsheetView({
       <StatusFilterBar
         selected={selectedStatuses}
         onChange={setSelectedStatuses}
+        counts={statusFilterCounts}
+        countsPending={statusFilterCountsPending}
       />
       <div className="flex h-9 flex-wrap items-center gap-2 rounded-md border border-zinc-700 bg-zinc-900 px-3 [color-scheme:dark]">
         <span className="text-xs font-medium uppercase tracking-wider text-zinc-500">
@@ -447,16 +544,17 @@ function SpreadsheetRowShell({
 }
 
 // Combine a date string ('yyyy-mm-dd') and a time string ('HH:MM' or
-// 'HH:MM:SS', or '' / malformed → fallback to start/end of day) into a
-// millisecond timestamp. Hours pad so half-typed '9:30' still parses;
-// seconds are optional. `kind` selects the inclusive boundary: 'start'
-// fills missing seconds with :00.000, 'end' fills with :59.999 so an
-// order anywhere in the final minute still passes.
-function boundToMs(
+// 'HH:MM:SS', or '' / malformed -> fallback to start/end of day) into
+// the timestamp shape Postgres stores in orders.created_at. Hours pad
+// so half-typed '9:30' still parses; seconds are optional. `kind`
+// selects the inclusive boundary: 'start' fills missing seconds with
+// :00.000, 'end' fills with :59.999 so an order anywhere in the final
+// minute still passes.
+function boundToTimestamp(
   date: string,
   time: string,
   kind: 'start' | 'end',
-): number | null {
+): string | null {
   if (!date) return null
   const match = time.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/)
   let suffix: string
@@ -472,8 +570,7 @@ function boundToMs(
   } else {
     suffix = kind === 'end' ? '23:59:59.999' : '00:00:00.000'
   }
-  const ms = new Date(`${date}T${suffix}`).getTime()
-  return Number.isFinite(ms) ? ms : null
+  return `${date} ${suffix}`
 }
 
 // Date field built on shadcn/ui's Calendar (popover + react-day-picker).
@@ -597,15 +694,17 @@ function TimeField({
 
 // Multi-select status filter rendered as a dropdown menu. The trigger
 // shows a count badge when at least one status is selected so the
-// active-filter state is visible without opening the menu. Filtering is
-// purely client-side over the loaded rows; the kanban view keeps its own
-// per-column streams and is unaffected.
+// active-filter state is visible without opening the menu.
 function StatusFilterBar({
   selected,
   onChange,
+  counts,
+  countsPending,
 }: {
   selected: Set<OrderStatus>
   onChange: (next: Set<OrderStatus>) => void
+  counts: OrderStatusCounts | undefined
+  countsPending: boolean
 }) {
   const [open, setOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -681,6 +780,15 @@ function StatusFilterBar({
                     className="h-4 w-4 cursor-pointer rounded border-zinc-700 bg-zinc-900 accent-blue-500"
                   />
                   <StatusBadge status={status} />
+                  <span
+                    aria-live="polite"
+                    aria-label={`${status} count`}
+                    className="ml-auto font-mono text-xs tabular-nums text-zinc-500"
+                  >
+                    {countsPending
+                      ? '...'
+                      : ORDER_COUNT_FORMATTER.format(counts?.[status] ?? 0)}
+                  </span>
                 </label>
               )
             })}
@@ -702,4 +810,3 @@ function StatusFilterBar({
     </div>
   )
 }
-

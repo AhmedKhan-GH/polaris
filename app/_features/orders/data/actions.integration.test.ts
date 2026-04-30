@@ -156,6 +156,50 @@ describe('orders/data/actions (integration)', () => {
     })
   })
 
+  describe('filtered spreadsheet actions', () => {
+    test('return matching pages and counts from the database', async () => {
+      const draft = await actions.createOrderAction()
+      const submittedA = await actions.createOrderAction()
+      const submittedB = await actions.createOrderAction()
+      await actions.transitionOrderAction({
+        orderId: submittedA.id,
+        toStatus: 'submitted',
+      })
+      await actions.transitionOrderAction({
+        orderId: submittedB.id,
+        toStatus: 'submitted',
+      })
+      await pool.query('UPDATE orders SET created_at = $1 WHERE id = $2', [
+        new Date('2026-04-19T09:00:00Z'),
+        draft.id,
+      ])
+      await pool.query('UPDATE orders SET created_at = $1 WHERE id = $2', [
+        new Date('2026-04-19T10:00:00Z'),
+        submittedA.id,
+      ])
+      await pool.query('UPDATE orders SET created_at = $1 WHERE id = $2', [
+        new Date('2026-04-19T11:00:00Z'),
+        submittedB.id,
+      ])
+
+      const filters = {
+        statuses: ['submitted'] as const,
+        createdFrom: '2026-04-19 00:00:00.000',
+        createdTo: '2026-04-19 23:59:59.999',
+      }
+
+      const page = await actions.findFilteredOrdersPageAction(filters, null, 1)
+      const count = await actions.countFilteredOrdersAction(filters)
+      const countsByStatus =
+        await actions.countFilteredOrdersByStatusAction(filters)
+
+      expect(page.map((o) => o.id)).toEqual([submittedB.id])
+      expect(count).toBe(2)
+      expect(countsByStatus.submitted).toBe(2)
+      expect(countsByStatus.drafted).toBe(0)
+    })
+  })
+
   describe('countOrdersAction', () => {
     test('returns 0 on an empty table', async () => {
       await expect(actions.countOrdersAction()).resolves.toBe(0)
