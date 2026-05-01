@@ -7,7 +7,6 @@ import {
   type InfiniteData,
 } from '@tanstack/react-query'
 import {
-  ACTIVE_ORDER_STATUSES,
   dedupeById,
   type Order,
   type OrderStatus,
@@ -23,6 +22,7 @@ import {
   findFilteredOrdersPageAction,
 } from '../../data/actions'
 import {
+  DEFAULT_ACTIVE_ORDER_FILTERS,
   ORDERS_PAGE_SIZE,
   listOrderStatusCountsQueryKey,
   listOrdersCountQueryKey,
@@ -68,7 +68,7 @@ export function ListView({
   // Start on the active pipeline to keep terminal/archive rows from
   // flooding the default list. Empty status set = no filter.
   const [selectedStatuses, setSelectedStatuses] = useState<Set<OrderStatus>>(
-    () => new Set(ACTIVE_ORDER_STATUSES),
+    () => new Set(DEFAULT_ACTIVE_ORDER_FILTERS.statuses),
   )
   const [dateRange, setDateRange] =
     useState<ListDateFilterValues>(EMPTY_DATE_RANGE)

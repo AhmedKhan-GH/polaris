@@ -2,10 +2,13 @@
 // Plain module --- no 'use client' directive --- so server components see
 // the actual values instead of client-only references.
 
-import type { OrderStatus } from '@/lib/domain/order'
+import { ACTIVE_ORDER_STATUSES, type OrderStatus } from '@/lib/domain/order'
 import type { OrderFilters } from '@/lib/db/orderRepository'
 
 export const ORDERS_PAGE_SIZE = 50
+export const DEFAULT_ACTIVE_ORDER_FILTERS = {
+  statuses: ACTIVE_ORDER_STATUSES,
+} satisfies OrderFilters
 export const ORDERS_QUERY_KEY = ['orders'] as const
 export const ORDERS_COUNT_QUERY_KEY = ['orders', 'count'] as const
 export const LIST_ORDERS_QUERY_KEY = [
