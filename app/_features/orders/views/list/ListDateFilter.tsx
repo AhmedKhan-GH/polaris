@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { CalendarIcon, RotateCcw } from 'lucide-react'
+import { CalendarIcon } from 'lucide-react'
 import { Calendar as ShadCalendar } from '@/components/ui/calendar'
 import {
   Popover,
@@ -9,64 +9,66 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover'
 
-export type DateRangeFilterValues = {
+export type ListDateFilterValues = {
   dateFrom: string
   timeFrom: string
   dateTo: string
   timeTo: string
 }
 
-export function DateRangeFilter({
+export function ListDateFilter({
   value,
   onChange,
 }: {
-  value: DateRangeFilterValues
-  onChange: (next: DateRangeFilterValues) => void
+  value: ListDateFilterValues
+  onChange: (next: ListDateFilterValues) => void
 }) {
   const { dateFrom, timeFrom, dateTo, timeTo } = value
   const active =
     dateFrom !== '' || timeFrom !== '' || dateTo !== '' || timeTo !== ''
 
-  function patch(next: Partial<DateRangeFilterValues>) {
+  function patch(next: Partial<ListDateFilterValues>) {
     onChange({ ...value, ...next })
   }
 
   return (
-    <div className="flex h-9 flex-wrap items-center gap-2 rounded-md border border-zinc-700 bg-zinc-900 py-0 pl-3 pr-1 [color-scheme:dark]">
-      <span className="inline-flex h-7 items-center text-xs font-medium uppercase leading-none tracking-wider text-zinc-500">
-        From
-      </span>
-      <DateField
-        value={dateFrom}
-        onChange={(next) => patch({ dateFrom: next })}
-        max={dateTo || undefined}
-        ariaLabel="Created from date"
-      />
-      <TimeField
-        value={timeFrom}
-        onChange={(next) => patch({ timeFrom: next })}
-        ariaLabel="Created from time (defaults to 00:00 when blank)"
-      />
-      <span
-        aria-hidden
-        className="inline-flex h-7 items-center leading-none text-zinc-500"
-      >
-        →
-      </span>
-      <span className="inline-flex h-7 items-center text-xs font-medium uppercase leading-none tracking-wider text-zinc-500">
-        To
-      </span>
-      <DateField
-        value={dateTo}
-        onChange={(next) => patch({ dateTo: next })}
-        min={dateFrom || undefined}
-        ariaLabel="Created to date"
-      />
-      <TimeField
-        value={timeTo}
-        onChange={(next) => patch({ timeTo: next })}
-        ariaLabel="Created to time (defaults to 23:59 when blank)"
-      />
+    <div className="inline-flex h-9 items-stretch overflow-hidden rounded-md border border-zinc-700 bg-zinc-900 [color-scheme:dark]">
+      <div className="flex h-full items-center gap-2 px-3">
+        <span className="inline-grid h-7 place-items-center text-xs font-medium uppercase tracking-wider text-zinc-500">
+          From
+        </span>
+        <DateField
+          value={dateFrom}
+          onChange={(next) => patch({ dateFrom: next })}
+          max={dateTo || undefined}
+          ariaLabel="Created from date"
+        />
+        <TimeField
+          value={timeFrom}
+          onChange={(next) => patch({ timeFrom: next })}
+          ariaLabel="Created from time (defaults to 00:00 when blank)"
+        />
+        <span
+          aria-hidden
+          className="inline-flex h-7 items-center leading-none text-zinc-500"
+        >
+          →
+        </span>
+        <span className="inline-grid h-7 place-items-center text-xs font-medium uppercase tracking-wider text-zinc-500">
+          To
+        </span>
+        <DateField
+          value={dateTo}
+          onChange={(next) => patch({ dateTo: next })}
+          min={dateFrom || undefined}
+          ariaLabel="Created to date"
+        />
+        <TimeField
+          value={timeTo}
+          onChange={(next) => patch({ timeTo: next })}
+          ariaLabel="Created to time (defaults to 23:59 when blank)"
+        />
+      </div>
       <button
         type="button"
         disabled={!active}
@@ -84,10 +86,9 @@ export function DateRangeFilter({
             ? 'Clear date range filter'
             : 'Date range is unspecified — showing all orders'
         }
-        className="inline-flex h-7 items-center gap-1 rounded border border-zinc-700 bg-zinc-800 px-1.5 text-xs font-medium leading-none text-zinc-200 hover:border-red-500/40 hover:bg-red-500/10 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-zinc-700 disabled:hover:bg-zinc-800 disabled:hover:text-zinc-200"
+        className="inline-flex h-full items-center border-l border-zinc-700 bg-zinc-800/70 px-3 text-xs font-medium leading-none text-zinc-200 hover:border-red-500/40 hover:bg-red-500/10 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-zinc-700 disabled:hover:bg-zinc-800/70 disabled:hover:text-zinc-200"
       >
-        <RotateCcw aria-hidden className="h-3.5 w-3.5" />
-        <span>Clear</span>
+        Clear filters
       </button>
     </div>
   )
@@ -146,10 +147,12 @@ function DateField({
           aria-label={ariaLabel}
           className="flex h-7 items-center gap-1.5 rounded px-1 font-mono text-sm hover:bg-zinc-800/50 focus:outline-none focus:ring-1 focus:ring-blue-400/40"
         >
-          <span className={empty ? 'text-zinc-600' : 'text-zinc-200'}>
+          <span
+            className={`inline-grid h-full place-items-center ${empty ? 'text-zinc-600' : 'text-zinc-200'}`}
+          >
             {empty ? 'YYYY-MM-DD' : value}
           </span>
-          <CalendarIcon aria-hidden className="h-3.5 w-3.5 text-zinc-500" />
+          <CalendarIcon aria-hidden className="h-3 w-3 text-zinc-500" />
         </button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="start">
@@ -181,23 +184,25 @@ function TimeField({
   ariaLabel: string
 }) {
   return (
-    <input
-      type="text"
-      inputMode="numeric"
-      pattern="\d{1,2}:\d{2}(:\d{2})?"
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === 'Escape') {
-          e.preventDefault()
-          ;(e.target as HTMLInputElement).blur()
-        }
-      }}
-      placeholder="HH:MM:SS"
-      aria-label={ariaLabel}
-      autoComplete="off"
-      className="h-7 w-[75px] rounded bg-transparent px-1 py-0 font-mono text-sm leading-7 text-zinc-200 outline-none placeholder:text-zinc-600 hover:bg-zinc-800/50 focus:ring-1 focus:ring-blue-400/40"
-    />
+    <label className="inline-grid h-7 cursor-text place-items-center rounded hover:bg-zinc-800/50 focus-within:ring-1 focus-within:ring-blue-400/40">
+      <input
+        type="text"
+        inputMode="numeric"
+        pattern="\d{1,2}:\d{2}(:\d{2})?"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === 'Escape') {
+            e.preventDefault()
+            ;(e.target as HTMLInputElement).blur()
+          }
+        }}
+        placeholder="HH:MM:SS"
+        aria-label={ariaLabel}
+        autoComplete="off"
+        className="block w-[75px] appearance-none border-0 bg-transparent px-1 py-0 font-mono text-sm text-zinc-200 outline-none placeholder:text-zinc-600"
+      />
+    </label>
   )
 }
 

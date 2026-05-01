@@ -1,8 +1,8 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 import { ChevronDown, ChevronUp } from 'lucide-react'
-import type { OrderStatus } from '@/lib/domain/order'
+import { ACTIVE_ORDER_STATUSES, type OrderStatus } from '@/lib/domain/order'
 import type { OrderStatusCounts } from '@/lib/db/orderRepository'
 import { StatusBadge } from '../../shared/StatusBadge'
 import {
@@ -13,7 +13,7 @@ import {
 // Multi-select status filter rendered as a dropdown menu. The trigger
 // shows a count badge when at least one status is selected so the
 // active-filter state is visible without opening the menu.
-export function StatusFilterBar({
+export function ListStatusFilter({
   selected,
   onChange,
   counts,
@@ -84,14 +84,13 @@ export function StatusFilterBar({
         >
           <div className="flex flex-col gap-1">
             {STATUS_FILTER_GROUPS.map((group, groupIndex) => (
-              <div
-                key={groupIndex}
-                className={
-                  groupIndex === 0
-                    ? 'flex flex-col gap-1'
-                    : 'mt-1 flex flex-col gap-1 border-t border-zinc-800 pt-2'
-                }
-              >
+              <Fragment key={groupIndex}>
+                {groupIndex > 0 && (
+                  <div
+                    role="separator"
+                    className="my-1 border-t border-zinc-800"
+                  />
+                )}
                 {group.map((status) => {
                   const active = selected.has(status)
                   return (
@@ -118,21 +117,17 @@ export function StatusFilterBar({
                     </label>
                   )
                 })}
-              </div>
+              </Fragment>
             ))}
           </div>
-          {someSelected && (
-            <>
-              <div className="my-1 border-t border-zinc-800" />
-              <button
-                type="button"
-                onClick={() => onChange(new Set())}
-                className="w-full rounded px-2 py-1 text-left text-xs font-medium text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
-              >
-                Clear filters
-              </button>
-            </>
-          )}
+          <div className="my-1 border-t border-zinc-800" />
+          <button
+            type="button"
+            onClick={() => onChange(new Set(ACTIVE_ORDER_STATUSES))}
+            className="w-full rounded px-2 py-1 text-left text-xs font-medium text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
+          >
+            Reset filters
+          </button>
         </div>
       )}
     </div>

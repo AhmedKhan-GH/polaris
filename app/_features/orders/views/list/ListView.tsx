@@ -7,6 +7,7 @@ import {
   type InfiniteData,
 } from '@tanstack/react-query'
 import {
+  ACTIVE_ORDER_STATUSES,
   dedupeById,
   type Order,
   type OrderStatus,
@@ -29,16 +30,16 @@ import {
 } from '../../data/queryKeys'
 import {
   boundToTimestamp,
-  DateRangeFilter,
-  type DateRangeFilterValues,
-} from './DateRangeFilter'
+  ListDateFilter,
+  type ListDateFilterValues,
+} from './ListDateFilter'
 import { ListTable } from './ListTable'
-import { StatusFilterBar } from './StatusFilterBar'
+import { ListStatusFilter } from './ListStatusFilter'
 import { STATUS_FILTER_ORDER } from './constants'
 
 type ListOrdersCache = InfiniteData<Order[], OrdersCursor | null>
 
-const EMPTY_DATE_RANGE: DateRangeFilterValues = {
+const EMPTY_DATE_RANGE: ListDateFilterValues = {
   dateFrom: '',
   timeFrom: '',
   dateTo: '',
@@ -64,12 +65,13 @@ export function ListView({
   selectedId: string | null
   onSelect: (id: string) => void
 }) {
-  // Empty status set = no filter (show everything).
+  // Start on the active pipeline to keep terminal/archive rows from
+  // flooding the default list. Empty status set = no filter.
   const [selectedStatuses, setSelectedStatuses] = useState<Set<OrderStatus>>(
-    new Set(),
+    () => new Set(ACTIVE_ORDER_STATUSES),
   )
   const [dateRange, setDateRange] =
-    useState<DateRangeFilterValues>(EMPTY_DATE_RANGE)
+    useState<ListDateFilterValues>(EMPTY_DATE_RANGE)
 
   const filters = useMemo<OrderFilters>(() => {
     const next: OrderFilters = {}
@@ -170,13 +172,13 @@ export function ListView({
 
   const filterBar = (
     <div className="flex flex-wrap items-center gap-3">
-      <StatusFilterBar
+      <ListStatusFilter
         selected={selectedStatuses}
         onChange={setSelectedStatuses}
         counts={statusFilterCounts}
         countsPending={statusFilterCountsPending}
       />
-      <DateRangeFilter value={dateRange} onChange={setDateRange} />
+      <ListDateFilter value={dateRange} onChange={setDateRange} />
     </div>
   )
 
