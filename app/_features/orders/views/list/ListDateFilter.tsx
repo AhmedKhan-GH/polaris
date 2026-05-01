@@ -108,10 +108,10 @@ export function ListDateFilter({
         <div
           role="dialog"
           aria-label="Created date range filter"
-          className="absolute left-0 top-full z-10 mt-1 w-[min(22rem,calc(100vw-2rem))] rounded-md border border-zinc-700 bg-zinc-900 p-2 shadow-lg"
+          className="absolute left-0 top-full z-10 mt-1 w-max max-w-[calc(100vw-2rem)] rounded-md border border-zinc-700 bg-zinc-900 p-2 shadow-lg"
         >
           <div className="flex flex-col gap-2">
-            <div className="grid grid-cols-[3rem_minmax(0,1fr)_auto] items-center gap-2 rounded px-2 py-1">
+            <div className="grid grid-cols-[3rem_auto_auto] items-center gap-2 rounded px-2 py-1">
               <span className="inline-flex h-7 items-center text-xs font-medium uppercase tracking-wider text-zinc-500">
                 From
               </span>
@@ -134,7 +134,7 @@ export function ListDateFilter({
                 onClick={() => patch({ dateFrom: '', timeFrom: '' })}
               />
             </div>
-            <div className="grid grid-cols-[3rem_minmax(0,1fr)_auto] items-center gap-2 rounded px-2 py-1">
+            <div className="grid grid-cols-[3rem_auto_auto] items-center gap-2 rounded px-2 py-1">
               <span className="inline-flex h-7 items-center text-xs font-medium uppercase tracking-wider text-zinc-500">
                 To
               </span>
