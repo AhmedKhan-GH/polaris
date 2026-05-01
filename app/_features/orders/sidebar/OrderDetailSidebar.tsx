@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { ArrowRight } from 'lucide-react'
+import { ArrowRightIcon } from '@heroicons/react/24/outline'
 import {
   formatCreatedAt,
   type Order,
@@ -401,7 +401,10 @@ function ConfirmActionModal({
         </h3>
         <div className="mt-2 flex items-center gap-2">
           <StatusBadge status={currentStatus} />
-          <ArrowRight aria-hidden className="h-3.5 w-3.5 text-zinc-500" />
+          <ArrowRightIcon
+            aria-hidden
+            className="h-3.5 w-3.5 text-zinc-500"
+          />
           <StatusBadge status={action.toStatus} />
         </div>
         <p className="mt-2 text-xs text-zinc-400">

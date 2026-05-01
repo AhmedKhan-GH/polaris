@@ -1,7 +1,10 @@
 'use client'
 
 import { Fragment, useEffect, useRef, useState } from 'react'
-import { ChevronDown, ChevronUp } from 'lucide-react'
+import {
+  ChevronDownIcon,
+  ChevronUpIcon,
+} from '@heroicons/react/24/outline'
 import { ACTIVE_ORDER_STATUSES, type OrderStatus } from '@/lib/domain/order'
 import type { OrderStatusCounts } from '@/lib/db/orderRepository'
 import { StatusBadge } from '../../shared/StatusBadge'
@@ -72,9 +75,15 @@ export function ListStatusFilter({
           </span>
         )}
         {open ? (
-          <ChevronUp aria-hidden className="h-4 w-4 text-zinc-500" />
+          <ChevronUpIcon
+            aria-hidden
+            className="h-4 w-4 text-zinc-500"
+          />
         ) : (
-          <ChevronDown aria-hidden className="h-4 w-4 text-zinc-500" />
+          <ChevronDownIcon
+            aria-hidden
+            className="h-4 w-4 text-zinc-500"
+          />
         )}
       </button>
       {open && (

@@ -1,5 +1,5 @@
 import { Fragment, type ReactNode } from 'react'
-import { ArrowRight } from 'lucide-react'
+import { ArrowRightIcon } from '@heroicons/react/24/outline'
 
 // Transition labels sit at the top of each column, naming the action
 // that moves cards out of that column into the next one. Index N = label
@@ -30,7 +30,10 @@ function TransitionLabel({ children }: { children: ReactNode }) {
   return (
     <span className="inline-flex items-center justify-end gap-1">
       <span>{children}</span>
-      <ArrowRight aria-hidden className="h-3.5 w-3.5 shrink-0" />
+      <ArrowRightIcon
+        aria-hidden
+        className="h-3.5 w-3.5 shrink-0"
+      />
     </span>
   )
 }

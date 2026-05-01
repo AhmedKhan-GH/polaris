@@ -1,7 +1,10 @@
 'use client'
 
 import { useState } from 'react'
-import { ArrowRight, CalendarIcon } from 'lucide-react'
+import {
+  ArrowRightIcon,
+  CalendarIcon,
+} from '@heroicons/react/24/outline'
 import { Calendar as ShadCalendar } from '@/components/ui/calendar'
 import {
   Popover,
@@ -33,8 +36,8 @@ export function ListDateFilter({
 
   return (
     <div className="inline-flex h-9 items-stretch overflow-hidden rounded-md border border-zinc-700 bg-zinc-900 [color-scheme:dark]">
-      <div className="flex h-full items-center gap-2 px-3">
-        <span className="inline-flex h-7 items-center text-xs font-medium uppercase tracking-wider text-zinc-500">
+      <div className="flex h-full items-center gap-2 px-3 whitespace-nowrap">
+        <span className="inline-flex h-7 shrink-0 items-center text-xs font-medium uppercase tracking-wider text-zinc-500">
           From
         </span>
         <DateField
@@ -50,11 +53,11 @@ export function ListDateFilter({
         />
         <span
           aria-hidden
-          className="inline-flex h-7 items-center justify-center text-zinc-500"
+          className="inline-flex h-7 shrink-0 items-center justify-center text-zinc-500"
         >
-          <ArrowRight className="h-3.5 w-3.5" />
+          <ArrowRightIcon className="h-3.5 w-3.5 shrink-0" />
         </span>
-        <span className="inline-flex h-7 items-center text-xs font-medium uppercase tracking-wider text-zinc-500">
+        <span className="inline-flex h-7 shrink-0 items-center text-xs font-medium uppercase tracking-wider text-zinc-500">
           To
         </span>
         <DateField
@@ -86,7 +89,7 @@ export function ListDateFilter({
             ? 'Clear date range filter'
             : 'Date range is unspecified — showing all orders'
         }
-        className="inline-flex h-full items-center border-l border-zinc-700 bg-zinc-800/70 px-3 text-xs font-medium leading-none text-zinc-200 hover:border-red-500/40 hover:bg-red-500/10 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-zinc-700 disabled:hover:bg-zinc-800/70 disabled:hover:text-zinc-200"
+        className="inline-flex h-full shrink-0 items-center border-l border-zinc-700 bg-zinc-800/70 px-3 text-xs font-medium leading-none text-zinc-200 whitespace-nowrap hover:border-red-500/40 hover:bg-red-500/10 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-zinc-700 disabled:hover:bg-zinc-800/70 disabled:hover:text-zinc-200"
       >
         Clear filters
       </button>
@@ -145,14 +148,17 @@ function DateField({
         <button
           type="button"
           aria-label={ariaLabel}
-          className="flex h-7 items-center gap-1.5 rounded px-1 font-mono text-sm hover:bg-zinc-800/50 focus:outline-none focus:ring-1 focus:ring-blue-400/40"
+          className="flex h-7 shrink-0 items-center gap-1.5 rounded px-1 font-mono text-sm hover:bg-zinc-800/50 focus:outline-none focus:ring-1 focus:ring-blue-400/40"
         >
           <span
-            className={`inline-flex h-full items-center ${empty ? 'text-zinc-600' : 'text-zinc-200'}`}
+            className={`inline-flex h-full shrink-0 items-center whitespace-nowrap ${empty ? 'text-zinc-600' : 'text-zinc-200'}`}
           >
             {empty ? 'YYYY-MM-DD' : value}
           </span>
-          <CalendarIcon aria-hidden className="h-3 w-3 text-zinc-500" />
+          <CalendarIcon
+            aria-hidden
+            className="h-3 w-3 shrink-0 text-zinc-500"
+          />
         </button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="start">
@@ -184,7 +190,7 @@ function TimeField({
   ariaLabel: string
 }) {
   return (
-    <label className="inline-flex h-7 cursor-text items-center rounded hover:bg-zinc-800/50 focus-within:ring-1 focus-within:ring-blue-400/40">
+    <label className="inline-flex h-7 shrink-0 cursor-text items-center rounded hover:bg-zinc-800/50 focus-within:ring-1 focus-within:ring-blue-400/40">
       <input
         type="text"
         inputMode="numeric"
@@ -200,7 +206,7 @@ function TimeField({
         placeholder="HH:MM:SS"
         aria-label={ariaLabel}
         autoComplete="off"
-        className="block w-[75px] appearance-none border-0 bg-transparent px-1 py-0 font-mono text-sm text-zinc-200 outline-none placeholder:text-zinc-600"
+        className="block w-[75px] shrink-0 appearance-none border-0 bg-transparent px-1 py-0 font-mono text-sm text-zinc-200 outline-none placeholder:text-zinc-600"
       />
     </label>
   )
