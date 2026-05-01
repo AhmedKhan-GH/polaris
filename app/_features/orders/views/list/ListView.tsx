@@ -162,6 +162,15 @@ export function ListView({
     : statusCounts
   const statusFilterCountsPending =
     dateFiltersActive && dateFilteredStatusCounts.data === undefined
+  const scrollResetKey = useMemo(
+    () =>
+      [
+        filters.statuses?.join(',') ?? '',
+        filters.createdFrom ?? '',
+        filters.createdTo ?? '',
+      ].join('|'),
+    [filters],
+  )
   const fetchNextVisiblePage = useCallback(() => {
     if (filtersActive) {
       void fetchNextFilteredPage()
@@ -202,6 +211,7 @@ export function ListView({
         hasNextPage={activeHasNextPage}
         isFetchingNextPage={activeIsFetchingNextPage}
         fetchNextPage={fetchNextVisiblePage}
+        scrollResetKey={scrollResetKey}
         selectedId={selectedId}
         onSelect={onSelect}
       />

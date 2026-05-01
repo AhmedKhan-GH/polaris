@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import {
   createColumnHelper,
@@ -53,6 +53,7 @@ export function ListTable({
   hasNextPage,
   isFetchingNextPage,
   fetchNextPage,
+  scrollResetKey,
   selectedId,
   onSelect,
 }: {
@@ -61,6 +62,7 @@ export function ListTable({
   hasNextPage: boolean | undefined
   isFetchingNextPage: boolean
   fetchNextPage: () => void
+  scrollResetKey: string
   selectedId: string | null
   onSelect: (id: string) => void
 }) {
@@ -84,6 +86,15 @@ export function ListTable({
     displayCount,
     ROW_HEIGHT,
   )
+
+  useLayoutEffect(() => {
+    const el = scrollRef.current
+    if (!el) return
+    if (el.scrollTop !== 0) {
+      el.scrollTo({ top: 0 })
+    }
+    resetUnseen()
+  }, [scrollResetKey, resetUnseen])
 
   const fetchNextVisiblePage = useCallback(() => {
     fetchNextPage()
