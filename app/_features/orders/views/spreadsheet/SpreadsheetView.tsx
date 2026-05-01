@@ -22,7 +22,6 @@ import {
 import {
   dedupeById,
   formatCreatedAt,
-  ORDER_STATUSES,
   type Order,
   type OrderStatus,
 } from '@/lib/domain/order'
@@ -48,6 +47,11 @@ import { useScrollAnchor } from '../../shared/useScrollAnchor'
 const ROW_HEIGHT = 44
 const GRID_COLUMNS = 'grid-cols-[120px_140px_1fr]'
 const ORDER_COUNT_FORMATTER = new Intl.NumberFormat('en-US')
+const STATUS_FILTER_GROUPS: readonly (readonly OrderStatus[])[] = [
+  ['drafted', 'submitted', 'invoiced', 'closed'],
+  ['discarded', 'rejected', 'voided', 'archived'],
+]
+const STATUS_FILTER_ORDER: readonly OrderStatus[] = STATUS_FILTER_GROUPS.flat()
 type SpreadsheetOrdersCache = InfiniteData<Order[], OrdersCursor | null>
 
 // Per-column meta: className applied to the <div role="cell"> wrapper
@@ -117,7 +121,7 @@ export function SpreadsheetView({
 
   const filters = useMemo<OrderFilters>(() => {
     const next: OrderFilters = {}
-    const statuses = ORDER_STATUSES.filter((status) =>
+    const statuses = STATUS_FILTER_ORDER.filter((status) =>
       selectedStatuses.has(status),
     )
     const createdFrom = boundToTimestamp(dateFrom, timeFrom, 'start')
@@ -766,32 +770,43 @@ function StatusFilterBar({
           className="absolute left-0 top-full z-10 mt-1 w-56 rounded-md border border-zinc-700 bg-zinc-900 p-2 shadow-lg"
         >
           <div className="flex flex-col gap-1">
-            {ORDER_STATUSES.map((status) => {
-              const active = selected.has(status)
-              return (
-                <label
-                  key={status}
-                  className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 select-none hover:bg-zinc-800"
-                >
-                  <input
-                    type="checkbox"
-                    checked={active}
-                    onChange={() => toggle(status)}
-                    className="h-4 w-4 cursor-pointer rounded border-zinc-700 bg-zinc-900 accent-blue-500"
-                  />
-                  <StatusBadge status={status} />
-                  <span
-                    aria-live="polite"
-                    aria-label={`${status} count`}
-                    className="ml-auto font-mono text-xs tabular-nums text-zinc-500"
-                  >
-                    {countsPending
-                      ? '...'
-                      : ORDER_COUNT_FORMATTER.format(counts?.[status] ?? 0)}
-                  </span>
-                </label>
-              )
-            })}
+            {STATUS_FILTER_GROUPS.map((group, groupIndex) => (
+              <div
+                key={groupIndex}
+                className={
+                  groupIndex === 0
+                    ? 'flex flex-col gap-1'
+                    : 'mt-1 flex flex-col gap-1 border-t border-zinc-800 pt-2'
+                }
+              >
+                {group.map((status) => {
+                  const active = selected.has(status)
+                  return (
+                    <label
+                      key={status}
+                      className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 select-none hover:bg-zinc-800"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={active}
+                        onChange={() => toggle(status)}
+                        className="h-4 w-4 cursor-pointer rounded border-zinc-700 bg-zinc-900 accent-blue-500"
+                      />
+                      <StatusBadge status={status} />
+                      <span
+                        aria-live="polite"
+                        aria-label={`${status} count`}
+                        className="ml-auto font-mono text-xs tabular-nums text-zinc-500"
+                      >
+                        {countsPending
+                          ? '...'
+                          : ORDER_COUNT_FORMATTER.format(counts?.[status] ?? 0)}
+                      </span>
+                    </label>
+                  )
+                })}
+              </div>
+            ))}
           </div>
           {someSelected && (
             <>

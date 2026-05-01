@@ -12,7 +12,7 @@ import { useOrderActions } from '../data/useOrderActions'
 interface ActionConfig {
   label: string
   toStatus: OrderStatus
-  tone: 'primary' | 'danger'
+  tone: 'primary' | 'terminal'
 }
 
 const ACTION_DESCRIPTIONS: Record<OrderStatus, string> = {
@@ -26,25 +26,64 @@ const ACTION_DESCRIPTIONS: Record<OrderStatus, string> = {
   voided:    'Voiding is for the accountable cancellation of an active invoice.',
 }
 
+const TERMINAL_ACTION_BUTTON_BASE =
+  'w-full rounded border bg-transparent px-3 py-2 text-sm font-medium disabled:cursor-wait disabled:opacity-60'
+
+const TERMINAL_ACTION_BUTTON_TONES: Record<OrderStatus, string> = {
+  drafted:   'border-zinc-700 text-zinc-300 hover:bg-zinc-800',
+  submitted: 'border-blue-500/40 text-blue-300 hover:bg-blue-500/10',
+  invoiced:  'border-violet-500/40 text-violet-300 hover:bg-violet-500/10',
+  closed:    'border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/10',
+  discarded: 'border-zinc-600/70 text-red-300 hover:bg-red-500/10',
+  rejected:  'border-blue-500/40 text-red-300 hover:bg-red-500/10',
+  voided:    'border-violet-500/40 text-red-300 hover:bg-red-500/10',
+  archived:  'border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/10',
+}
+
+const TERMINAL_CONFIRM_BUTTON_BASE =
+  'rounded border px-3 py-1.5 text-xs font-medium disabled:cursor-wait disabled:opacity-60'
+
+const TERMINAL_CONFIRM_BUTTON_TONES: Record<OrderStatus, string> = {
+  drafted:   'border-zinc-700 bg-zinc-800 text-zinc-200 hover:bg-zinc-700',
+  submitted: 'border-blue-500/40 bg-blue-500/15 text-blue-300 hover:bg-blue-500/25',
+  invoiced:  'border-violet-500/40 bg-violet-500/15 text-violet-300 hover:bg-violet-500/25',
+  closed:    'border-emerald-500/40 bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25',
+  discarded: 'border-zinc-600/70 bg-red-500/15 text-red-300 hover:bg-red-500/25',
+  rejected:  'border-blue-500/40 bg-red-500/15 text-red-300 hover:bg-red-500/25',
+  voided:    'border-violet-500/40 bg-red-500/15 text-red-300 hover:bg-red-500/25',
+  archived:  'border-emerald-500/40 bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25',
+}
+
+const TERMINAL_CARD_BORDER_TONES: Record<OrderStatus, string> = {
+  drafted:   'border-zinc-700',
+  submitted: 'border-blue-500/50',
+  invoiced:  'border-violet-500/50',
+  closed:    'border-emerald-500/50',
+  discarded: 'border-zinc-600/80',
+  rejected:  'border-blue-500/50',
+  voided:    'border-violet-500/50',
+  archived:  'border-emerald-500/50',
+}
+
 // Mirrors VALID_TRANSITIONS in lib/db/orderRepository.ts. Forward
-// transitions render as "primary" (continue the pipeline); terminal
-// exits render as "danger" so the discard/reject/void sinks stand
-// apart from the happy-path moves.
+// transitions render as "primary" (continue the pipeline). Terminal
+// destinations keep their source-stage hue; destructive exits use
+// danger text, while archive stays a completed-state terminal.
 const ACTIONS_BY_STATUS: Record<OrderStatus, ActionConfig[]> = {
   drafted: [
     { label: 'Submit',   toStatus: 'submitted', tone: 'primary' },
-    { label: 'Discard',  toStatus: 'discarded', tone: 'danger'  },
+    { label: 'Discard',  toStatus: 'discarded', tone: 'terminal' },
   ],
   submitted: [
     { label: 'Invoice',  toStatus: 'invoiced',  tone: 'primary' },
-    { label: 'Reject',   toStatus: 'rejected',  tone: 'danger'  },
+    { label: 'Reject',   toStatus: 'rejected',  tone: 'terminal' },
   ],
   invoiced: [
     { label: 'Close',    toStatus: 'closed',   tone: 'primary' },
-    { label: 'Void',     toStatus: 'voided',   tone: 'danger'  },
+    { label: 'Void',     toStatus: 'voided',   tone: 'terminal' },
   ],
   closed: [
-    { label: 'Archive',  toStatus: 'archived', tone: 'primary' },
+    { label: 'Archive',  toStatus: 'archived', tone: 'terminal' },
   ],
   archived:  [],
   discarded: [],
@@ -94,7 +133,7 @@ function SidebarBody({
 
   const actions = ACTIONS_BY_STATUS[order.status]
   const primaryAction = actions.find((a) => a.tone === 'primary') ?? null
-  const dangerAction  = actions.find((a) => a.tone === 'danger')  ?? null
+  const terminalAction = actions.find((a) => a.tone === 'terminal') ?? null
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -197,14 +236,14 @@ function SidebarBody({
 
         <div className="flex gap-2 border-t border-zinc-800 bg-zinc-950 px-5 py-4">
           <div className="flex-1">
-            {dangerAction && (
+            {terminalAction && (
               <button
                 type="button"
                 disabled={isPending}
-                onClick={() => setPendingAction(dangerAction)}
-                className="w-full rounded border border-red-500/40 bg-transparent px-3 py-2 text-sm font-medium text-red-300 hover:bg-red-500/10 disabled:cursor-wait disabled:opacity-60"
+                onClick={() => setPendingAction(terminalAction)}
+                className={`${TERMINAL_ACTION_BUTTON_BASE} ${TERMINAL_ACTION_BUTTON_TONES[terminalAction.toStatus]}`}
               >
-                {dangerAction.label}
+                {terminalAction.label}
               </button>
             )}
           </div>
@@ -327,15 +366,17 @@ function ConfirmActionModal({
   onConfirm: () => void
   onCancel: () => void
 }) {
-  const isDanger = action.tone === 'danger'
-  const titleId = isDanger
-    ? 'confirm-terminate-title'
+  const isTerminal = action.tone === 'terminal'
+  const titleId = isTerminal
+    ? 'confirm-terminal-title'
     : 'confirm-transition-title'
   const bodyCopy = ACTION_DESCRIPTIONS[action.toStatus]
-  const confirmButtonClass = isDanger
-    ? 'rounded border border-red-500/40 bg-red-500/15 px-3 py-1.5 text-xs font-medium text-red-300 hover:bg-red-500/25 disabled:cursor-wait disabled:opacity-60'
+  const confirmButtonClass = isTerminal
+    ? `${TERMINAL_CONFIRM_BUTTON_BASE} ${TERMINAL_CONFIRM_BUTTON_TONES[action.toStatus]}`
     : 'rounded border border-zinc-100 bg-zinc-100 px-3 py-1.5 text-xs font-medium text-zinc-900 hover:bg-zinc-200 disabled:cursor-wait disabled:opacity-60'
-  const cardBorderClass = isDanger ? 'border-red-500/50' : 'border-zinc-700'
+  const cardBorderClass = isTerminal
+    ? TERMINAL_CARD_BORDER_TONES[action.toStatus]
+    : 'border-zinc-700'
 
   // Scoped to the parent <aside>: absolute inset-0 covers the sidebar
   // pane only, not the entire viewport.
