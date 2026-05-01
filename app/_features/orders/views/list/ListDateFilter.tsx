@@ -1,9 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
-  ArrowRightIcon,
   CalendarIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
 } from '@heroicons/react/24/outline'
 import { Calendar as ShadCalendar } from '@/components/ui/calendar'
 import {
@@ -26,73 +27,143 @@ export function ListDateFilter({
   value: ListDateFilterValues
   onChange: (next: ListDateFilterValues) => void
 }) {
+  const [open, setOpen] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
   const { dateFrom, timeFrom, dateTo, timeTo } = value
   const active =
     dateFrom !== '' || timeFrom !== '' || dateTo !== '' || timeTo !== ''
+  const activeBounds =
+    (dateFrom !== '' || timeFrom !== '' ? 1 : 0) +
+    (dateTo !== '' || timeTo !== '' ? 1 : 0)
 
   function patch(next: Partial<ListDateFilterValues>) {
     onChange({ ...value, ...next })
   }
 
+  function clear() {
+    onChange({
+      dateFrom: '',
+      timeFrom: '',
+      dateTo: '',
+      timeTo: '',
+    })
+  }
+
+  useEffect(() => {
+    if (!open) return
+    function onClickOutside(e: MouseEvent) {
+      const target = e.target as Node
+      if (containerRef.current?.contains(target)) return
+      if (
+        target instanceof Element &&
+        target.closest('[data-date-filter-calendar]')
+      ) {
+        return
+      }
+      setOpen(false)
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setOpen(false)
+    }
+    document.addEventListener('mousedown', onClickOutside)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onClickOutside)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [open])
+
   return (
-    <div className="inline-flex h-9 items-stretch overflow-hidden rounded-md border border-zinc-700 bg-zinc-900 [color-scheme:dark]">
-      <div className="flex h-full items-center gap-2 px-3 whitespace-nowrap">
-        <span className="inline-flex h-7 shrink-0 items-center text-xs font-medium uppercase tracking-wider text-zinc-500">
-          From
-        </span>
-        <DateField
-          value={dateFrom}
-          onChange={(next) => patch({ dateFrom: next })}
-          max={dateTo || undefined}
-          ariaLabel="Created from date"
-        />
-        <TimeField
-          value={timeFrom}
-          onChange={(next) => patch({ timeFrom: next })}
-          ariaLabel="Created from time (defaults to 00:00 when blank)"
-        />
-        <span
-          aria-hidden
-          className="inline-flex h-7 shrink-0 items-center justify-center text-zinc-500"
-        >
-          <ArrowRightIcon className="h-3.5 w-3.5 shrink-0" />
-        </span>
-        <span className="inline-flex h-7 shrink-0 items-center text-xs font-medium uppercase tracking-wider text-zinc-500">
-          To
-        </span>
-        <DateField
-          value={dateTo}
-          onChange={(next) => patch({ dateTo: next })}
-          min={dateFrom || undefined}
-          ariaLabel="Created to date"
-        />
-        <TimeField
-          value={timeTo}
-          onChange={(next) => patch({ timeTo: next })}
-          ariaLabel="Created to time (defaults to 23:59 when blank)"
-        />
-      </div>
+    <div
+      ref={containerRef}
+      className="relative inline-block self-start [color-scheme:dark]"
+    >
       <button
         type="button"
-        disabled={!active}
-        onClick={() =>
-          onChange({
-            dateFrom: '',
-            timeFrom: '',
-            dateTo: '',
-            timeTo: '',
-          })
-        }
-        aria-label="Clear date range filter (show all orders)"
-        title={
-          active
-            ? 'Clear date range filter'
-            : 'Date range is unspecified — showing all orders'
-        }
-        className="inline-flex h-full shrink-0 items-center border-l border-zinc-700 bg-zinc-800/70 px-3 text-xs font-medium leading-none text-zinc-200 whitespace-nowrap hover:border-red-500/40 hover:bg-red-500/10 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-zinc-700 disabled:hover:bg-zinc-800/70 disabled:hover:text-zinc-200"
+        onClick={() => setOpen((o) => !o)}
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        className="flex h-9 items-center gap-2 rounded-md border border-zinc-700 bg-zinc-900 px-3 text-sm font-medium text-zinc-200 hover:bg-zinc-800"
       >
-        Clear filters
+        <span>Created</span>
+        {active && (
+          <span className="rounded-full bg-blue-500/20 px-1.5 text-[10px] font-medium leading-4 text-blue-300">
+            {Math.max(1, activeBounds)}
+          </span>
+        )}
+        {open ? (
+          <ChevronUpIcon
+            aria-hidden
+            className="h-4 w-4 text-zinc-500"
+          />
+        ) : (
+          <ChevronDownIcon
+            aria-hidden
+            className="h-4 w-4 text-zinc-500"
+          />
+        )}
       </button>
+      {open && (
+        <div
+          role="dialog"
+          aria-label="Created date range filter"
+          className="absolute left-0 top-full z-10 mt-1 w-[min(22rem,calc(100vw-2rem))] rounded-md border border-zinc-700 bg-zinc-900 p-2 shadow-lg"
+        >
+          <div className="flex flex-col gap-2">
+            <div className="grid grid-cols-[3rem_1fr] items-center gap-2 rounded px-2 py-1">
+              <span className="inline-flex h-7 items-center text-xs font-medium uppercase tracking-wider text-zinc-500">
+                From
+              </span>
+              <div className="flex min-w-0 items-center gap-2">
+                <DateField
+                  value={dateFrom}
+                  onChange={(next) => patch({ dateFrom: next })}
+                  max={dateTo || undefined}
+                  ariaLabel="Created from date"
+                />
+                <TimeField
+                  value={timeFrom}
+                  onChange={(next) => patch({ timeFrom: next })}
+                  ariaLabel="Created from time (defaults to 00:00 when blank)"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-[3rem_1fr] items-center gap-2 rounded px-2 py-1">
+              <span className="inline-flex h-7 items-center text-xs font-medium uppercase tracking-wider text-zinc-500">
+                To
+              </span>
+              <div className="flex min-w-0 items-center gap-2">
+                <DateField
+                  value={dateTo}
+                  onChange={(next) => patch({ dateTo: next })}
+                  min={dateFrom || undefined}
+                  ariaLabel="Created to date"
+                />
+                <TimeField
+                  value={timeTo}
+                  onChange={(next) => patch({ timeTo: next })}
+                  ariaLabel="Created to time (defaults to 23:59 when blank)"
+                />
+              </div>
+            </div>
+          </div>
+          <div className="my-1 border-t border-zinc-800" />
+          <button
+            type="button"
+            disabled={!active}
+            onClick={clear}
+            aria-label="Clear date range filter (show all orders)"
+            title={
+              active
+                ? 'Clear date range filter'
+                : 'Date range is unspecified; showing all orders'
+            }
+            className="w-full rounded px-2 py-1 text-left text-xs font-medium text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-zinc-400"
+          >
+            Clear filters
+          </button>
+        </div>
+      )}
     </div>
   )
 }
@@ -161,7 +232,11 @@ function DateField({
           />
         </button>
       </PopoverTrigger>
-      <PopoverContent className="w-auto p-0" align="start">
+      <PopoverContent
+        data-date-filter-calendar
+        className="w-auto p-0"
+        align="start"
+      >
         <ShadCalendar
           mode="single"
           selected={selected}
