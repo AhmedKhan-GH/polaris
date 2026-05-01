@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { CalendarIcon } from 'lucide-react'
+import { ArrowRight, CalendarIcon } from 'lucide-react'
 import { Calendar as ShadCalendar } from '@/components/ui/calendar'
 import {
   Popover,
@@ -34,7 +34,7 @@ export function ListDateFilter({
   return (
     <div className="inline-flex h-9 items-stretch overflow-hidden rounded-md border border-zinc-700 bg-zinc-900 [color-scheme:dark]">
       <div className="flex h-full items-center gap-2 px-3">
-        <span className="inline-grid h-7 place-items-center text-xs font-medium uppercase tracking-wider text-zinc-500">
+        <span className="inline-flex h-7 items-center text-xs font-medium uppercase tracking-wider text-zinc-500">
           From
         </span>
         <DateField
@@ -50,11 +50,11 @@ export function ListDateFilter({
         />
         <span
           aria-hidden
-          className="inline-flex h-7 items-center leading-none text-zinc-500"
+          className="inline-flex h-7 items-center justify-center text-zinc-500"
         >
-          →
+          <ArrowRight className="h-3.5 w-3.5" />
         </span>
-        <span className="inline-grid h-7 place-items-center text-xs font-medium uppercase tracking-wider text-zinc-500">
+        <span className="inline-flex h-7 items-center text-xs font-medium uppercase tracking-wider text-zinc-500">
           To
         </span>
         <DateField
@@ -148,7 +148,7 @@ function DateField({
           className="flex h-7 items-center gap-1.5 rounded px-1 font-mono text-sm hover:bg-zinc-800/50 focus:outline-none focus:ring-1 focus:ring-blue-400/40"
         >
           <span
-            className={`inline-grid h-full place-items-center ${empty ? 'text-zinc-600' : 'text-zinc-200'}`}
+            className={`inline-flex h-full items-center ${empty ? 'text-zinc-600' : 'text-zinc-200'}`}
           >
             {empty ? 'YYYY-MM-DD' : value}
           </span>
@@ -184,7 +184,7 @@ function TimeField({
   ariaLabel: string
 }) {
   return (
-    <label className="inline-grid h-7 cursor-text place-items-center rounded hover:bg-zinc-800/50 focus-within:ring-1 focus-within:ring-blue-400/40">
+    <label className="inline-flex h-7 cursor-text items-center rounded hover:bg-zinc-800/50 focus-within:ring-1 focus-within:ring-blue-400/40">
       <input
         type="text"
         inputMode="numeric"

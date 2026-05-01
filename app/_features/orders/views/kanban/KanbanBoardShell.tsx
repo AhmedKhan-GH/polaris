@@ -1,4 +1,5 @@
 import { Fragment, type ReactNode } from 'react'
+import { ArrowRight } from 'lucide-react'
 
 // Transition labels sit at the top of each column, naming the action
 // that moves cards out of that column into the next one. Index N = label
@@ -17,7 +18,7 @@ const ArchiveCabinetIcon = () => (
     strokeWidth="2"
     strokeLinecap="round"
     strokeLinejoin="round"
-    className="ml-1 shrink-0"
+    className="shrink-0"
   >
     <rect x="2" y="3" width="20" height="5" rx="1" />
     <path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8" />
@@ -25,16 +26,21 @@ const ArchiveCabinetIcon = () => (
   </svg>
 )
 
+function TransitionLabel({ children }: { children: ReactNode }) {
+  return (
+    <span className="inline-flex items-center justify-end gap-1">
+      <span>{children}</span>
+      <ArrowRight aria-hidden className="h-3.5 w-3.5 shrink-0" />
+    </span>
+  )
+}
+
 const TRANSITION_LABELS: ReadonlyArray<ReactNode> = [
-  'Submit →',
-  'Invoice →',
-  'Close →',
-  // "Archive →" keeps its natural in-text space around the arrow to
-  // match the other column labels; the cabinet glyph carries its own
-  // ml-1 (4px) so the spacing between arrow and icon doesn't depend on
-  // a flex `gap` on this wrapper.
-  <span key="archive" className="inline-flex items-center">
-    <span>Archive →</span>
+  <TransitionLabel key="submit">Submit</TransitionLabel>,
+  <TransitionLabel key="invoice">Invoice</TransitionLabel>,
+  <TransitionLabel key="close">Close</TransitionLabel>,
+  <span key="archive" className="inline-flex items-center justify-end gap-1">
+    <TransitionLabel>Archive</TransitionLabel>
     <ArchiveCabinetIcon />
   </span>,
 ]
