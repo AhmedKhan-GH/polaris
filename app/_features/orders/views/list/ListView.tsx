@@ -23,20 +23,20 @@ import {
 } from '../../data/actions'
 import {
   ORDERS_PAGE_SIZE,
-  spreadsheetOrderStatusCountsQueryKey,
-  spreadsheetOrdersCountQueryKey,
-  spreadsheetOrdersQueryKey,
+  listOrderStatusCountsQueryKey,
+  listOrdersCountQueryKey,
+  listOrdersQueryKey,
 } from '../../data/queryKeys'
 import {
   boundToTimestamp,
   DateRangeFilter,
   type DateRangeFilterValues,
 } from './DateRangeFilter'
-import { SpreadsheetTable } from './SpreadsheetTable'
+import { ListTable } from './ListTable'
 import { StatusFilterBar } from './StatusFilterBar'
 import { STATUS_FILTER_ORDER } from './constants'
 
-type SpreadsheetOrdersCache = InfiniteData<Order[], OrdersCursor | null>
+type ListOrdersCache = InfiniteData<Order[], OrdersCursor | null>
 
 const EMPTY_DATE_RANGE: DateRangeFilterValues = {
   dateFrom: '',
@@ -45,7 +45,7 @@ const EMPTY_DATE_RANGE: DateRangeFilterValues = {
   timeTo: '',
 }
 
-export function SpreadsheetView({
+export function ListView({
   orders,
   totalCount,
   statusCounts,
@@ -109,11 +109,11 @@ export function SpreadsheetView({
   const filteredPages = useInfiniteQuery<
     Order[],
     Error,
-    SpreadsheetOrdersCache,
-    ReturnType<typeof spreadsheetOrdersQueryKey>,
+    ListOrdersCache,
+    ReturnType<typeof listOrdersQueryKey>,
     OrdersCursor | null
   >({
-    queryKey: spreadsheetOrdersQueryKey(filters),
+    queryKey: listOrdersQueryKey(filters),
     queryFn: ({ pageParam }) =>
       findFilteredOrdersPageAction(filters, pageParam, ORDERS_PAGE_SIZE),
     initialPageParam: null,
@@ -126,12 +126,12 @@ export function SpreadsheetView({
   })
 
   const filteredTotal = useQuery({
-    queryKey: spreadsheetOrdersCountQueryKey(filters),
+    queryKey: listOrdersCountQueryKey(filters),
     queryFn: () => countFilteredOrdersAction(filters),
     enabled: filtersActive,
   })
   const dateFilteredStatusCounts = useQuery({
-    queryKey: spreadsheetOrderStatusCountsQueryKey(statusCountFilters),
+    queryKey: listOrderStatusCountsQueryKey(statusCountFilters),
     queryFn: () => countFilteredOrdersByStatusAction(statusCountFilters),
     enabled: dateFiltersActive,
   })
@@ -194,7 +194,7 @@ export function SpreadsheetView({
   return (
     <div className="flex-1 min-h-0 flex flex-col gap-3">
       {filterBar}
-      <SpreadsheetTable
+      <ListTable
         visibleOrders={visibleOrders}
         displayCount={displayCount}
         hasNextPage={activeHasNextPage}

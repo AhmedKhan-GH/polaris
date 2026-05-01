@@ -4,7 +4,7 @@ import { Fragment, type ReactNode } from 'react'
 // that moves cards out of that column into the next one. Index N = label
 // above column N. The Closed column's outbound move archives the order
 // into the terminal 'archived' state, which is hidden from the kanban
-// (visible in the spreadsheet only); the trailing cabinet icon stands in
+// (visible in the list only); the trailing cabinet icon stands in
 // for that destination column since it isn't drawn here.
 const ArchiveCabinetIcon = () => (
   <svg

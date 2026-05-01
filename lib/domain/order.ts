@@ -114,7 +114,7 @@ export function dedupeById<T extends { id: string }>(list: readonly T[]): T[] {
 // Locale + options pinned so server-rendered output matches the client's
 // first paint --- otherwise hydration mismatches on the comma/space and
 // 12h vs 24h based on the user's system. Shared between the kanban
-// card and the spreadsheet "Created" column. Date is composed manually
+// card and the list "Created" column. Date is composed manually
 // in the local timezone as ISO 'yyyy-mm-dd' (military / sortable form),
 // time uses hourCycle 'h23' so midnight reads as '00' rather than '24'
 // on the few locales that confuse hour12:false with hourCycle h24.

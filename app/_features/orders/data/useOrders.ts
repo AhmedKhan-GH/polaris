@@ -18,7 +18,7 @@ import {
   ORDERS_COUNT_QUERY_KEY,
   ORDERS_PAGE_SIZE,
   ORDERS_QUERY_KEY,
-  SPREADSHEET_ORDERS_QUERY_KEY,
+  LIST_ORDERS_QUERY_KEY,
   ORDERS_STATUS_COUNTS_QUERY_KEY,
   ordersByStatusQueryKey,
 } from './queryKeys'
@@ -85,16 +85,16 @@ export function useOrders(): UseOrdersResult {
   })
 
   // Single channel, two table subscriptions. Row-shaped events on
-  // `orders` fan out to the global cache (spreadsheet view) AND the
+  // `orders` fan out to the global cache (list view) AND the
   // per-status cache the row belongs to (kanban columns); count deltas
   // on `order_status_counts` (maintained by the trigger added in
   // 0014_small_nighthawk.sql) stream straight into the column-header
   // counts cache --- no GROUP BY refetch on every change.
   useEffect(() => {
     const supabase = getSupabaseClient()
-    const invalidateSpreadsheetQueries = () => {
+    const invalidateListQueries = () => {
       void queryClient.invalidateQueries({
-        queryKey: SPREADSHEET_ORDERS_QUERY_KEY,
+        queryKey: LIST_ORDERS_QUERY_KEY,
       })
     }
     const channel = supabase
@@ -121,7 +121,7 @@ export function useOrders(): UseOrdersResult {
             )
             // Status counts arrive separately on the order_status_counts
             // stream below.
-            invalidateSpreadsheetQueries()
+            invalidateListQueries()
           } else if (payload.eventType === 'UPDATE') {
             const row = safeParseOrder(payload.new, 'update')
             if (!row) return
@@ -150,7 +150,7 @@ export function useOrders(): UseOrdersResult {
                 (old) => insertSortedIfInWindow(old, row),
               )
             }
-            invalidateSpreadsheetQueries()
+            invalidateListQueries()
           } else if (payload.eventType === 'DELETE') {
             const oldId = (payload.old as { id?: string }).id
             if (!oldId) return
@@ -167,7 +167,7 @@ export function useOrders(): UseOrdersResult {
             queryClient.setQueryData<number>(ORDERS_COUNT_QUERY_KEY, (n) =>
               Math.max(0, (n ?? 0) - 1),
             )
-            invalidateSpreadsheetQueries()
+            invalidateListQueries()
           }
         },
       )

@@ -5,7 +5,7 @@ import type { OrdersCursor } from '@/lib/db/orderRepository'
 import {
   ORDERS_PAGE_SIZE,
   ORDERS_QUERY_KEY,
-  SPREADSHEET_ORDERS_QUERY_KEY,
+  LIST_ORDERS_QUERY_KEY,
   ordersByStatusQueryKey,
 } from './queryKeys'
 
@@ -174,10 +174,10 @@ export function findInCaches(
     if (statusMatch) return statusMatch
   }
   for (const query of queryClient.getQueryCache().findAll({
-    queryKey: SPREADSHEET_ORDERS_QUERY_KEY,
+    queryKey: LIST_ORDERS_QUERY_KEY,
   })) {
-    const spreadsheetMatch = findInUnknownOrdersCache(query.state.data, orderId)
-    if (spreadsheetMatch) return spreadsheetMatch
+    const listMatch = findInUnknownOrdersCache(query.state.data, orderId)
+    if (listMatch) return listMatch
   }
   return null
 }

@@ -15,7 +15,7 @@ import {
 import { StatusBadge } from '../../shared/StatusBadge'
 import { useScrollAnchor } from '../../shared/useScrollAnchor'
 import { GRID_COLUMNS, ROW_HEIGHT } from './constants'
-import { SpreadsheetRowShell } from './SpreadsheetRowShell'
+import { ListRowShell } from './ListRowShell'
 
 // Per-column meta: className applied to the <div role="cell"> wrapper
 // so each column can carry its own typography/colors without nesting
@@ -47,7 +47,7 @@ const columns = [
   }),
 ]
 
-export function SpreadsheetTable({
+export function ListTable({
   visibleOrders,
   displayCount,
   hasNextPage,
@@ -209,7 +209,7 @@ export function SpreadsheetTable({
             const row = rows[vi.index]
             if (!row) {
               return (
-                <SpreadsheetRowShell
+                <ListRowShell
                   key={`shell-${vi.index}`}
                   rowIndex={vi.index}
                   start={vi.start}

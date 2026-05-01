@@ -8,9 +8,9 @@ import type { OrderFilters } from '@/lib/db/orderRepository'
 export const ORDERS_PAGE_SIZE = 50
 export const ORDERS_QUERY_KEY = ['orders'] as const
 export const ORDERS_COUNT_QUERY_KEY = ['orders', 'count'] as const
-export const SPREADSHEET_ORDERS_QUERY_KEY = [
+export const LIST_ORDERS_QUERY_KEY = [
   'orders',
-  'spreadsheet',
+  'list',
 ] as const
 export const ORDERS_STATUS_COUNTS_QUERY_KEY = [
   'orders',
@@ -24,14 +24,14 @@ export function ordersByStatusQueryKey(status: OrderStatus) {
   return ['orders', 'by-status', status] as const
 }
 
-export function spreadsheetOrdersQueryKey(filters: OrderFilters) {
-  return [...SPREADSHEET_ORDERS_QUERY_KEY, 'page', filters] as const
+export function listOrdersQueryKey(filters: OrderFilters) {
+  return [...LIST_ORDERS_QUERY_KEY, 'page', filters] as const
 }
 
-export function spreadsheetOrdersCountQueryKey(filters: OrderFilters) {
-  return [...SPREADSHEET_ORDERS_QUERY_KEY, 'count', filters] as const
+export function listOrdersCountQueryKey(filters: OrderFilters) {
+  return [...LIST_ORDERS_QUERY_KEY, 'count', filters] as const
 }
 
-export function spreadsheetOrderStatusCountsQueryKey(filters: OrderFilters) {
-  return [...SPREADSHEET_ORDERS_QUERY_KEY, 'status-counts', filters] as const
+export function listOrderStatusCountsQueryKey(filters: OrderFilters) {
+  return [...LIST_ORDERS_QUERY_KEY, 'status-counts', filters] as const
 }

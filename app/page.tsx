@@ -25,7 +25,7 @@ import { KanbanBoardShell } from './_features/orders/views/kanban/KanbanBoardShe
 import { KanbanColumnShell } from './_features/orders/views/kanban/KanbanColumnShell'
 
 // Statuses surfaced by the kanban (terminal states stay in the
-// spreadsheet only). Each gets its own prefetch so columns paint with
+// list only). Each gets its own prefetch so columns paint with
 // real cards on first load instead of waiting for realtime to fill in.
 const KANBAN_STATUSES: ReadonlyArray<OrderStatus> = [
   'drafted',
@@ -61,7 +61,7 @@ export default function Home() {
 async function OrdersPageData() {
   // Prefetch every cache the client will need on first paint so
   // useInfiniteQuery / useQuery hydrate without an extra round-trip:
-  // the spreadsheet's global page, the count + per-status aggregates,
+  // the list's global page, the count + per-status aggregates,
   // and the first page of each kanban column.
   const queryClient = new QueryClient()
   await Promise.all([

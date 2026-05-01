@@ -14,7 +14,7 @@ import { ACTIVE_ORDER_STATUSES } from '../lib/domain/order'
 // action on purpose --- the running browser sees these mutations via
 // realtime, just like a real second client. Useful for verifying
 // multi-client fan-out locally and for stress-testing the kanban /
-// spreadsheet pushdown + indicator behavior.
+// list pushdown + indicator behavior.
 //
 // Run with: npm run sim:other-user. Ctrl+C to stop.
 

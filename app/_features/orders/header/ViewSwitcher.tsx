@@ -1,10 +1,10 @@
 'use client'
 
-export type View = 'kanban' | 'spreadsheet'
+export type View = 'kanban' | 'list'
 
 const VIEWS: { value: View; label: string }[] = [
   { value: 'kanban', label: 'Kanban' },
-  { value: 'spreadsheet', label: 'Spreadsheet' },
+  { value: 'list', label: 'List' },
 ]
 
 export function ViewSwitcher({

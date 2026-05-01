@@ -9,7 +9,7 @@ import { useOrders } from './data/useOrders'
 import { findInCaches } from './data/cacheHelpers'
 import { type View } from './header/ViewSwitcher'
 import { KanbanBoard } from './views/kanban/KanbanBoard'
-import { SpreadsheetView } from './views/spreadsheet/SpreadsheetView'
+import { ListView } from './views/list/ListView'
 
 export function OrdersPage() {
   const {
@@ -32,7 +32,7 @@ export function OrdersPage() {
 
   // The selected order may live in a per-status (kanban) cache that the
   // global query hasn't paged into yet, so we walk every cache instead
-  // of just the spreadsheet's flat array.
+  // of just the list's flat array.
   const selectedOrder = selectedId
     ? findInCaches(queryClient, selectedId)
     : null
@@ -59,10 +59,10 @@ export function OrdersPage() {
         />
       </div>
       <div
-        className={view === 'spreadsheet' ? 'flex min-h-0 flex-1' : 'hidden'}
-        aria-hidden={view !== 'spreadsheet'}
+        className={view === 'list' ? 'flex min-h-0 flex-1' : 'hidden'}
+        aria-hidden={view !== 'list'}
       >
-        <SpreadsheetView
+        <ListView
           orders={orders}
           totalCount={totalCount}
           statusCounts={statusCounts}

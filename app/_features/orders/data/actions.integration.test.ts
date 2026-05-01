@@ -156,7 +156,7 @@ describe('orders/data/actions (integration)', () => {
     })
   })
 
-  describe('filtered spreadsheet actions', () => {
+  describe('filtered list actions', () => {
     test('return matching pages and counts from the database', async () => {
       const draft = await actions.createOrderAction()
       const submittedA = await actions.createOrderAction()

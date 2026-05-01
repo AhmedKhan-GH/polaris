@@ -1,6 +1,6 @@
 import { GRID_COLUMNS } from './constants'
 
-export function SpreadsheetRowShell({
+export function ListRowShell({
   rowIndex,
   start,
   size,
