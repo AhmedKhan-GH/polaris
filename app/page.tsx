@@ -41,10 +41,10 @@ const FALLBACK = (
   >
     <KanbanBoardShell
       columns={[
-        <KanbanColumnShell key="drafted"   loading name="Drafted"   count="—" />,
-        <KanbanColumnShell key="submitted" loading name="Submitted" count="—" />,
-        <KanbanColumnShell key="invoiced"  loading name="Invoiced"  count="—" />,
-        <KanbanColumnShell key="closed"    loading name="Closed"    count="—" />,
+        <KanbanColumnShell key="drafted"   loading name="Drafted"   status="drafted"   count="—" />,
+        <KanbanColumnShell key="submitted" loading name="Submitted" status="submitted" count="—" />,
+        <KanbanColumnShell key="invoiced"  loading name="Invoiced"  status="invoiced"  count="—" />,
+        <KanbanColumnShell key="closed"    loading name="Closed"    status="closed"    count="—" />,
       ]}
     />
   </OrdersPageShell>

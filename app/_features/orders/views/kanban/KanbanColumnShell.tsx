@@ -1,7 +1,10 @@
 import type { ReactNode } from 'react'
+import type { OrderStatus } from '@/lib/domain/order'
+import { STATUS_BADGE_TONES } from '../../shared/StatusBadge'
 
 interface KanbanColumnShellProps {
   name: string
+  status: OrderStatus
   count: ReactNode
   loading?: boolean
   // Optional inline element rendered in the header bar between the
@@ -13,17 +16,19 @@ interface KanbanColumnShellProps {
 
 export function KanbanColumnShell({
   name,
+  status,
   count,
   loading,
   headerAlert,
   children,
 }: KanbanColumnShellProps) {
+  const titleClass = `min-w-0 truncate rounded-full border px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide ${STATUS_BADGE_TONES[status]}`
   const sectionClass = loading
     ? 'flex w-full min-w-64 min-h-0 flex-1 flex-col gap-3 rounded-lg border border-zinc-800 bg-zinc-900 p-3 animate-loading-card'
     : 'flex w-full min-w-64 min-h-0 flex-1 flex-col gap-3 rounded-lg border border-zinc-800 bg-zinc-900 p-3'
-  const badgeClass = loading
-    ? 'rounded-full bg-zinc-800 px-2 py-0.5 text-[11px] font-medium text-zinc-500'
-    : 'rounded-full bg-zinc-800 px-2 py-0.5 text-[11px] font-medium text-zinc-300'
+  const countClass = loading
+    ? 'font-mono text-xs tabular-nums text-zinc-600'
+    : 'font-mono text-xs tabular-nums text-zinc-500'
 
   return (
     <section aria-hidden={loading || undefined} className={sectionClass}>
@@ -36,10 +41,10 @@ export function KanbanColumnShell({
           pill appear offset from the count. */}
       <div className="flex items-center justify-between gap-2 px-1">
         <div className="flex min-w-0 items-center gap-2">
-          <h2 className="min-w-0 truncate text-xs font-semibold uppercase tracking-wider text-zinc-300">
+          <h2 className={titleClass}>
             {name}
           </h2>
-          <span className={badgeClass}>{count}</span>
+          <span className={countClass}>{count}</span>
         </div>
         {headerAlert}
       </div>

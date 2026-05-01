@@ -1,6 +1,6 @@
 import type { OrderStatus } from '@/lib/domain/order'
 
-const TONES: Record<OrderStatus, string> = {
+export const STATUS_BADGE_TONES: Record<OrderStatus, string> = {
   drafted:   'border-zinc-500/30 bg-zinc-700/50 text-zinc-200',
   discarded: 'border-zinc-500/35 bg-zinc-950/80 text-red-300',
   submitted: 'border-blue-400/30 bg-blue-500/15 text-blue-300',
@@ -14,7 +14,7 @@ const TONES: Record<OrderStatus, string> = {
 export function StatusBadge({ status }: { status: OrderStatus }) {
   return (
     <span
-      className={`rounded-full border px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide ${TONES[status]}`}
+      className={`rounded-full border px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide ${STATUS_BADGE_TONES[status]}`}
     >
       {status}
     </span>

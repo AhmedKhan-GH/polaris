@@ -134,6 +134,7 @@ export function KanbanColumn({
   return (
     <KanbanColumnShell
       name={name}
+      status={status}
       count={totalSlots}
       headerAlert={headerAlert}
     >
