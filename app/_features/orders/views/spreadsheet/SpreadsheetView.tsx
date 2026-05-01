@@ -308,8 +308,8 @@ export function SpreadsheetView({
         counts={statusFilterCounts}
         countsPending={statusFilterCountsPending}
       />
-      <div className="flex h-9 flex-wrap items-center gap-2 rounded-md border border-zinc-700 bg-zinc-900 px-3 [color-scheme:dark]">
-        <span className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+      <div className="flex h-9 flex-wrap items-center gap-2 rounded-md border border-zinc-700 bg-zinc-900 py-0 pl-3 pr-1 [color-scheme:dark]">
+        <span className="inline-flex h-7 items-center text-xs font-medium uppercase leading-none tracking-wider text-zinc-500">
           From
         </span>
         <DateField
@@ -323,8 +323,13 @@ export function SpreadsheetView({
           onChange={setTimeFrom}
           ariaLabel="Created from time (defaults to 00:00 when blank)"
         />
-        <span aria-hidden className="text-zinc-500">→</span>
-        <span className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+        <span
+          aria-hidden
+          className="inline-flex h-7 items-center leading-none text-zinc-500"
+        >
+          →
+        </span>
+        <span className="inline-flex h-7 items-center text-xs font-medium uppercase leading-none tracking-wider text-zinc-500">
           To
         </span>
         <DateField
@@ -347,13 +352,13 @@ export function SpreadsheetView({
             setDateTo('')
             setTimeTo('')
           }}
-          aria-label="Reset date range to unspecified (show all orders)"
+          aria-label="Clear date range filter (show all orders)"
           title={
             dateRangeActive
-              ? 'Reset date range to unspecified'
+              ? 'Clear date range filter'
               : 'Date range is unspecified — showing all orders'
           }
-          className="ml-1 inline-flex items-center gap-1.5 rounded border border-zinc-700 bg-zinc-800 px-2 py-1 text-xs font-medium text-zinc-200 hover:border-red-500/40 hover:bg-red-500/10 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-zinc-700 disabled:hover:bg-zinc-800 disabled:hover:text-zinc-200"
+          className="inline-flex h-7 items-center gap-1 rounded border border-zinc-700 bg-zinc-800 px-1.5 text-xs font-medium leading-none text-zinc-200 hover:border-red-500/40 hover:bg-red-500/10 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-zinc-700 disabled:hover:bg-zinc-800 disabled:hover:text-zinc-200"
         >
           <svg
             aria-hidden
@@ -369,7 +374,7 @@ export function SpreadsheetView({
             <polyline points="1 4 1 10 7 10" />
             <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
           </svg>
-          <span>Reset</span>
+          <span>Clear</span>
         </button>
       </div>
     </div>
@@ -691,7 +696,7 @@ function TimeField({
       placeholder="HH:MM:SS"
       aria-label={ariaLabel}
       autoComplete="off"
-      className="w-[75px] rounded bg-transparent px-1 font-mono text-sm text-zinc-200 outline-none placeholder:text-zinc-600 hover:bg-zinc-800/50 focus:ring-1 focus:ring-blue-400/40"
+      className="h-7 w-[75px] rounded bg-transparent px-1 py-0 font-mono text-sm leading-7 text-zinc-200 outline-none placeholder:text-zinc-600 hover:bg-zinc-800/50 focus:ring-1 focus:ring-blue-400/40"
     />
   )
 }
