@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import type { OrderStatus } from '@/lib/domain/order'
-import { STATUS_BADGE_TONES } from '../../shared/StatusBadge'
+import { STATUS_BADGE_TONES } from '../../shared/statusTones'
 
 interface KanbanColumnShellProps {
   name: string

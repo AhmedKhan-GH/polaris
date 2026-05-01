@@ -8,6 +8,10 @@ import {
   type OrderStatus,
 } from '@/lib/domain/order'
 import { StatusBadge } from '../shared/StatusBadge'
+import {
+  STATUS_BUTTON_TONES,
+  STATUS_PANEL_BORDER_TONES,
+} from '../shared/statusTones'
 import { useOrderActions } from '../data/useOrderActions'
 
 interface ActionConfig {
@@ -27,49 +31,15 @@ const ACTION_DESCRIPTIONS: Record<OrderStatus, string> = {
   voided:    'Voiding is for the accountable cancellation of an active invoice.',
 }
 
-const TERMINAL_ACTION_BUTTON_BASE =
-  'w-full rounded border bg-transparent px-3 py-2 text-sm font-medium disabled:cursor-wait disabled:opacity-60'
+const ACTION_BUTTON_BASE =
+  'w-full rounded border px-3 py-2 text-sm font-medium disabled:cursor-wait disabled:opacity-60'
 
-const TERMINAL_ACTION_BUTTON_TONES: Record<OrderStatus, string> = {
-  drafted:   'border-zinc-700 text-zinc-300 hover:bg-zinc-800',
-  submitted: 'border-blue-500/40 text-blue-300 hover:bg-blue-500/10',
-  invoiced:  'border-violet-500/40 text-violet-300 hover:bg-violet-500/10',
-  closed:    'border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/10',
-  discarded: 'border-zinc-600/70 text-red-300 hover:bg-red-500/10',
-  rejected:  'border-blue-500/40 text-red-300 hover:bg-red-500/10',
-  voided:    'border-violet-500/40 text-red-300 hover:bg-red-500/10',
-  archived:  'border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/10',
-}
-
-const TERMINAL_CONFIRM_BUTTON_BASE =
+const CONFIRM_BUTTON_BASE =
   'rounded border px-3 py-1.5 text-xs font-medium disabled:cursor-wait disabled:opacity-60'
 
-const TERMINAL_CONFIRM_BUTTON_TONES: Record<OrderStatus, string> = {
-  drafted:   'border-zinc-700 bg-zinc-800 text-zinc-200 hover:bg-zinc-700',
-  submitted: 'border-blue-500/40 bg-blue-500/15 text-blue-300 hover:bg-blue-500/25',
-  invoiced:  'border-violet-500/40 bg-violet-500/15 text-violet-300 hover:bg-violet-500/25',
-  closed:    'border-emerald-500/40 bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25',
-  discarded: 'border-zinc-600/70 bg-red-500/15 text-red-300 hover:bg-red-500/25',
-  rejected:  'border-blue-500/40 bg-red-500/15 text-red-300 hover:bg-red-500/25',
-  voided:    'border-violet-500/40 bg-red-500/15 text-red-300 hover:bg-red-500/25',
-  archived:  'border-emerald-500/40 bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25',
-}
-
-const TERMINAL_CARD_BORDER_TONES: Record<OrderStatus, string> = {
-  drafted:   'border-zinc-700',
-  submitted: 'border-blue-500/50',
-  invoiced:  'border-violet-500/50',
-  closed:    'border-emerald-500/50',
-  discarded: 'border-zinc-600/80',
-  rejected:  'border-blue-500/50',
-  voided:    'border-violet-500/50',
-  archived:  'border-emerald-500/50',
-}
-
-// Mirrors VALID_TRANSITIONS in lib/db/orderRepository.ts. Forward
-// transitions render as "primary" (continue the pipeline). Terminal
-// destinations keep their source-stage hue; destructive exits use
-// danger text, while archive stays a completed-state terminal.
+// Mirrors VALID_TRANSITIONS in lib/db/orderRepository.ts. Button colors
+// come from the destination status so the action, confirmation, and
+// resulting badge stay visually aligned.
 const ACTIONS_BY_STATUS: Record<OrderStatus, ActionConfig[]> = {
   drafted: [
     { label: 'Submit',   toStatus: 'submitted', tone: 'primary' },
@@ -242,7 +212,7 @@ function SidebarBody({
                 type="button"
                 disabled={isPending}
                 onClick={() => setPendingAction(terminalAction)}
-                className={`${TERMINAL_ACTION_BUTTON_BASE} ${TERMINAL_ACTION_BUTTON_TONES[terminalAction.toStatus]}`}
+                className={`${ACTION_BUTTON_BASE} ${STATUS_BUTTON_TONES[terminalAction.toStatus]}`}
               >
                 {terminalAction.label}
               </button>
@@ -253,7 +223,7 @@ function SidebarBody({
               type="button"
               disabled={isPending}
               onClick={() => setDuplicatePending(true)}
-              className="w-full rounded border border-zinc-700 bg-transparent px-3 py-2 text-sm font-medium text-zinc-200 hover:bg-zinc-800 disabled:cursor-wait disabled:opacity-60"
+              className={`${ACTION_BUTTON_BASE} ${STATUS_BUTTON_TONES.drafted}`}
             >
               Duplicate
             </button>
@@ -264,7 +234,7 @@ function SidebarBody({
                 type="button"
                 disabled={isPending}
                 onClick={() => setPendingAction(primaryAction)}
-                className="w-full rounded bg-zinc-100 px-3 py-2 text-sm font-medium text-zinc-900 hover:bg-zinc-200 disabled:cursor-wait disabled:opacity-60"
+                className={`${ACTION_BUTTON_BASE} ${STATUS_BUTTON_TONES[primaryAction.toStatus]}`}
               >
                 {primaryAction.label}
               </button>
@@ -317,7 +287,7 @@ function ConfirmDuplicateModal({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full rounded-lg border border-zinc-700 bg-zinc-900 p-4 shadow-2xl"
+        className={`w-full rounded-lg border ${STATUS_PANEL_BORDER_TONES.drafted} bg-zinc-900 p-4 shadow-2xl`}
       >
         <h3
           id="confirm-duplicate-title"
@@ -342,7 +312,7 @@ function ConfirmDuplicateModal({
             disabled={isPending}
             onClick={onConfirm}
             autoFocus
-            className="rounded border border-zinc-100 bg-zinc-100 px-3 py-1.5 text-xs font-medium text-zinc-900 hover:bg-zinc-200 disabled:cursor-wait disabled:opacity-60"
+            className={`${CONFIRM_BUTTON_BASE} ${STATUS_BUTTON_TONES.drafted}`}
           >
             Duplicate
           </button>
@@ -372,12 +342,8 @@ function ConfirmActionModal({
     ? 'confirm-terminal-title'
     : 'confirm-transition-title'
   const bodyCopy = ACTION_DESCRIPTIONS[action.toStatus]
-  const confirmButtonClass = isTerminal
-    ? `${TERMINAL_CONFIRM_BUTTON_BASE} ${TERMINAL_CONFIRM_BUTTON_TONES[action.toStatus]}`
-    : 'rounded border border-zinc-100 bg-zinc-100 px-3 py-1.5 text-xs font-medium text-zinc-900 hover:bg-zinc-200 disabled:cursor-wait disabled:opacity-60'
-  const cardBorderClass = isTerminal
-    ? TERMINAL_CARD_BORDER_TONES[action.toStatus]
-    : 'border-zinc-700'
+  const confirmButtonClass = `${CONFIRM_BUTTON_BASE} ${STATUS_BUTTON_TONES[action.toStatus]}`
+  const cardBorderClass = STATUS_PANEL_BORDER_TONES[action.toStatus]
 
   // Scoped to the parent <aside>: absolute inset-0 covers the sidebar
   // pane only, not the entire viewport.
