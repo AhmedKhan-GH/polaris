@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { ChevronDown, ChevronUp } from 'lucide-react'
 import { Calendar as ShadCalendar } from '@/components/ui/calendar'
 import {
   Popover,
@@ -765,9 +766,11 @@ function StatusFilterBar({
             {selected.size}
           </span>
         )}
-        <span aria-hidden className="text-xs opacity-60">
-          {open ? '▴' : '▾'}
-        </span>
+        {open ? (
+          <ChevronUp aria-hidden className="h-4 w-4 text-zinc-500" />
+        ) : (
+          <ChevronDown aria-hidden className="h-4 w-4 text-zinc-500" />
+        )}
       </button>
       {open && (
         <div
