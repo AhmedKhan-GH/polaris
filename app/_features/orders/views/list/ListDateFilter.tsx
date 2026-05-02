@@ -91,12 +91,12 @@ export function ListDateFilter({
         {open ? (
           <ChevronUpIcon
             aria-hidden
-            className="h-4 w-4 text-zinc-500"
+            className="h-4 w-4 text-zinc-300"
           />
         ) : (
           <ChevronDownIcon
             aria-hidden
-            className="h-4 w-4 text-zinc-500"
+            className="h-4 w-4 text-zinc-300"
           />
         )}
       </button>
@@ -107,11 +107,11 @@ export function ListDateFilter({
           className="absolute left-0 top-full z-10 mt-1 w-max max-w-[calc(100vw-2rem)] rounded-md border border-zinc-700 bg-zinc-900 p-2 shadow-lg"
         >
           <div className="flex flex-col gap-2">
-            <div className="grid grid-cols-[3rem_auto_auto] items-center gap-2 rounded px-2 py-1">
-              <span className="inline-flex h-7 items-center text-xs font-medium uppercase tracking-wider text-zinc-500">
+            <div className="grid grid-cols-[3rem_auto] items-center gap-2 rounded px-2 py-1">
+              <span className="inline-flex h-7 items-center text-xs font-medium uppercase tracking-wider text-zinc-300">
                 From
               </span>
-              <div className="min-w-0">
+              <div className="flex items-center gap-1">
                 <DateTimeInput
                   value={{ date: dateFrom, time: timeFrom }}
                   onChange={(next) =>
@@ -122,18 +122,18 @@ export function ListDateFilter({
                   dateAriaLabel="Created from date"
                   timeAriaLabel="Created from time (defaults to 00:00 when blank)"
                 />
+                <ResetButton
+                  ariaLabel="Clear from date and time"
+                  disabled={dateFrom === '' && timeFrom === ''}
+                  onClick={() => patch({ dateFrom: '', timeFrom: '' })}
+                />
               </div>
-              <ResetButton
-                ariaLabel="Clear from date and time"
-                disabled={dateFrom === '' && timeFrom === ''}
-                onClick={() => patch({ dateFrom: '', timeFrom: '' })}
-              />
             </div>
-            <div className="grid grid-cols-[3rem_auto_auto] items-center gap-2 rounded px-2 py-1">
-              <span className="inline-flex h-7 items-center text-xs font-medium uppercase tracking-wider text-zinc-500">
+            <div className="grid grid-cols-[3rem_auto] items-center gap-2 rounded px-2 py-1">
+              <span className="inline-flex h-7 items-center text-xs font-medium uppercase tracking-wider text-zinc-300">
                 To
               </span>
-              <div className="min-w-0">
+              <div className="flex items-center gap-1">
                 <DateTimeInput
                   value={{ date: dateTo, time: timeTo }}
                   onChange={(next) =>
@@ -144,12 +144,12 @@ export function ListDateFilter({
                   dateAriaLabel="Created to date"
                   timeAriaLabel="Created to time (defaults to 23:59 when blank)"
                 />
+                <ResetButton
+                  ariaLabel="Clear to date and time"
+                  disabled={dateTo === '' && timeTo === ''}
+                  onClick={() => patch({ dateTo: '', timeTo: '' })}
+                />
               </div>
-              <ResetButton
-                ariaLabel="Clear to date and time"
-                disabled={dateTo === '' && timeTo === ''}
-                onClick={() => patch({ dateTo: '', timeTo: '' })}
-              />
             </div>
           </div>
           <div className="my-1 border-t border-zinc-800" />
@@ -163,7 +163,7 @@ export function ListDateFilter({
                 ? 'Clear date range filter'
                 : 'Date range is unspecified; showing all orders'
             }
-            className="w-full rounded px-2 py-1 text-left text-xs font-medium text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-zinc-400"
+            className="w-full rounded px-2 py-1 text-left text-xs font-medium text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100 disabled:cursor-not-allowed disabled:text-zinc-500 disabled:hover:bg-transparent disabled:hover:text-zinc-500"
           >
             Clear filters
           </button>
@@ -189,7 +189,7 @@ function ResetButton({
       title={ariaLabel}
       disabled={disabled}
       onClick={onClick}
-      className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded text-zinc-500 hover:bg-zinc-800 hover:text-zinc-200 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-zinc-500"
+      className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100 disabled:cursor-not-allowed disabled:text-zinc-500 disabled:hover:bg-transparent disabled:hover:text-zinc-500"
     >
       <ArrowPathIcon
         aria-hidden
