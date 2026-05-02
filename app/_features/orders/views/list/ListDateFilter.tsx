@@ -7,6 +7,7 @@ import {
   ChevronUpIcon,
 } from '@heroicons/react/24/outline'
 import { DateTimeInput } from '@/components/ui/date-time-input'
+import { usePreferences } from '../../../preferences/PreferencesProvider'
 
 export type ListDateFilterValues = {
   dateFrom: string
@@ -22,6 +23,7 @@ export function ListDateFilter({
   value: ListDateFilterValues
   onChange: (next: ListDateFilterValues) => void
 }) {
+  const { hour12 } = usePreferences()
   const [open, setOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const { dateFrom, timeFrom, dateTo, timeTo } = value
@@ -116,6 +118,7 @@ export function ListDateFilter({
                     patch({ dateFrom: next.date, timeFrom: next.time })
                   }
                   max={dateTo || undefined}
+                  hour12={hour12}
                   dateAriaLabel="Created from date"
                   timeAriaLabel="Created from time (defaults to 00:00 when blank)"
                 />
@@ -137,6 +140,7 @@ export function ListDateFilter({
                     patch({ dateTo: next.date, timeTo: next.time })
                   }
                   min={dateFrom || undefined}
+                  hour12={hour12}
                   dateAriaLabel="Created to date"
                   timeAriaLabel="Created to time (defaults to 23:59 when blank)"
                 />
@@ -238,12 +242,20 @@ export function boundToTimestamp(
   const month = Number(dateMatch[2]) - 1
   const day = Number(dateMatch[3])
 
-  const tm = time.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/)
+  // Accept either 24h ('14:30:00') or 12h ('2:30:00 PM') input. The
+  // optional capture group on the AM/PM marker requires both letters
+  // (a partially typed 'P' is not a valid commit) and is case-
+  // insensitive. Whitespace between the time and the marker is
+  // optional so '2:30PM' parses too.
+  const tm = time.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?\s*([apAP][mM])?$/)
   const isEnd = kind === 'end'
   let h: number, mn: number, s: number, msPart: number
   if (tm) {
     h = Number(tm[1])
     mn = Number(tm[2])
+    const period = tm[4]?.toLowerCase()
+    if (period === 'pm' && h < 12) h += 12
+    else if (period === 'am' && h === 12) h = 0
     if (tm[3] !== undefined) {
       s = Number(tm[3])
       msPart = isEnd ? 999 : 0

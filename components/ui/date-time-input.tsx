@@ -26,6 +26,11 @@ export type DateTimeInputProps = {
   className?: string
   datePlaceholder?: string
   timePlaceholder?: string
+  // When true, prompt the user with a 12h-shaped placeholder. The
+  // input parser stays format-agnostic and will accept either 24h
+  // ("14:30") or 12h ("2:30 PM") regardless of this flag --- the
+  // placeholder is just a hint about which form to type.
+  hour12?: boolean
 }
 
 function DateTimeInput({
@@ -37,7 +42,8 @@ function DateTimeInput({
   max,
   className,
   datePlaceholder = 'YYYY-MM-DD',
-  timePlaceholder = 'HH:MM:SS',
+  timePlaceholder,
+  hour12 = false,
 }: DateTimeInputProps) {
   const [open, setOpen] = React.useState(false)
   const emptyDate = value.date === ''
@@ -95,8 +101,10 @@ function DateTimeInput({
       <label className="inline-flex h-7 shrink-0 cursor-text items-center rounded hover:bg-zinc-800/50 focus-within:ring-1 focus-within:ring-blue-400/40">
         <input
           type="text"
-          inputMode="numeric"
-          pattern="\d{1,2}:\d{2}(:\d{2})?"
+          // inputMode 'text' rather than 'numeric' so 12h users can
+          // surface the AM/PM letters from the on-screen keyboard
+          // without toggling layouts.
+          inputMode={hour12 ? 'text' : 'numeric'}
           value={value.time}
           onChange={(e) => {
             const next = e.target.value
@@ -108,10 +116,15 @@ function DateTimeInput({
               ;(e.target as HTMLInputElement).blur()
             }
           }}
-          placeholder={timePlaceholder}
+          placeholder={
+            timePlaceholder ?? (hour12 ? 'HH:MM:SS PM' : 'HH:MM:SS')
+          }
           aria-label={timeAriaLabel}
           autoComplete="off"
-          className="block w-[75px] shrink-0 appearance-none border-0 bg-transparent px-1 py-0 font-mono text-sm text-zinc-100 outline-none placeholder:text-zinc-400"
+          className={cn(
+            'block shrink-0 appearance-none border-0 bg-transparent px-1 py-0 font-mono text-sm text-zinc-100 outline-none placeholder:text-zinc-400',
+            hour12 ? 'w-[105px]' : 'w-[75px]',
+          )}
         />
       </label>
     </div>
@@ -119,7 +132,13 @@ function DateTimeInput({
 }
 DateTimeInput.displayName = 'DateTimeInput'
 
-const PARTIAL_TIME = /^\d{0,2}(:\d{0,2}(:\d{0,2})?)?$/
+// Matches any string the user could be in the middle of typing toward
+// either 24h ('14:30:00') or 12h ('2:30:00 PM'). The optional trailing
+// '\s*[apAP]?[mM]?' allows mid-typing states like '2:30 ', '2:30 P',
+// and '2:30 PM' without rejecting any keystroke before the suffix is
+// complete. Strict range validation happens later in
+// boundToTimestamp where the value is committed.
+const PARTIAL_TIME = /^\d{0,2}(:\d{0,2}(:\d{0,2})?)?\s*[apAP]?[mM]?$/
 
 function isoToLocalDate(iso: string | undefined): Date | undefined {
   if (!iso) return undefined
