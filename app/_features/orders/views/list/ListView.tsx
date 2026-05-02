@@ -36,6 +36,7 @@ import {
 import { ListTable } from './ListTable'
 import { ListStatusFilter } from './ListStatusFilter'
 import { STATUS_FILTER_ORDER } from './constants'
+import { usePreferences } from '../../../preferences/PreferencesProvider'
 
 type ListOrdersCache = InfiniteData<Order[], OrdersCursor | null>
 
@@ -72,6 +73,7 @@ export function ListView({
   )
   const [dateRange, setDateRange] =
     useState<ListDateFilterValues>(EMPTY_DATE_RANGE)
+  const { timezone } = usePreferences()
 
   const filters = useMemo<OrderFilters>(() => {
     const next: OrderFilters = {}
@@ -82,18 +84,20 @@ export function ListView({
       dateRange.dateFrom,
       dateRange.timeFrom,
       'start',
+      timezone,
     )
     const createdTo = boundToTimestamp(
       dateRange.dateTo,
       dateRange.timeTo,
       'end',
+      timezone,
     )
 
     if (statuses.length > 0) next.statuses = statuses
     if (createdFrom !== null) next.createdFrom = createdFrom
     if (createdTo !== null) next.createdTo = createdTo
     return next
-  }, [selectedStatuses, dateRange])
+  }, [selectedStatuses, dateRange, timezone])
 
   const filtersActive =
     (filters.statuses?.length ?? 0) > 0 ||

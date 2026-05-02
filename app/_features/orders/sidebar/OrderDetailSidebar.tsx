@@ -7,6 +7,7 @@ import {
   type Order,
   type OrderStatus,
 } from '@/lib/domain/order'
+import { usePreferences } from '../../preferences/PreferencesProvider'
 import { StatusBadge } from '../shared/StatusBadge'
 import {
   STATUS_BUTTON_TONES,
@@ -98,6 +99,7 @@ function SidebarBody({
 }) {
   const { transition, discardDraft, duplicate, isPending, error } =
     useOrderActions()
+  const { timezone, hour12 } = usePreferences()
 
   const [pendingAction, setPendingAction] = useState<ActionConfig | null>(null)
   const [duplicatePending, setDuplicatePending] = useState(false)
@@ -176,11 +178,13 @@ function SidebarBody({
 
       <dl className="grid grid-cols-[max-content_1fr] gap-x-4 gap-y-2 border-b border-zinc-800 px-5 py-4 text-sm">
         <dt className="text-zinc-500">Created</dt>
-        <dd className="text-zinc-200">{formatCreatedAt(order.createdAt)}</dd>
+        <dd className="text-zinc-200">
+          {formatCreatedAt(order.createdAt, timezone, hour12)}
+        </dd>
 
         <dt className="text-zinc-500">Status changed</dt>
         <dd className="text-zinc-200">
-          {formatCreatedAt(order.statusUpdatedAt)}
+          {formatCreatedAt(order.statusUpdatedAt, timezone, hour12)}
         </dd>
 
         {order.duplicatedFromOrderId && (

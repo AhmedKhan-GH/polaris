@@ -195,15 +195,42 @@ function ResetButton({
   )
 }
 
+// Compute the offset (ms) between the supplied IANA timezone and UTC at
+// a given instant. Used to convert a typed wall-clock filter bound into
+// the matching epoch millisecond.
+function tzOffsetMs(timeZone: string, atMs: number): number {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    hourCycle: 'h23',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  }).formatToParts(new Date(atMs))
+  const get = (t: string) => Number(parts.find((p) => p.type === t)?.value)
+  const wallAsUtc = Date.UTC(
+    get('year'),
+    get('month') - 1,
+    get('day'),
+    get('hour') === 24 ? 0 : get('hour'),
+    get('minute'),
+    get('second'),
+  )
+  return wallAsUtc - atMs
+}
+
 // Combine a date string ('yyyy-mm-dd') and a time string ('HH:MM' or
 // 'HH:MM:SS', or '' / malformed -> fallback to start/end of day) into
-// epoch milliseconds matching orders.created_at. Wall-clock values are
-// interpreted in the browser's local timezone today; once a timezone
-// selector exists this should consult that instead.
+// epoch milliseconds matching orders.created_at. The wall-clock value
+// is interpreted in the supplied IANA timezone so 'From: 09:00' means
+// 9am in the user's chosen zone, not in the browser's locale.
 export function boundToTimestamp(
   date: string,
   time: string,
   kind: 'start' | 'end',
+  timeZone: string,
 ): number | null {
   const dateMatch = date.match(/^(\d{4})-(\d{2})-(\d{2})$/)
   if (!dateMatch) return null
@@ -230,5 +257,10 @@ export function boundToTimestamp(
     s = isEnd ? 59 : 0
     msPart = isEnd ? 999 : 0
   }
-  return new Date(year, month, day, h, mn, s, msPart).getTime()
+  // Treat the wall-clock components as if they were UTC, then subtract
+  // the actual offset of that wall-clock in the target zone. One pass
+  // is correct for every instant except the ~1 hour/year DST fall-back
+  // ambiguity, which we accept since filter bounds are end-user input.
+  const guess = Date.UTC(year, month, day, h, mn, s, msPart)
+  return guess - tzOffsetMs(timeZone, guess)
 }

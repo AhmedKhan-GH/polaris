@@ -6,6 +6,7 @@ import {
   isServer,
 } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
+import { PreferencesProvider } from './_features/preferences/PreferencesProvider'
 
 function makeQueryClient() {
   return new QueryClient({
@@ -34,5 +35,9 @@ function getQueryClient(): QueryClient {
 
 export function Providers({ children }: { children: ReactNode }) {
   const queryClient = getQueryClient()
-  return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+  return (
+    <QueryClientProvider client={queryClient}>
+      <PreferencesProvider>{children}</PreferencesProvider>
+    </QueryClientProvider>
+  )
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useLayoutEffect, useRef } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import {
   createColumnHelper,
@@ -12,6 +12,7 @@ import {
   formatCreatedAt,
   type Order,
 } from '@/lib/domain/order'
+import { usePreferences } from '../../../preferences/PreferencesProvider'
 import { StatusBadge } from '../../shared/StatusBadge'
 import { useScrollAnchor } from '../../shared/useScrollAnchor'
 import { GRID_COLUMNS, ROW_HEIGHT } from './constants'
@@ -28,24 +29,6 @@ declare module '@tanstack/react-table' {
 }
 
 const columnHelper = createColumnHelper<Order>()
-
-const columns = [
-  columnHelper.accessor('orderNumber', {
-    header: 'Order #',
-    cell: (info) => info.getValue(),
-    meta: { cellClassName: 'font-mono text-zinc-50' },
-  }),
-  columnHelper.accessor('status', {
-    header: 'Status',
-    cell: (info) => <StatusBadge status={info.getValue()} />,
-    meta: { cellClassName: 'text-zinc-300' },
-  }),
-  columnHelper.accessor('createdAt', {
-    header: 'Created',
-    cell: (info) => formatCreatedAt(info.getValue()),
-    meta: { cellClassName: 'text-zinc-300' },
-  }),
-]
 
 export function ListTable({
   visibleOrders,
@@ -67,6 +50,28 @@ export function ListTable({
   onSelect: (id: string) => void
 }) {
   const scrollRef = useRef<HTMLDivElement>(null)
+  const { timezone, hour12 } = usePreferences()
+
+  const columns = useMemo(
+    () => [
+      columnHelper.accessor('orderNumber', {
+        header: 'Order #',
+        cell: (info) => info.getValue(),
+        meta: { cellClassName: 'font-mono text-zinc-50' },
+      }),
+      columnHelper.accessor('status', {
+        header: 'Status',
+        cell: (info) => <StatusBadge status={info.getValue()} />,
+        meta: { cellClassName: 'text-zinc-300' },
+      }),
+      columnHelper.accessor('createdAt', {
+        header: 'Created',
+        cell: (info) => formatCreatedAt(info.getValue(), timezone, hour12),
+        meta: { cellClassName: 'text-zinc-300' },
+      }),
+    ],
+    [timezone, hour12],
+  )
 
   const table = useReactTable({
     data: visibleOrders,

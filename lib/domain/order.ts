@@ -119,24 +119,32 @@ export function dedupeById<T extends { id: string }>(list: readonly T[]): T[] {
   })
 }
 
-// Locale + options pinned so server-rendered output matches the client's
-// first paint --- otherwise hydration mismatches on the comma/space and
-// 12h vs 24h based on the user's system. Shared between the kanban
-// card and the list "Created" column. Date is composed manually
-// in the local timezone as ISO 'yyyy-mm-dd' (military / sortable form),
-// time uses hourCycle 'h23' so midnight reads as '00' rather than '24'
-// on the few locales that confuse hour12:false with hourCycle h24.
-export function formatCreatedAt(ms: number): string {
-  const d = new Date(ms)
-  const yyyy = d.getFullYear()
-  const mm = String(d.getMonth() + 1).padStart(2, '0')
-  const dd = String(d.getDate()).padStart(2, '0')
-  const datePart = `${yyyy}-${mm}-${dd}`
-  const timePart = d.toLocaleTimeString('en-US', {
+// Render an epoch-ms instant as 'YYYY-MM-DD · HH:MM:SS' in the supplied
+// IANA timezone. Uses Intl.DateTimeFormat.formatToParts so output is
+// stable across locales (no comma/space drift) and pieces are pulled
+// by part name rather than position. 24h mode pins hourCycle 'h23' so
+// midnight reads as '00' rather than '24'; 12h mode pins 'h12' and
+// appends the AM/PM marker. Callers thread the preferences in from
+// the user's PreferencesProvider.
+export function formatCreatedAt(
+  ms: number,
+  timeZone: string,
+  hour12 = false,
+): string {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit',
-    hourCycle: 'h23',
-  })
-  return `${datePart} · ${timePart}`
+    hourCycle: hour12 ? 'h12' : 'h23',
+  }).formatToParts(new Date(ms))
+  const get = (type: string) =>
+    parts.find((p) => p.type === type)?.value ?? ''
+  const datePart = `${get('year')}-${get('month')}-${get('day')}`
+  const timePart = `${get('hour')}:${get('minute')}:${get('second')}`
+  const period = hour12 ? ` ${get('dayPeriod')}` : ''
+  return `${datePart} · ${timePart}${period}`
 }

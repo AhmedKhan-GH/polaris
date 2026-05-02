@@ -31,8 +31,10 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="h-full flex flex-col bg-zinc-950 font-sans text-zinc-100">
-        <AuthBar />
-        <Providers>{children}</Providers>
+        <Providers>
+          <AuthBar />
+          {children}
+        </Providers>
       </body>
     </html>
   );

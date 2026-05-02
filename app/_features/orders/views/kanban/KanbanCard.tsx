@@ -2,6 +2,7 @@
 
 import { memo, useCallback } from 'react'
 import { formatCreatedAt, type Order } from '@/lib/domain/order'
+import { usePreferences } from '../../../preferences/PreferencesProvider'
 import { KanbanCardShell } from './KanbanCardShell'
 
 export const KanbanCard = memo(function KanbanCard({
@@ -13,6 +14,7 @@ export const KanbanCard = memo(function KanbanCard({
   isSelected: boolean
   onSelect: (id: string) => void
 }) {
+  const { timezone, hour12 } = usePreferences()
   const handleClick = useCallback(
     () => onSelect(order.id),
     [onSelect, order.id],
@@ -24,7 +26,7 @@ export const KanbanCard = memo(function KanbanCard({
           {order.orderNumber}
         </span>
         <span className="truncate text-[11px] text-zinc-400">
-          {formatCreatedAt(order.createdAt)}
+          {formatCreatedAt(order.createdAt, timezone, hour12)}
         </span>
       </div>
     </KanbanCardShell>

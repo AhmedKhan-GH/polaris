@@ -226,29 +226,36 @@ describe('dedupeById', () => {
 })
 
 describe('formatCreatedAt', () => {
-  afterEach(() => {
-    vi.restoreAllMocks()
+  test('renders an instant in the supplied IANA timezone, 24-hour', () => {
+    // 2026-04-19T16:30:00Z is 12:30 in America/New_York (EDT, UTC-4)
+    expect(
+      formatCreatedAt(Date.UTC(2026, 3, 19, 16, 30, 0), 'America/New_York'),
+    ).toBe('2026-04-19 · 12:30:00')
   })
 
-  test('joins ISO yyyy-mm-dd date with 24-hour time', () => {
-    // Pin only the time formatter; date is composed manually from the
-    // local-time getters so it doesn't depend on locale.
-    const timeSpy = vi
-      .spyOn(Date.prototype, 'toLocaleTimeString')
-      .mockReturnValue('12:00:00')
-    vi.spyOn(Date.prototype, 'getFullYear').mockReturnValue(2026)
-    vi.spyOn(Date.prototype, 'getMonth').mockReturnValue(3) // April
-    vi.spyOn(Date.prototype, 'getDate').mockReturnValue(19)
+  test('renders the same instant differently in a different zone', () => {
+    const ms = Date.UTC(2026, 3, 19, 16, 30, 0)
+    expect(formatCreatedAt(ms, 'UTC')).toBe('2026-04-19 · 16:30:00')
+    expect(formatCreatedAt(ms, 'Asia/Tokyo')).toBe('2026-04-20 · 01:30:00')
+  })
 
-    expect(formatCreatedAt(Date.UTC(2026, 3, 19, 12, 0, 0))).toBe(
-      '2026-04-19 · 12:00:00',
+  test('appends AM/PM when hour12 is true', () => {
+    const ms = Date.UTC(2026, 3, 19, 16, 30, 0)
+    expect(formatCreatedAt(ms, 'UTC', true)).toBe('2026-04-19 · 04:30:00 PM')
+    expect(formatCreatedAt(ms, 'America/New_York', true)).toBe(
+      '2026-04-19 · 12:30:00 PM',
     )
+  })
 
-    expect(timeSpy).toHaveBeenCalledWith('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hourCycle: 'h23',
-    })
+  test('renders midnight as 12:00:00 AM in 12h mode (h12 cycle)', () => {
+    expect(formatCreatedAt(Date.UTC(2026, 3, 19, 0, 0, 0), 'UTC', true)).toBe(
+      '2026-04-19 · 12:00:00 AM',
+    )
+  })
+
+  test('renders midnight as 00:00:00 in 24h mode (h23 cycle)', () => {
+    expect(formatCreatedAt(Date.UTC(2026, 3, 19, 0, 0, 0), 'UTC')).toBe(
+      '2026-04-19 · 00:00:00',
+    )
   })
 })

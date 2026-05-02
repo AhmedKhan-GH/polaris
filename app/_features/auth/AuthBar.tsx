@@ -1,4 +1,6 @@
 import { getServerSupabase } from '@/lib/supabase/server'
+import { Hour12Toggle } from '../preferences/Hour12Toggle'
+import { TimezoneSelector } from '../preferences/TimezoneSelector'
 import { SignOutForm } from './SignOutForm'
 
 export async function AuthBar() {
@@ -13,7 +15,9 @@ export async function AuthBar() {
           row, so the form clips at the inside of the page padding
           instead of bleeding past it when the email + button row gets
           wider than the viewport. */}
-      <div className="flex justify-end overflow-hidden">
+      <div className="flex justify-end items-center gap-4 overflow-hidden">
+        <Hour12Toggle />
+        <TimezoneSelector />
         <SignOutForm email={user.email} />
       </div>
     </div>
