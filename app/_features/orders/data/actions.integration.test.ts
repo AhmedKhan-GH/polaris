@@ -170,7 +170,7 @@ describe('orders/data/actions (integration)', () => {
         toStatus: 'submitted',
       })
       await pool.query('UPDATE orders SET created_at = $1 WHERE id = $2', [
-        new Date('2026-04-19T09:00:00Z'),
+        Date.parse('2026-04-19T09:00:00Z'),
         draft.id,
       ])
       await pool.query('UPDATE orders SET created_at = $1 WHERE id = $2', [
