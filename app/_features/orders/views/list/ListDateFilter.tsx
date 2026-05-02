@@ -3,16 +3,10 @@
 import { useEffect, useRef, useState } from 'react'
 import {
   ArrowPathIcon,
-  CalendarIcon,
   ChevronDownIcon,
   ChevronUpIcon,
 } from '@heroicons/react/24/outline'
-import { Calendar as ShadCalendar } from '@/components/ui/calendar'
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover'
+import { DateTimeInput } from '@/components/ui/date-time-input'
 
 export type ListDateFilterValues = {
   dateFrom: string
@@ -57,7 +51,7 @@ export function ListDateFilter({
       if (containerRef.current?.contains(target)) return
       if (
         target instanceof Element &&
-        target.closest('[data-date-filter-calendar]')
+        target.closest('[data-date-time-input-calendar]')
       ) {
         return
       }
@@ -115,17 +109,15 @@ export function ListDateFilter({
               <span className="inline-flex h-7 items-center text-xs font-medium uppercase tracking-wider text-zinc-500">
                 From
               </span>
-              <div className="flex min-w-0 items-center gap-2">
-                <DateField
-                  value={dateFrom}
-                  onChange={(next) => patch({ dateFrom: next })}
+              <div className="min-w-0">
+                <DateTimeInput
+                  value={{ date: dateFrom, time: timeFrom }}
+                  onChange={(next) =>
+                    patch({ dateFrom: next.date, timeFrom: next.time })
+                  }
                   max={dateTo || undefined}
-                  ariaLabel="Created from date"
-                />
-                <TimeField
-                  value={timeFrom}
-                  onChange={(next) => patch({ timeFrom: next })}
-                  ariaLabel="Created from time (defaults to 00:00 when blank)"
+                  dateAriaLabel="Created from date"
+                  timeAriaLabel="Created from time (defaults to 00:00 when blank)"
                 />
               </div>
               <ResetButton
@@ -138,17 +130,15 @@ export function ListDateFilter({
               <span className="inline-flex h-7 items-center text-xs font-medium uppercase tracking-wider text-zinc-500">
                 To
               </span>
-              <div className="flex min-w-0 items-center gap-2">
-                <DateField
-                  value={dateTo}
-                  onChange={(next) => patch({ dateTo: next })}
+              <div className="min-w-0">
+                <DateTimeInput
+                  value={{ date: dateTo, time: timeTo }}
+                  onChange={(next) =>
+                    patch({ dateTo: next.date, timeTo: next.time })
+                  }
                   min={dateFrom || undefined}
-                  ariaLabel="Created to date"
-                />
-                <TimeField
-                  value={timeTo}
-                  onChange={(next) => patch({ timeTo: next })}
-                  ariaLabel="Created to time (defaults to 23:59 when blank)"
+                  dateAriaLabel="Created to date"
+                  timeAriaLabel="Created to time (defaults to 23:59 when blank)"
                 />
               </div>
               <ResetButton
@@ -229,111 +219,4 @@ export function boundToTimestamp(
     suffix = kind === 'end' ? '23:59:59.999' : '00:00:00.000'
   }
   return `${date} ${suffix}`
-}
-
-function DateField({
-  value,
-  onChange,
-  ariaLabel,
-  min,
-  max,
-}: {
-  value: string
-  onChange: (next: string) => void
-  ariaLabel: string
-  min?: string
-  max?: string
-}) {
-  const [open, setOpen] = useState(false)
-  const empty = value === ''
-  const selected = isoToLocalDate(value)
-  const minDate = isoToLocalDate(min)
-  const maxDate = isoToLocalDate(max)
-
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <button
-          type="button"
-          aria-label={ariaLabel}
-          className="flex h-7 shrink-0 items-center gap-1.5 rounded px-1 font-mono text-sm hover:bg-zinc-800/50 focus:outline-none focus:ring-1 focus:ring-blue-400/40"
-        >
-          <span
-            className={`inline-flex h-full shrink-0 items-center whitespace-nowrap ${empty ? 'text-zinc-600' : 'text-zinc-200'}`}
-          >
-            {empty ? 'YYYY-MM-DD' : value}
-          </span>
-          <CalendarIcon
-            aria-hidden
-            className="h-3 w-3 shrink-0 text-zinc-500"
-          />
-        </button>
-      </PopoverTrigger>
-      <PopoverContent
-        data-date-filter-calendar
-        className="w-auto p-0"
-        align="start"
-      >
-        <ShadCalendar
-          mode="single"
-          selected={selected}
-          defaultMonth={selected ?? minDate ?? maxDate ?? new Date()}
-          onSelect={(d) => {
-            if (d) onChange(localDateToIso(d))
-            setOpen(false)
-          }}
-          disabled={[
-            ...(minDate ? [{ before: minDate }] : []),
-            ...(maxDate ? [{ after: maxDate }] : []),
-          ]}
-        />
-      </PopoverContent>
-    </Popover>
-  )
-}
-
-function TimeField({
-  value,
-  onChange,
-  ariaLabel,
-}: {
-  value: string
-  onChange: (next: string) => void
-  ariaLabel: string
-}) {
-  return (
-    <label className="inline-flex h-7 shrink-0 cursor-text items-center rounded hover:bg-zinc-800/50 focus-within:ring-1 focus-within:ring-blue-400/40">
-      <input
-        type="text"
-        inputMode="numeric"
-        pattern="\d{1,2}:\d{2}(:\d{2})?"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === 'Escape') {
-            e.preventDefault()
-            ;(e.target as HTMLInputElement).blur()
-          }
-        }}
-        placeholder="HH:MM:SS"
-        aria-label={ariaLabel}
-        autoComplete="off"
-        className="block w-[75px] shrink-0 appearance-none border-0 bg-transparent px-1 py-0 font-mono text-sm text-zinc-200 outline-none placeholder:text-zinc-600"
-      />
-    </label>
-  )
-}
-
-function isoToLocalDate(iso: string | undefined): Date | undefined {
-  if (!iso) return undefined
-  const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})$/)
-  if (!m) return undefined
-  return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]))
-}
-
-function localDateToIso(d: Date): string {
-  const y = d.getFullYear()
-  const m = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-  return `${y}-${m}-${day}`
 }

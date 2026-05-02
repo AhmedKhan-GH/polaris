@@ -53,7 +53,7 @@ function Calendar({
         month_grid: cn('w-full border-collapse', defaults.month_grid),
         weekdays: cn('flex', defaults.weekdays),
         weekday: cn(
-          'flex h-8 w-9 items-center justify-center text-[0.75rem] font-normal text-zinc-500',
+          'flex h-8 w-9 items-center justify-center text-[0.75rem] font-normal text-zinc-400',
           defaults.weekday,
         ),
         week: cn('mt-1 flex w-full', defaults.week),
@@ -62,7 +62,7 @@ function Calendar({
           defaults.day,
         ),
         day_button: cn(
-          'inline-flex h-8 w-8 select-none items-center justify-center rounded-md font-normal text-zinc-200 transition-colors hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-40',
+          'inline-flex h-8 w-8 select-none items-center justify-center rounded-md font-normal text-zinc-100 transition-colors hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-70',
           defaults.day_button,
         ),
         selected: cn(
@@ -74,10 +74,10 @@ function Calendar({
           defaults.today,
         ),
         outside: cn(
-          '[&_button]:text-zinc-600 aria-selected:[&_button]:text-zinc-600',
+          '[&_button]:text-zinc-400 aria-selected:[&_button]:text-zinc-400',
           defaults.outside,
         ),
-        disabled: cn('[&_button]:text-zinc-700 [&_button]:opacity-50', defaults.disabled),
+        disabled: cn('[&_button]:text-zinc-400', defaults.disabled),
         hidden: cn('invisible', defaults.hidden),
         ...classNames,
       }}
