@@ -129,7 +129,7 @@ describe('orders/data/actions (integration)', () => {
 
       const first = await actions.findOrdersPageAction(null, 2)
       const cursor = {
-        createdAt: first[1].createdAt.toISOString(),
+        createdAt: first[1].createdAt,
         id: first[1].id,
       }
       const second = await actions.findOrdersPageAction(cursor, 2)
@@ -174,18 +174,18 @@ describe('orders/data/actions (integration)', () => {
         draft.id,
       ])
       await pool.query('UPDATE orders SET created_at = $1 WHERE id = $2', [
-        new Date('2026-04-19T10:00:00Z'),
+        Date.parse('2026-04-19T10:00:00Z'),
         submittedA.id,
       ])
       await pool.query('UPDATE orders SET created_at = $1 WHERE id = $2', [
-        new Date('2026-04-19T11:00:00Z'),
+        Date.parse('2026-04-19T11:00:00Z'),
         submittedB.id,
       ])
 
       const filters = {
         statuses: ['submitted'] as const,
-        createdFrom: '2026-04-19 00:00:00.000',
-        createdTo: '2026-04-19 23:59:59.999',
+        createdFrom: Date.parse('2026-04-19T00:00:00Z'),
+        createdTo: Date.parse('2026-04-19T23:59:59.999Z'),
       }
 
       const page = await actions.findFilteredOrdersPageAction(filters, null, 1)

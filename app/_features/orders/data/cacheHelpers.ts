@@ -42,12 +42,10 @@ function findInUnknownOrdersCache(data: unknown, orderId: string): Order | null 
 // negative when `a` comes BEFORE `b` in the displayed list (newer first
 // or, on ties, higher id first).
 function compareDesc(
-  a: { createdAt: Date; id: string },
-  b: { createdAt: Date; id: string },
+  a: { createdAt: number; id: string },
+  b: { createdAt: number; id: string },
 ): number {
-  const at = a.createdAt.getTime()
-  const bt = b.createdAt.getTime()
-  if (at !== bt) return bt - at
+  if (a.createdAt !== b.createdAt) return b.createdAt - a.createdAt
   if (a.id > b.id) return -1
   if (a.id < b.id) return 1
   return 0

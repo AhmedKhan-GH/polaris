@@ -13,7 +13,7 @@ const MIGRATIONS_FOLDER = path.resolve(__dirname, '..', '..', 'drizzle')
 type SeedOrder = {
   id: string
   orderNumber: number
-  createdAt: Date
+  createdAt: number
 }
 
 describe('orderRepository (integration)', () => {
@@ -83,9 +83,9 @@ describe('orderRepository (integration)', () => {
     expect(order.id).toMatch(
       /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
     )
-    expect(order.createdAt).toBeInstanceOf(Date)
-    expect(order.createdAt.getTime()).toBeGreaterThanOrEqual(before - 1_000)
-    expect(order.createdAt.getTime()).toBeLessThanOrEqual(after + 1_000)
+    expect(typeof order.createdAt).toBe('number')
+    expect(order.createdAt).toBeGreaterThanOrEqual(before - 1_000)
+    expect(order.createdAt).toBeLessThanOrEqual(after + 1_000)
   })
 
   test('findOrderById returns the inserted order', async () => {
@@ -126,26 +126,26 @@ describe('orderRepository (integration)', () => {
 
     expect(order.status).toBe('drafted')
     expect(order.duplicatedFromOrderId).toBeNull()
-    expect(order.statusUpdatedAt).toBeInstanceOf(Date)
-    expect(order.statusUpdatedAt.getTime()).toBeGreaterThanOrEqual(before - 1_000)
-    expect(order.statusUpdatedAt.getTime()).toBeLessThanOrEqual(after + 1_000)
+    expect(typeof order.statusUpdatedAt).toBe('number')
+    expect(order.statusUpdatedAt).toBeGreaterThanOrEqual(before - 1_000)
+    expect(order.statusUpdatedAt).toBeLessThanOrEqual(after + 1_000)
   })
 
   test('findOrdersPage returns the first page newest-first and respects the limit', async () => {
     await seedOrder({
       id: '00000000-0000-0000-0000-000000000001',
       orderNumber: 1_000_001,
-      createdAt: new Date('2026-04-19T10:00:00Z'),
+      createdAt: Date.parse('2026-04-19T10:00:00Z'),
     })
     await seedOrder({
       id: '00000000-0000-0000-0000-000000000002',
       orderNumber: 1_000_002,
-      createdAt: new Date('2026-04-19T11:00:00Z'),
+      createdAt: Date.parse('2026-04-19T11:00:00Z'),
     })
     await seedOrder({
       id: '00000000-0000-0000-0000-000000000003',
       orderNumber: 1_000_003,
-      createdAt: new Date('2026-04-19T12:00:00Z'),
+      createdAt: Date.parse('2026-04-19T12:00:00Z'),
     })
 
     const page = await repo.findOrdersPage(null, 2)
@@ -157,7 +157,7 @@ describe('orderRepository (integration)', () => {
   })
 
   test('findOrdersPage uses the createdAt and id cursor to continue after tied timestamps', async () => {
-    const createdAt = new Date('2026-04-19T12:00:00Z')
+    const createdAt = Date.parse('2026-04-19T12:00:00Z')
     await seedOrder({
       id: '00000000-0000-0000-0000-000000000001',
       orderNumber: 1_000_001,
@@ -176,7 +176,7 @@ describe('orderRepository (integration)', () => {
 
     const firstPage = await repo.findOrdersPage(null, 2)
     const cursor = {
-      createdAt: firstPage[1].createdAt.toISOString(),
+      createdAt: firstPage[1].createdAt,
       id: firstPage[1].id,
     }
 
@@ -196,41 +196,41 @@ describe('orderRepository (integration)', () => {
       id: '00000000-0000-0000-0000-000000000001',
       orderNumber: 1_000_001,
       status: 'drafted',
-      createdAt: new Date('2026-04-19T09:00:00Z'),
+      createdAt: Date.parse('2026-04-19T09:00:00Z'),
     })
     await seedOrder({
       id: '00000000-0000-0000-0000-000000000002',
       orderNumber: 1_000_002,
       status: 'submitted',
-      createdAt: new Date('2026-04-19T10:00:00Z'),
+      createdAt: Date.parse('2026-04-19T10:00:00Z'),
     })
     await seedOrder({
       id: '00000000-0000-0000-0000-000000000003',
       orderNumber: 1_000_003,
       status: 'submitted',
-      createdAt: new Date('2026-04-19T11:00:00Z'),
+      createdAt: Date.parse('2026-04-19T11:00:00Z'),
     })
     await seedOrder({
       id: '00000000-0000-0000-0000-000000000004',
       orderNumber: 1_000_004,
       status: 'submitted',
-      createdAt: new Date('2026-04-19T12:00:00Z'),
+      createdAt: Date.parse('2026-04-19T12:00:00Z'),
     })
     await seedOrder({
       id: '00000000-0000-0000-0000-000000000005',
       orderNumber: 1_000_005,
       status: 'closed',
-      createdAt: new Date('2026-04-19T13:00:00Z'),
+      createdAt: Date.parse('2026-04-19T13:00:00Z'),
     })
 
     const filters = {
       statuses: ['submitted'] as const,
-      createdFrom: '2026-04-18 00:00:00.000',
-      createdTo: '2026-04-20 23:59:59.999',
+      createdFrom: Date.parse('2026-04-18T00:00:00Z'),
+      createdTo: Date.parse('2026-04-20T23:59:59.999Z'),
     }
     const firstPage = await repo.findFilteredOrdersPage(filters, null, 2)
     const cursor = {
-      createdAt: firstPage[1].createdAt.toISOString(),
+      createdAt: firstPage[1].createdAt,
       id: firstPage[1].id,
     }
     const secondPage = await repo.findFilteredOrdersPage(filters, cursor, 2)
@@ -249,26 +249,26 @@ describe('orderRepository (integration)', () => {
       id: '00000000-0000-0000-0000-000000000001',
       orderNumber: 1_000_001,
       status: 'submitted',
-      createdAt: new Date('2026-04-19T10:00:00Z'),
+      createdAt: Date.parse('2026-04-19T10:00:00Z'),
     })
     await seedOrder({
       id: '00000000-0000-0000-0000-000000000002',
       orderNumber: 1_000_002,
       status: 'submitted',
-      createdAt: new Date('2026-04-19T11:00:00Z'),
+      createdAt: Date.parse('2026-04-19T11:00:00Z'),
     })
     await seedOrder({
       id: '00000000-0000-0000-0000-000000000003',
       orderNumber: 1_000_003,
       status: 'drafted',
-      createdAt: new Date('2026-04-19T12:00:00Z'),
+      createdAt: Date.parse('2026-04-19T12:00:00Z'),
     })
 
     await expect(
       repo.countFilteredOrders({
         statuses: ['submitted'],
-        createdFrom: '2026-04-19 00:00:00.000',
-        createdTo: '2026-04-19 23:59:59.999',
+        createdFrom: Date.parse('2026-04-19T00:00:00Z'),
+        createdTo: Date.parse('2026-04-19T23:59:59.999Z'),
       }),
     ).resolves.toBe(2)
   })
@@ -278,30 +278,30 @@ describe('orderRepository (integration)', () => {
       id: '00000000-0000-0000-0000-000000000001',
       orderNumber: 1_000_001,
       status: 'submitted',
-      createdAt: new Date('2026-04-19T10:00:00Z'),
+      createdAt: Date.parse('2026-04-19T10:00:00Z'),
     })
     await seedOrder({
       id: '00000000-0000-0000-0000-000000000002',
       orderNumber: 1_000_002,
       status: 'submitted',
-      createdAt: new Date('2026-04-19T11:00:00Z'),
+      createdAt: Date.parse('2026-04-19T11:00:00Z'),
     })
     await seedOrder({
       id: '00000000-0000-0000-0000-000000000003',
       orderNumber: 1_000_003,
       status: 'drafted',
-      createdAt: new Date('2026-04-19T12:00:00Z'),
+      createdAt: Date.parse('2026-04-19T12:00:00Z'),
     })
     await seedOrder({
       id: '00000000-0000-0000-0000-000000000004',
       orderNumber: 1_000_004,
       status: 'voided',
-      createdAt: new Date('2026-04-21T12:00:00Z'),
+      createdAt: Date.parse('2026-04-21T12:00:00Z'),
     })
 
     const counts = await repo.countFilteredOrdersByStatus({
-      createdFrom: '2026-04-18 00:00:00.000',
-      createdTo: '2026-04-20 23:59:59.999',
+      createdFrom: Date.parse('2026-04-18T00:00:00Z'),
+      createdTo: Date.parse('2026-04-20T23:59:59.999Z'),
     })
 
     expect(counts.submitted).toBe(2)
@@ -315,12 +315,12 @@ describe('orderRepository (integration)', () => {
     await seedOrder({
       id: '00000000-0000-0000-0000-000000000001',
       orderNumber: 1_000_001,
-      createdAt: new Date('2026-04-19T10:00:00Z'),
+      createdAt: Date.parse('2026-04-19T10:00:00Z'),
     })
     await seedOrder({
       id: '00000000-0000-0000-0000-000000000002',
       orderNumber: 1_000_002,
-      createdAt: new Date('2026-04-19T11:00:00Z'),
+      createdAt: Date.parse('2026-04-19T11:00:00Z'),
     })
 
     await expect(repo.countOrders()).resolves.toBe(2)
@@ -340,7 +340,7 @@ describe('orderRepository (integration)', () => {
       })
 
       expect(updated.status).toBe('submitted')
-      expect(updated.statusUpdatedAt.getTime()).toBeGreaterThanOrEqual(before - 1_000)
+      expect(updated.statusUpdatedAt).toBeGreaterThanOrEqual(before - 1_000)
 
       const { rows } = await pool.query(
         'SELECT from_status, to_status, changed_by, reason FROM order_status_history WHERE order_id = $1',

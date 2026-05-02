@@ -138,7 +138,7 @@ async function applyOptimisticTransition(
 
   const patch: Partial<Order> = {
     status: toStatus,
-    statusUpdatedAt: new Date(),
+    statusUpdatedAt: Date.now(),
   }
 
   queryClient.setQueryData<OrdersCache>(ORDERS_QUERY_KEY, (old) =>

@@ -197,26 +197,38 @@ function ResetButton({
 
 // Combine a date string ('yyyy-mm-dd') and a time string ('HH:MM' or
 // 'HH:MM:SS', or '' / malformed -> fallback to start/end of day) into
-// the timestamp shape Postgres stores in orders.created_at.
+// epoch milliseconds matching orders.created_at. Wall-clock values are
+// interpreted in the browser's local timezone today; once a timezone
+// selector exists this should consult that instead.
 export function boundToTimestamp(
   date: string,
   time: string,
   kind: 'start' | 'end',
-): string | null {
-  if (!date) return null
-  const match = time.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/)
-  let suffix: string
-  if (match) {
-    const h = match[1].padStart(2, '0')
-    const m = match[2]
-    const s = match[3]
-    if (s !== undefined) {
-      suffix = kind === 'end' ? `${h}:${m}:${s}.999` : `${h}:${m}:${s}.000`
+): number | null {
+  const dateMatch = date.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+  if (!dateMatch) return null
+  const year = Number(dateMatch[1])
+  const month = Number(dateMatch[2]) - 1
+  const day = Number(dateMatch[3])
+
+  const tm = time.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/)
+  const isEnd = kind === 'end'
+  let h: number, mn: number, s: number, msPart: number
+  if (tm) {
+    h = Number(tm[1])
+    mn = Number(tm[2])
+    if (tm[3] !== undefined) {
+      s = Number(tm[3])
+      msPart = isEnd ? 999 : 0
     } else {
-      suffix = kind === 'end' ? `${h}:${m}:59.999` : `${h}:${m}:00.000`
+      s = isEnd ? 59 : 0
+      msPart = isEnd ? 999 : 0
     }
   } else {
-    suffix = kind === 'end' ? '23:59:59.999' : '00:00:00.000'
+    h = isEnd ? 23 : 0
+    mn = isEnd ? 59 : 0
+    s = isEnd ? 59 : 0
+    msPart = isEnd ? 999 : 0
   }
-  return `${date} ${suffix}`
+  return new Date(year, month, day, h, mn, s, msPart).getTime()
 }

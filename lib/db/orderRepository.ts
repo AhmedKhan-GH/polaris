@@ -21,11 +21,11 @@ import {
   type OrderStatus,
 } from '../domain/order'
 
-export type OrdersCursor = { createdAt: string; id: string }
+export type OrdersCursor = { createdAt: number; id: string }
 export type OrderFilters = {
   statuses?: readonly OrderStatus[]
-  createdFrom?: string
-  createdTo?: string
+  createdFrom?: number
+  createdTo?: number
 }
 
 // Forward-only graph. Mirrors enforce_forward_status as last updated in
@@ -49,9 +49,9 @@ export function isValidTransition(from: OrderStatus, to: OrderStatus): boolean {
 function cursorWhere(cursor: OrdersCursor | null): SQL | undefined {
   return cursor
     ? or(
-        lt(orders.createdAt, sql`${cursor.createdAt}::timestamp`),
+        lt(orders.createdAt, cursor.createdAt),
         and(
-          eq(orders.createdAt, sql`${cursor.createdAt}::timestamp`),
+          eq(orders.createdAt, cursor.createdAt),
           lt(orders.id, sql`${cursor.id}::uuid`),
         ),
       )
@@ -73,11 +73,11 @@ function orderFiltersWhere(filters: OrderFilters): SQL | undefined {
   } else if (statuses.length > 1) {
     predicates.push(inArray(orders.status, statuses))
   }
-  if (filters.createdFrom) {
-    predicates.push(gte(orders.createdAt, sql`${filters.createdFrom}::timestamp`))
+  if (filters.createdFrom !== undefined) {
+    predicates.push(gte(orders.createdAt, filters.createdFrom))
   }
-  if (filters.createdTo) {
-    predicates.push(lte(orders.createdAt, sql`${filters.createdTo}::timestamp`))
+  if (filters.createdTo !== undefined) {
+    predicates.push(lte(orders.createdAt, filters.createdTo))
   }
 
   return predicates.length > 0 ? and(...predicates) : undefined
@@ -262,7 +262,7 @@ export async function transitionOrderStatus(args: {
 
     const [updated] = await tx
       .update(orders)
-      .set({ status: toStatus, statusUpdatedAt: new Date() })
+      .set({ status: toStatus, statusUpdatedAt: Date.now() })
       .where(eq(orders.id, orderId))
       .returning()
 

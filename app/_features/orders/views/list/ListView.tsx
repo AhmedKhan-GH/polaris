@@ -90,8 +90,8 @@ export function ListView({
     )
 
     if (statuses.length > 0) next.statuses = statuses
-    if (createdFrom) next.createdFrom = createdFrom
-    if (createdTo) next.createdTo = createdTo
+    if (createdFrom !== null) next.createdFrom = createdFrom
+    if (createdTo !== null) next.createdTo = createdTo
     return next
   }, [selectedStatuses, dateRange])
 
@@ -103,8 +103,8 @@ export function ListView({
     filters.createdFrom !== undefined || filters.createdTo !== undefined
   const statusCountFilters = useMemo<OrderFilters>(() => {
     const next: OrderFilters = {}
-    if (filters.createdFrom) next.createdFrom = filters.createdFrom
-    if (filters.createdTo) next.createdTo = filters.createdTo
+    if (filters.createdFrom !== undefined) next.createdFrom = filters.createdFrom
+    if (filters.createdTo !== undefined) next.createdTo = filters.createdTo
     return next
   }, [filters.createdFrom, filters.createdTo])
 
@@ -122,7 +122,7 @@ export function ListView({
     getNextPageParam: (lastPage) => {
       if (lastPage.length < ORDERS_PAGE_SIZE) return undefined
       const last = lastPage[lastPage.length - 1]
-      return { createdAt: last.createdAt.toISOString(), id: last.id }
+      return { createdAt: last.createdAt, id: last.id }
     },
     enabled: filtersActive,
   })

@@ -8,9 +8,18 @@ import {
   pgTable,
   primaryKey,
   text,
-  timestamp,
   uuid,
 } from "drizzle-orm/pg-core";
+
+// Timestamps are stored as bigint epoch milliseconds (UTC). This is
+// timezone-unambiguous and survives forever without DST/zone migrations
+// --- a logistics order written in 2026 means the same instant when read
+// from any process in any timezone in 2050. Display layer converts to
+// the user's chosen zone at render time.
+const epochMs = (name: string) =>
+  bigint(name, { mode: "number" })
+    .notNull()
+    .default(sql`(extract(epoch from now()) * 1000)::bigint`);
 
 // Active states are the operational pipeline; the three terminal sinks
 // (discarded, rejected, voided) are forward-only exits enforced by the
@@ -45,9 +54,9 @@ export const orders = pgTable(
       .unique()
       .default(sql`nextval('order_number_seq')`),
     status: orderStatus("status").notNull().default("drafted"),
-    statusUpdatedAt: timestamp("status_updated_at").notNull().defaultNow(),
+    statusUpdatedAt: epochMs("status_updated_at"),
     duplicatedFromOrderId: uuid("duplicated_from_order_id"),
-    createdAt: timestamp("created_at").notNull().defaultNow(),
+    createdAt: epochMs("created_at"),
   },
   (table) => [
     // Cursor-paginated newest-first reads. The (created_at, id) tuple
@@ -85,7 +94,7 @@ export const orderStatusHistory = pgTable(
     fromStatus: orderStatus("from_status"),
     toStatus: orderStatus("to_status").notNull(),
     changedBy: uuid("changed_by"),
-    changedAt: timestamp("changed_at").notNull().defaultNow(),
+    changedAt: epochMs("changed_at"),
     reason: text("reason"),
   },
   (table) => [

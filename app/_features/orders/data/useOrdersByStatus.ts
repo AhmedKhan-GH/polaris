@@ -37,7 +37,7 @@ export function useOrdersByStatus(
     getNextPageParam: (lastPage) => {
       if (lastPage.length < ORDERS_PAGE_SIZE) return undefined
       const last = lastPage[lastPage.length - 1]
-      return { createdAt: last.createdAt.toISOString(), id: last.id }
+      return { createdAt: last.createdAt, id: last.id }
     },
   })
 

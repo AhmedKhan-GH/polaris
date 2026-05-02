@@ -120,6 +120,13 @@
       "when": 1777283600000,
       "tag": "0016_rename_completed_to_closed",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1777685495202,
+      "tag": "0017_parched_eternity",
+      "breakpoints": true
     }
   ]
 }

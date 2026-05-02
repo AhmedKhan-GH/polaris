@@ -14,9 +14,9 @@ describe('toOrder', () => {
     id: '7c16d5b1-6f83-45a2-9a9d-1f0dc1f1a2e4',
     orderNumber: 1_000_000,
     status: 'drafted' as const,
-    statusUpdatedAt: new Date('2026-04-19T12:00:00Z'),
+    statusUpdatedAt: Date.UTC(2026, 3, 19, 12, 0, 0),
     duplicatedFromOrderId: null,
-    createdAt: new Date('2026-04-19T12:00:00Z'),
+    createdAt: Date.UTC(2026, 3, 19, 12, 0, 0),
   }
 
   test('maps every domain field from the row', () => {
@@ -39,13 +39,14 @@ describe('toOrder', () => {
 })
 
 describe('parseOrderRow', () => {
+  const tsMs = Date.UTC(2026, 3, 19, 12, 0, 0)
   const validRow = {
     id: '7c16d5b1-6f83-45a2-9a9d-1f0dc1f1a2e4',
     order_number: '1000001',
     status: 'drafted',
-    status_updated_at: '2026-04-19T12:00:00Z',
+    status_updated_at: tsMs,
     duplicated_from_order_id: null,
-    created_at: '2026-04-19T12:00:00Z',
+    created_at: tsMs,
   }
 
   test('converts a raw row into an Order', () => {
@@ -53,9 +54,9 @@ describe('parseOrderRow', () => {
       id: validRow.id,
       orderNumber: 1_000_001,
       status: 'drafted',
-      statusUpdatedAt: new Date('2026-04-19T12:00:00Z'),
+      statusUpdatedAt: tsMs,
       duplicatedFromOrderId: null,
-      createdAt: new Date('2026-04-19T12:00:00Z'),
+      createdAt: tsMs,
     })
   })
 
@@ -66,6 +67,12 @@ describe('parseOrderRow', () => {
         order_number: 1_000_001,
       }).orderNumber,
     ).toBe(1_000_001)
+  })
+
+  test('coerces a stringified bigint timestamp', () => {
+    expect(
+      parseOrderRow({ ...validRow, created_at: String(tsMs) }).createdAt,
+    ).toBe(tsMs)
   })
 
   test('throws on an invalid UUID', () => {
@@ -102,15 +109,16 @@ describe('safeParseOrder', () => {
   })
 
   test('returns the parsed order for a valid row', () => {
+    const tsMs = Date.UTC(2026, 3, 19, 12, 0, 0)
     expect(
       safeParseOrder(
         {
           id: '7c16d5b1-6f83-45a2-9a9d-1f0dc1f1a2e4',
           order_number: '1000001',
           status: 'drafted',
-          status_updated_at: '2026-04-19T12:00:00Z',
+          status_updated_at: tsMs,
           duplicated_from_order_id: null,
-          created_at: '2026-04-19T12:00:00Z',
+          created_at: tsMs,
         },
         'insert',
       ),
@@ -118,9 +126,9 @@ describe('safeParseOrder', () => {
       id: '7c16d5b1-6f83-45a2-9a9d-1f0dc1f1a2e4',
       orderNumber: 1_000_001,
       status: 'drafted',
-      statusUpdatedAt: new Date('2026-04-19T12:00:00Z'),
+      statusUpdatedAt: tsMs,
       duplicatedFromOrderId: null,
-      createdAt: new Date('2026-04-19T12:00:00Z'),
+      createdAt: tsMs,
     })
   })
 
@@ -148,17 +156,17 @@ describe('sortOrdersNewestFirst', () => {
   const older = {
     id: 'a',
     orderNumber: 1,
-    createdAt: new Date('2026-04-19T10:00:00Z'),
+    createdAt: Date.UTC(2026, 3, 19, 10, 0, 0),
   }
   const middle = {
     id: 'b',
     orderNumber: 2,
-    createdAt: new Date('2026-04-19T11:00:00Z'),
+    createdAt: Date.UTC(2026, 3, 19, 11, 0, 0),
   }
   const newest = {
     id: 'c',
     orderNumber: 3,
-    createdAt: new Date('2026-04-19T12:00:00Z'),
+    createdAt: Date.UTC(2026, 3, 19, 12, 0, 0),
   }
 
   test('sorts orders by createdAt descending', () => {
@@ -232,7 +240,7 @@ describe('formatCreatedAt', () => {
     vi.spyOn(Date.prototype, 'getMonth').mockReturnValue(3) // April
     vi.spyOn(Date.prototype, 'getDate').mockReturnValue(19)
 
-    expect(formatCreatedAt(new Date('2026-04-19T12:00:00Z'))).toBe(
+    expect(formatCreatedAt(Date.UTC(2026, 3, 19, 12, 0, 0))).toBe(
       '2026-04-19 · 12:00:00',
     )
 
@@ -242,19 +250,5 @@ describe('formatCreatedAt', () => {
       second: '2-digit',
       hourCycle: 'h23',
     })
-  })
-
-  test('does not mutate the input Date', () => {
-    vi.spyOn(Date.prototype, 'toLocaleTimeString').mockReturnValue('12:00:00')
-    vi.spyOn(Date.prototype, 'getFullYear').mockReturnValue(2026)
-    vi.spyOn(Date.prototype, 'getMonth').mockReturnValue(3)
-    vi.spyOn(Date.prototype, 'getDate').mockReturnValue(19)
-
-    const input = new Date('2026-04-19T12:00:00Z')
-    const before = input.getTime()
-
-    formatCreatedAt(input)
-
-    expect(input.getTime()).toBe(before)
   })
 })

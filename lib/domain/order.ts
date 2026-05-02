@@ -20,22 +20,24 @@ export const ACTIVE_ORDER_STATUSES: readonly OrderStatus[] = [
   'closed',
 ]
 
+// Timestamps are unix epoch milliseconds (UTC). Display layer converts
+// to the user's chosen timezone at render time.
 export type Order = {
   id: string
   orderNumber: number
   status: OrderStatus
-  statusUpdatedAt: Date
+  statusUpdatedAt: number
   duplicatedFromOrderId: string | null
-  createdAt: Date
+  createdAt: number
 }
 
 export function toOrder(row: {
   id: string
   orderNumber: number
   status: OrderStatus
-  statusUpdatedAt: Date
+  statusUpdatedAt: number
   duplicatedFromOrderId: string | null
-  createdAt: Date
+  createdAt: number
 }): Order {
   return {
     id: row.id,
@@ -47,9 +49,17 @@ export function toOrder(row: {
   }
 }
 
-// Realtime / REST payloads use snake_case with string-or-number bigints and
-// ISO timestamps. Validate + normalize at the boundary before the row is
-// allowed to become an Order.
+// Postgres bigint can arrive as number (when small enough) or string
+// (driver-dependent). Coerce both to a finite number; ms-since-epoch
+// stays inside Number.MAX_SAFE_INTEGER until year 287396.
+const epochMs = z
+  .union([z.number(), z.string()])
+  .transform((v) => (typeof v === 'number' ? v : Number(v)))
+  .refine((n) => Number.isFinite(n), { message: 'expected epoch ms' })
+
+// Realtime / REST payloads use snake_case with string-or-number bigints.
+// Validate + normalize at the boundary before the row is allowed to
+// become an Order.
 export const orderRowSchema = z
   .object({
     id: z.string().uuid(),
@@ -57,9 +67,9 @@ export const orderRowSchema = z
       .union([z.number(), z.string()])
       .transform((v) => (typeof v === 'number' ? v : Number(v))),
     status: z.enum(ORDER_STATUSES),
-    status_updated_at: z.string().transform((s) => new Date(s)),
+    status_updated_at: epochMs,
     duplicated_from_order_id: z.string().uuid().nullable(),
-    created_at: z.string().transform((s) => new Date(s)),
+    created_at: epochMs,
   })
   .transform((row): Order => ({
     id: row.id,
@@ -86,12 +96,10 @@ export function safeParseOrder(
   }
 }
 
-export function sortOrdersNewestFirst<T extends { createdAt: Date }>(
+export function sortOrdersNewestFirst<T extends { createdAt: number }>(
   orders: T[],
 ): T[] {
-  return [...orders].sort(
-    (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
-  )
+  return [...orders].sort((a, b) => b.createdAt - a.createdAt)
 }
 
 export function mergeById<T extends { id: string }>(list: T[], next: T): T[] {
@@ -118,8 +126,8 @@ export function dedupeById<T extends { id: string }>(list: readonly T[]): T[] {
 // in the local timezone as ISO 'yyyy-mm-dd' (military / sortable form),
 // time uses hourCycle 'h23' so midnight reads as '00' rather than '24'
 // on the few locales that confuse hour12:false with hourCycle h24.
-export function formatCreatedAt(date: Date): string {
-  const d = new Date(date)
+export function formatCreatedAt(ms: number): string {
+  const d = new Date(ms)
   const yyyy = d.getFullYear()
   const mm = String(d.getMonth() + 1).padStart(2, '0')
   const dd = String(d.getDate()).padStart(2, '0')
