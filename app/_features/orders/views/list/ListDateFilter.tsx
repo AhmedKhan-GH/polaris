@@ -25,10 +25,18 @@ export function ListDateFilter({
 }) {
   const { hour12 } = usePreferences()
   const [open, setOpen] = useState(false)
+  const [fromResetKey, setFromResetKey] = useState(0)
+  const [toResetKey, setToResetKey] = useState(0)
+  const [fromHasTimeContent, setFromHasTimeContent] = useState(false)
+  const [toHasTimeContent, setToHasTimeContent] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const { dateFrom, timeFrom, dateTo, timeTo } = value
+  const canResetFrom =
+    dateFrom !== '' || timeFrom !== '' || fromHasTimeContent
+  const canResetTo = dateTo !== '' || timeTo !== '' || toHasTimeContent
   const active =
     dateFrom !== '' || timeFrom !== '' || dateTo !== '' || timeTo !== ''
+  const hasAnyContent = active || fromHasTimeContent || toHasTimeContent
   const activeBounds =
     (dateFrom !== '' || timeFrom !== '' ? 1 : 0) +
     (dateTo !== '' || timeTo !== '' ? 1 : 0)
@@ -38,12 +46,28 @@ export function ListDateFilter({
   }
 
   function clear() {
+    setFromResetKey((key) => key + 1)
+    setToResetKey((key) => key + 1)
+    setFromHasTimeContent(false)
+    setToHasTimeContent(false)
     onChange({
       dateFrom: '',
       timeFrom: '',
       dateTo: '',
       timeTo: '',
     })
+  }
+
+  function clearFrom() {
+    setFromResetKey((key) => key + 1)
+    setFromHasTimeContent(false)
+    patch({ dateFrom: '', timeFrom: '' })
+  }
+
+  function clearTo() {
+    setToResetKey((key) => key + 1)
+    setToHasTimeContent(false)
+    patch({ dateTo: '', timeTo: '' })
   }
 
   useEffect(() => {
@@ -107,16 +131,18 @@ export function ListDateFilter({
           className="absolute left-0 top-full z-10 mt-1 w-max max-w-[calc(100vw-2rem)] rounded-md border border-zinc-700 bg-zinc-900 p-2 shadow-lg"
         >
           <div className="flex flex-col gap-2">
-            <div className="grid grid-cols-[3rem_auto] items-center gap-2 rounded px-2 py-1">
+            <div className="grid grid-cols-[2.5rem_auto] items-center gap-1 rounded px-2 py-1">
               <span className="inline-flex h-7 items-center text-xs font-medium uppercase tracking-wider text-zinc-300">
                 From
               </span>
               <div className="flex items-center gap-1">
                 <DateTimeInput
+                  key={fromResetKey}
                   value={{ date: dateFrom, time: timeFrom }}
                   onChange={(next) =>
                     patch({ dateFrom: next.date, timeFrom: next.time })
                   }
+                  onTimeContentChange={setFromHasTimeContent}
                   max={dateTo || undefined}
                   hour12={hour12}
                   dateAriaLabel="Created from date"
@@ -124,21 +150,23 @@ export function ListDateFilter({
                 />
                 <ResetButton
                   ariaLabel="Clear from date and time"
-                  disabled={dateFrom === '' && timeFrom === ''}
-                  onClick={() => patch({ dateFrom: '', timeFrom: '' })}
+                  disabled={!canResetFrom}
+                  onClick={clearFrom}
                 />
               </div>
             </div>
-            <div className="grid grid-cols-[3rem_auto] items-center gap-2 rounded px-2 py-1">
+            <div className="grid grid-cols-[2.5rem_auto] items-center gap-1 rounded px-2 py-1">
               <span className="inline-flex h-7 items-center text-xs font-medium uppercase tracking-wider text-zinc-300">
                 To
               </span>
               <div className="flex items-center gap-1">
                 <DateTimeInput
+                  key={toResetKey}
                   value={{ date: dateTo, time: timeTo }}
                   onChange={(next) =>
                     patch({ dateTo: next.date, timeTo: next.time })
                   }
+                  onTimeContentChange={setToHasTimeContent}
                   min={dateFrom || undefined}
                   hour12={hour12}
                   dateAriaLabel="Created to date"
@@ -146,8 +174,8 @@ export function ListDateFilter({
                 />
                 <ResetButton
                   ariaLabel="Clear to date and time"
-                  disabled={dateTo === '' && timeTo === ''}
-                  onClick={() => patch({ dateTo: '', timeTo: '' })}
+                  disabled={!canResetTo}
+                  onClick={clearTo}
                 />
               </div>
             </div>
@@ -155,11 +183,11 @@ export function ListDateFilter({
           <div className="my-1 border-t border-zinc-800" />
           <button
             type="button"
-            disabled={!active}
+            disabled={!hasAnyContent}
             onClick={clear}
             aria-label="Clear date range filter (show all orders)"
             title={
-              active
+              hasAnyContent
                 ? 'Clear date range filter'
                 : 'Date range is unspecified; showing all orders'
             }

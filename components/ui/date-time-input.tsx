@@ -7,6 +7,7 @@ import {
   DateSegment,
   I18nProvider,
   TimeField,
+  TimeFieldStateContext,
   type DateValue,
   type TimeValue,
 } from 'react-aria-components'
@@ -40,6 +41,7 @@ export type DateTimeInputProps = {
   max?: string
   className?: string
   hour12?: boolean
+  onTimeContentChange?: (hasContent: boolean) => void
 }
 
 function DateTimeInput({
@@ -51,6 +53,7 @@ function DateTimeInput({
   max,
   className,
   hour12 = false,
+  onTimeContentChange,
 }: DateTimeInputProps) {
   const dateValue = isoToCalendarDate(value.date)
   const timeValue = stringToTime(value.time)
@@ -99,8 +102,7 @@ function DateTimeInput({
           <DateInput
             className={cn(
               fieldClass,
-              'justify-end',
-              hour12 ? 'w-[13ch]' : 'w-[9ch]',
+              hour12 ? 'w-[11.5ch] justify-start' : 'w-[9ch] justify-end',
             )}
           >
             {(segment) => (
@@ -110,12 +112,44 @@ function DateTimeInput({
               />
             )}
           </DateInput>
+          <TimeContentObserver onChange={onTimeContentChange} />
         </TimeField>
       </div>
     </I18nProvider>
   )
 }
 DateTimeInput.displayName = 'DateTimeInput'
+
+function TimeContentObserver({
+  onChange,
+}: {
+  onChange?: (hasContent: boolean) => void
+}) {
+  const state = React.useContext(TimeFieldStateContext)
+  const hasContent =
+    state?.segments.some(
+      (segment) => isTimeSegment(segment.type) && !segment.isPlaceholder,
+    ) ?? false
+
+  React.useEffect(() => {
+    onChange?.(hasContent)
+  }, [hasContent, onChange])
+
+  React.useEffect(() => {
+    return () => onChange?.(false)
+  }, [onChange])
+
+  return null
+}
+
+function isTimeSegment(type: string): boolean {
+  return (
+    type === 'hour' ||
+    type === 'minute' ||
+    type === 'second' ||
+    type === 'dayPeriod'
+  )
+}
 
 // shadcn-style: the <DateInput> wrapper is the visible "field" --- a
 // single rounded container that hovers/focuses as one unit even
