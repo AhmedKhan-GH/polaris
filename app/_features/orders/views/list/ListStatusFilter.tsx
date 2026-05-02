@@ -30,6 +30,7 @@ export function ListStatusFilter({
   const [open, setOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const someSelected = selected.size > 0
+  const isDefaultSelection = isDefaultStatusSelection(selected)
 
   useEffect(() => {
     if (!open) return
@@ -132,13 +133,21 @@ export function ListStatusFilter({
           <div className="my-1 border-t border-zinc-800" />
           <button
             type="button"
+            disabled={isDefaultSelection}
             onClick={() => onChange(new Set(ACTIVE_ORDER_STATUSES))}
-            className="w-full rounded px-2 py-1 text-left text-xs font-medium text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
+            className="w-full rounded px-2 py-1 text-left text-xs font-medium text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200 disabled:cursor-not-allowed disabled:text-zinc-600 disabled:hover:bg-transparent disabled:hover:text-zinc-600"
           >
             Reset filters
           </button>
         </div>
       )}
     </div>
+  )
+}
+
+function isDefaultStatusSelection(selected: Set<OrderStatus>): boolean {
+  return (
+    selected.size === ACTIVE_ORDER_STATUSES.length &&
+    ACTIVE_ORDER_STATUSES.every((status) => selected.has(status))
   )
 }
