@@ -34,10 +34,11 @@ test.describe("discard draft", () => {
     });
     await expect(draftedHeading).toBeVisible();
 
-    await page.getByRole("button", { name: "Draft", exact: true }).click();
-
     const beforeText = await draftedCount(page).textContent();
     const before = Number(beforeText ?? "0");
+
+    await page.getByRole("button", { name: "Draft", exact: true }).click();
+
     await expect(draftedCount(page)).toHaveText(String(before + 1), {
       timeout: 10_000,
     });
