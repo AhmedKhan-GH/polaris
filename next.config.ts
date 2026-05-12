@@ -5,7 +5,7 @@ const supabaseHost = supabaseUrl ? new URL(supabaseUrl).host : "";
 
 const csp = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline'",
+  `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : ""}`,
   "style-src 'self' 'unsafe-inline'",
   `connect-src 'self' ${supabaseUrl} ws://${supabaseHost} wss://${supabaseHost}`,
   "img-src 'self' data:",
