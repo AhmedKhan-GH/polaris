@@ -1,6 +1,6 @@
 {
-  "id": "97619aa6-20e3-4b13-af3c-0de9697dba87",
-  "prevId": "d5689007-0a5e-4a0d-8749-27642a89c888",
+  "id": "8acdc8f3-27b8-4341-8d98-ed4dfa4bd239",
+  "prevId": "97619aa6-20e3-4b13-af3c-0de9697dba87",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -308,6 +308,7 @@
       "name": "user_role",
       "schema": "public",
       "values": [
+        "sysadmin",
         "owner",
         "admin",
         "member",
