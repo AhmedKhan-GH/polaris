@@ -3,6 +3,7 @@ import { sql } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { getProfile, type UserRole } from '@/lib/profile'
 import { CreateAccountForm } from './CreateOwnerForm'
+import { ResetPasswordButton } from './ResetPasswordButton'
 
 interface TeamMember {
   id: string
@@ -66,6 +67,9 @@ export default async function TeamPage() {
             <tr>
               <th className="px-4 py-3 font-medium text-zinc-400">Email</th>
               <th className="px-4 py-3 font-medium text-zinc-400">Role</th>
+              {profile.role === 'sysadmin' && (
+                <th className="px-4 py-3 font-medium text-zinc-400">Password</th>
+              )}
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-800/50">
@@ -79,6 +83,11 @@ export default async function TeamPage() {
                     {ROLE_LABELS[m.role]}
                   </span>
                 </td>
+                {profile.role === 'sysadmin' && (
+                  <td className="px-4 py-3">
+                    <ResetPasswordButton userId={m.id} email={m.email} />
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>
