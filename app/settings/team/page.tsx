@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import { sql } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { getProfile, type UserRole } from '@/lib/profile'
-import { CreateOwnerForm } from './CreateOwnerForm'
+import { CreateAccountForm } from './CreateOwnerForm'
 
 interface TeamMember {
   id: string
@@ -88,12 +88,12 @@ export default async function TeamPage() {
       {profile.role === 'sysadmin' && (
         <section className="mt-12">
           <h2 className="mb-1 text-lg font-semibold text-zinc-50">
-            Create owner account
+            Create new account
           </h2>
           <p className="mb-6 text-sm text-zinc-400">
-            The new account will have full app access and can manage the team.
+            The new user will be able to sign in immediately.
           </p>
-          <CreateOwnerForm />
+          <CreateAccountForm />
         </section>
       )}
     </main>

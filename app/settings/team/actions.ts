@@ -2,10 +2,12 @@
 
 import { db } from '@/lib/db'
 import { profiles } from '@/lib/schema'
-import { getProfile } from '@/lib/profile'
+import { getProfile, type UserRole } from '@/lib/profile'
 import { getServiceRoleSupabase } from '@/lib/supabase/server'
 
-export async function createOwnerAction(formData: FormData): Promise<{ error?: string }> {
+const ALLOWED_ROLES: UserRole[] = ['owner', 'admin', 'member', 'guest']
+
+export async function createAccountAction(formData: FormData): Promise<{ error?: string }> {
   const profile = await getProfile()
   if (!profile || profile.role !== 'sysadmin') {
     return { error: 'Forbidden' }
@@ -13,13 +15,18 @@ export async function createOwnerAction(formData: FormData): Promise<{ error?: s
 
   const email = formData.get('email') as string | null
   const password = formData.get('password') as string | null
+  const role = formData.get('role') as UserRole | null
 
-  if (!email || !password) {
-    return { error: 'Email and password are required' }
+  if (!email || !password || !role) {
+    return { error: 'Email, password, and role are required' }
   }
 
   if (password.length < 6) {
     return { error: 'Password must be at least 6 characters' }
+  }
+
+  if (!ALLOWED_ROLES.includes(role)) {
+    return { error: 'Invalid role' }
   }
 
   const supabase = getServiceRoleSupabase()
@@ -34,7 +41,7 @@ export async function createOwnerAction(formData: FormData): Promise<{ error?: s
     return { error: error.message }
   }
 
-  await db.insert(profiles).values({ id: data.user.id, role: 'owner' })
+  await db.insert(profiles).values({ id: data.user.id, role })
 
   return {}
 }
