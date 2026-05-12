@@ -1,7 +1,16 @@
 import 'server-only'
+import { createClient } from '@supabase/supabase-js'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
-import { clientEnv } from '../env'
+import { clientEnv, serverEnv } from '../env'
+
+export function getServiceRoleSupabase() {
+  return createClient(
+    clientEnv.NEXT_PUBLIC_SUPABASE_URL,
+    serverEnv!.SUPABASE_SERVICE_ROLE_KEY,
+    { auth: { autoRefreshToken: false, persistSession: false } },
+  )
+}
 
 export async function getServerSupabase() {
   const cookieStore = await cookies()
