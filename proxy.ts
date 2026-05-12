@@ -26,6 +26,7 @@ export async function proxy(request: NextRequest) {
   // Must use getUser() not getSession() — getSession() is local-only and unverified.
   const {
     data: { user },
+    error,
   } = await supabase.auth.getUser()
 
   const { pathname } = request.nextUrl
@@ -35,7 +36,15 @@ export async function proxy(request: NextRequest) {
   if (!user && !isPublic) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
-    return NextResponse.redirect(url)
+    const redirect = NextResponse.redirect(url)
+
+    if (error?.code === 'refresh_token_not_found') {
+      request.cookies.getAll().forEach(({ name }) => {
+        if (name.startsWith('sb-')) redirect.cookies.delete(name)
+      })
+    }
+
+    return redirect
   }
 
   return response
