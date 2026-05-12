@@ -32,6 +32,7 @@ async function getTeamMembers(): Promise<TeamMember[]> {
 }
 
 const ROLE_LABELS: Record<UserRole, string> = {
+  sysadmin: 'Sysadmin',
   owner: 'Owner',
   admin: 'Admin',
   member: 'Member',
@@ -39,6 +40,7 @@ const ROLE_LABELS: Record<UserRole, string> = {
 }
 
 const ROLE_COLORS: Record<UserRole, string> = {
+  sysadmin: 'bg-red-900/50 text-red-300',
   owner: 'bg-amber-900/50 text-amber-300',
   admin: 'bg-blue-900/50 text-blue-300',
   member: 'bg-zinc-800 text-zinc-300',
@@ -48,7 +50,7 @@ const ROLE_COLORS: Record<UserRole, string> = {
 export default async function TeamPage() {
   const profile = await getProfile()
   if (!profile) redirect('/no-access')
-  if (profile.role !== 'owner') redirect('/')
+  if (profile.role !== 'sysadmin' && profile.role !== 'owner') redirect('/')
 
   const members = await getTeamMembers()
 
