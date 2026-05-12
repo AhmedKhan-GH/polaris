@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState, useEffect, useRef } from 'react'
+import { useActionState, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createAccountAction } from './actions'
 
@@ -21,6 +21,7 @@ async function action(_prev: typeof initialState, formData: FormData) {
 
 export function CreateAccountForm() {
   const [state, formAction, isPending] = useActionState(action, initialState)
+  const [mismatch, setMismatch] = useState(false)
   const router = useRouter()
   const formRef = useRef<HTMLFormElement>(null)
 
@@ -31,8 +32,20 @@ export function CreateAccountForm() {
     }
   }, [state.success, router])
 
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    const fd = new FormData(e.currentTarget)
+    const pw = fd.get('password') as string
+    const confirm = fd.get('confirmPassword') as string
+    if (pw !== confirm) {
+      e.preventDefault()
+      setMismatch(true)
+      return
+    }
+    setMismatch(false)
+  }
+
   return (
-    <form ref={formRef} action={formAction} className="flex flex-col gap-4">
+    <form ref={formRef} action={formAction} onSubmit={handleSubmit} className="flex flex-col gap-4">
       <div className="flex flex-col gap-1.5">
         <label htmlFor="email" className="text-sm text-zinc-400">
           Email
@@ -63,6 +76,21 @@ export function CreateAccountForm() {
         />
       </div>
       <div className="flex flex-col gap-1.5">
+        <label htmlFor="confirmPassword" className="text-sm text-zinc-400">
+          Confirm password
+        </label>
+        <input
+          id="confirmPassword"
+          name="confirmPassword"
+          type="password"
+          required
+          minLength={6}
+          autoComplete="new-password"
+          className="rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-200 placeholder:text-zinc-600 focus:border-zinc-500 focus:outline-none"
+          placeholder="Re-enter password"
+        />
+      </div>
+      <div className="flex flex-col gap-1.5">
         <label htmlFor="role" className="text-sm text-zinc-400">
           Role
         </label>
@@ -80,6 +108,9 @@ export function CreateAccountForm() {
           ))}
         </select>
       </div>
+      {mismatch && (
+        <p className="text-sm text-red-400">Passwords do not match</p>
+      )}
       {state.error && (
         <p className="text-sm text-red-400">{state.error}</p>
       )}

@@ -15,10 +15,15 @@ export async function createAccountAction(formData: FormData): Promise<{ error?:
 
   const email = formData.get('email') as string | null
   const password = formData.get('password') as string | null
+  const confirmPassword = formData.get('confirmPassword') as string | null
   const role = formData.get('role') as UserRole | null
 
-  if (!email || !password || !role) {
+  if (!email || !password || !confirmPassword || !role) {
     return { error: 'Email, password, and role are required' }
+  }
+
+  if (password !== confirmPassword) {
+    return { error: 'Passwords do not match' }
   }
 
   if (password.length < 6) {
@@ -54,9 +59,14 @@ export async function resetPasswordAction(formData: FormData): Promise<{ error?:
 
   const userId = formData.get('userId') as string | null
   const password = formData.get('password') as string | null
+  const confirmPassword = formData.get('confirmPassword') as string | null
 
-  if (!userId || !password) {
+  if (!userId || !password || !confirmPassword) {
     return { error: 'User and password are required' }
+  }
+
+  if (password !== confirmPassword) {
+    return { error: 'Passwords do not match' }
   }
 
   if (password.length < 6) {
