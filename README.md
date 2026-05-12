@@ -6,20 +6,27 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 npm install
 
 # Start Supabase locally (requires Docker)
-npm run dev:up
+npm run infra:up
 
 # Add the printed DB URL to .env.local:
 # DATABASE_URL=postgresql://postgres:postgres@localhost:54322/postgres
 
 npm run db:migrate
-npm run db:seed      # optional
+npm run db:seed      # optional — seeds sample orders
+
+# Create the initial admin user
+supabase auth admin create-user \
+  --email admin@yourapp.com \
+  --password '<strong-password>' \
+  --custom-claims '{"role":"platform_admin"}'
+
 npm run dev
 ```
 
 ## Starting up again
 
 ```bash
-npm run dev:up       # if not already running
+npm run infra:up       # if not already running
 npm run dev          # runs db:migrate then starts the dev server
 
 # Or start both in one shot:
@@ -31,7 +38,7 @@ Open [http://localhost:3000](http://localhost:3000) to see the result.
 When you're done:
 
 ```bash
-npm run dev:down
+npm run infra:down
 ```
 
 ## Database
@@ -52,7 +59,7 @@ npm test                     # unit tests
 npm run test:integration     # explicit Testcontainers-backed integration tests
 ```
 
-`dev:up` and `dev:down` only manage the local Supabase stack. Integration tests manage their own Testcontainers lifecycle.
+`infra:up` and `infra:down` only manage the local Supabase stack. Integration tests manage their own Testcontainers lifecycle.
 
 ## Learn More
 

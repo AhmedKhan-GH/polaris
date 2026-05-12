@@ -1,0 +1,1 @@
+-- Intentionally empty. See README.md for bootstrapping the first admin user.
