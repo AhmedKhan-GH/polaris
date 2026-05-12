@@ -1,3 +1,4 @@
+import { redirect } from 'next/navigation'
 import { Suspense } from 'react'
 import {
   HydrationBoundary,
@@ -28,6 +29,7 @@ import {
 } from './_features/orders/data/queryKeys'
 import { KanbanBoardShell } from './_features/orders/views/kanban/KanbanBoardShell'
 import { KanbanColumnShell } from './_features/orders/views/kanban/KanbanColumnShell'
+import { getProfile } from '@/lib/profile'
 
 // Statuses surfaced by the kanban (terminal states stay in the
 // list only). Each gets its own prefetch so columns paint with
@@ -51,7 +53,10 @@ const FALLBACK = (
   </OrdersPageShell>
 )
 
-export default function Home() {
+export default async function Home() {
+  const profile = await getProfile()
+  if (!profile) redirect('/no-access')
+
   return (
     <Suspense fallback={FALLBACK}>
       <OrdersPageData />

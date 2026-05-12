@@ -31,7 +31,9 @@ export async function proxy(request: NextRequest) {
 
   const { pathname } = request.nextUrl
   const isPublic =
-    pathname === '/login' || pathname === '/auth/callback'
+    pathname === '/login' ||
+    pathname === '/auth/callback' ||
+    pathname === '/no-access'
 
   if (!user && !isPublic) {
     const url = request.nextUrl.clone()
