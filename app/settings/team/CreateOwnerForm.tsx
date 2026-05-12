@@ -1,6 +1,7 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useEffect, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import { createOwnerAction } from './actions'
 
 const initialState = { error: undefined as string | undefined, success: false }
@@ -13,9 +14,18 @@ async function action(_prev: typeof initialState, formData: FormData) {
 
 export function CreateOwnerForm() {
   const [state, formAction, isPending] = useActionState(action, initialState)
+  const router = useRouter()
+  const formRef = useRef<HTMLFormElement>(null)
+
+  useEffect(() => {
+    if (state.success) {
+      formRef.current?.reset()
+      router.refresh()
+    }
+  }, [state.success, router])
 
   return (
-    <form action={formAction} className="flex flex-col gap-4">
+    <form ref={formRef} action={formAction} className="flex flex-col gap-4">
       <div className="flex flex-col gap-1.5">
         <label htmlFor="email" className="text-sm text-zinc-400">
           Email
