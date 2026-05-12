@@ -17,7 +17,7 @@ export async function AuthBar() {
   return (
     <div className="shrink-0 border-b border-zinc-800 bg-zinc-950 px-6 py-2">
       <div className="flex justify-end items-center gap-4 overflow-hidden">
-        {(profile?.role === 'sysadmin' || profile?.role === 'owner') && (
+        {(profile?.role === 'system' || profile?.role === 'owner') && (
           <Link
             href="/settings/team"
             className="whitespace-nowrap text-sm text-zinc-500 hover:text-zinc-300 transition-colors"

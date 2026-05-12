@@ -33,7 +33,7 @@ async function getTeamMembers(): Promise<TeamMember[]> {
 }
 
 const ROLE_LABELS: Record<UserRole, string> = {
-  sysadmin: 'Sysadmin',
+  system: 'System',
   owner: 'Owner',
   admin: 'Admin',
   member: 'Member',
@@ -41,7 +41,7 @@ const ROLE_LABELS: Record<UserRole, string> = {
 }
 
 const ROLE_COLORS: Record<UserRole, string> = {
-  sysadmin: 'bg-red-900/50 text-red-300',
+  system: 'bg-red-900/50 text-red-300',
   owner: 'bg-amber-900/50 text-amber-300',
   admin: 'bg-blue-900/50 text-blue-300',
   member: 'bg-zinc-800 text-zinc-300',
@@ -51,7 +51,7 @@ const ROLE_COLORS: Record<UserRole, string> = {
 export default async function TeamPage() {
   const profile = await getProfile()
   if (!profile) redirect('/no-access')
-  if (profile.role !== 'sysadmin' && profile.role !== 'owner') redirect('/')
+  if (profile.role !== 'system' && profile.role !== 'owner') redirect('/')
 
   const members = await getTeamMembers()
 
@@ -67,7 +67,7 @@ export default async function TeamPage() {
             <tr>
               <th className="px-4 py-3 font-medium text-zinc-400">Email</th>
               <th className="px-4 py-3 font-medium text-zinc-400">Role</th>
-              {profile.role === 'sysadmin' && (
+              {profile.role === 'system' && (
                 <th className="px-4 py-3 font-medium text-zinc-400">Password</th>
               )}
             </tr>
@@ -83,7 +83,7 @@ export default async function TeamPage() {
                     {ROLE_LABELS[m.role]}
                   </span>
                 </td>
-                {profile.role === 'sysadmin' && (
+                {profile.role === 'system' && (
                   <td className="px-4 py-3">
                     <ResetPasswordButton userId={m.id} email={m.email} />
                   </td>
@@ -94,7 +94,7 @@ export default async function TeamPage() {
         </table>
       </div>
 
-      {profile.role === 'sysadmin' && (
+      {profile.role === 'system' && (
         <section className="mt-12">
           <h2 className="mb-1 text-lg font-semibold text-zinc-50">
             Create new account

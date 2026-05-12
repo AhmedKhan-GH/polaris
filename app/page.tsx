@@ -56,7 +56,7 @@ const FALLBACK = (
 export default async function Home() {
   const profile = await getProfile()
   if (!profile) redirect('/no-access')
-  if (profile.role === 'sysadmin') redirect('/settings/team')
+  if (profile.role === 'system') redirect('/settings/team')
 
   return (
     <Suspense fallback={FALLBACK}>

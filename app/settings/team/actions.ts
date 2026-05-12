@@ -9,7 +9,7 @@ const ALLOWED_ROLES: UserRole[] = ['owner', 'admin', 'member', 'guest']
 
 export async function createAccountAction(formData: FormData): Promise<{ error?: string }> {
   const profile = await getProfile()
-  if (!profile || profile.role !== 'sysadmin') {
+  if (!profile || profile.role !== 'system') {
     return { error: 'Forbidden' }
   }
 
@@ -53,7 +53,7 @@ export async function createAccountAction(formData: FormData): Promise<{ error?:
 
 export async function resetPasswordAction(formData: FormData): Promise<{ error?: string }> {
   const profile = await getProfile()
-  if (!profile || profile.role !== 'sysadmin') {
+  if (!profile || profile.role !== 'system') {
     return { error: 'Forbidden' }
   }
 

@@ -3,7 +3,7 @@ import { db } from './db'
 import { profiles } from './schema'
 import { getServerSupabase } from './supabase/server'
 
-export type UserRole = 'sysadmin' | 'owner' | 'admin' | 'member' | 'guest'
+export type UserRole = 'system' | 'owner' | 'admin' | 'member' | 'guest'
 
 export interface Profile {
   id: string

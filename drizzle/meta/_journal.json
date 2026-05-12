@@ -162,6 +162,13 @@
       "when": 1778570372875,
       "tag": "0022_add_sysadmin_role",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1747094400000,
+      "tag": "0023_rename_sysadmin_to_system",
+      "breakpoints": true
     }
   ]
 }

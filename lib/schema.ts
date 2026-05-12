@@ -22,7 +22,7 @@ const epochMs = (name: string) =>
     .default(sql`(extract(epoch from now()) * 1000)::bigint`);
 
 export const userRole = pgEnum("user_role", [
-  "sysadmin",
+  "system",
   "owner",
   "admin",
   "member",
