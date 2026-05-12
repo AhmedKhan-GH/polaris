@@ -4,9 +4,6 @@
   "private": true,
   "scripts": {
     "dev": "drizzle-kit migrate && next dev",
-    "infra:up": "npx supabase start",
-    "infra:down": "npx supabase stop",
-    "dev:all": "npm run infra:up && npm run dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",

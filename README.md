@@ -5,8 +5,17 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 ```bash
 npm install
 
-# Start Supabase locally (requires Docker)
-npm run infra:up
+# Install Docker if needed:
+#   macOS:   brew install --cask docker
+#   Windows: winget install Docker.DockerDesktop
+#   Linux:   curl -fsSL https://get.docker.com | sh
+
+# Start Docker if needed:
+#   macOS:   open -a Docker
+#   Windows: start Docker Desktop from the Start menu
+#   Linux:   sudo systemctl start docker
+
+npx supabase start
 
 # Add the printed DB URL to .env.local:
 # DATABASE_URL=postgresql://postgres:postgres@localhost:54322/postgres
@@ -14,11 +23,12 @@ npm run infra:up
 npm run db:migrate
 npm run db:seed      # optional — seeds sample orders
 
-# Create the initial admin user
-supabase auth admin create-user \
-  --email admin@yourapp.com \
-  --password '<strong-password>' \
-  --custom-claims '{"role":"platform_admin"}'
+# Create the system user (use the secret key from `npx supabase status`)
+curl -s -X POST 'http://localhost:54321/auth/v1/admin/users' \
+  -H 'apikey: <secret-key>' \
+  -H 'Authorization: Bearer <secret-key>' \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"<email>","password":"<password>","email_confirm":true}'
 
 npm run dev
 ```
@@ -26,11 +36,8 @@ npm run dev
 ## Starting up again
 
 ```bash
-npm run infra:up       # if not already running
-npm run dev          # runs db:migrate then starts the dev server
-
-# Or start both in one shot:
-npm run dev:all
+npx supabase start     # if not already running
+npm run dev            # runs db:migrate then starts the dev server
 ```
 
 Open [http://localhost:3000](http://localhost:3000) to see the result.
@@ -38,7 +45,7 @@ Open [http://localhost:3000](http://localhost:3000) to see the result.
 When you're done:
 
 ```bash
-npm run infra:down
+npx supabase stop
 ```
 
 ## Database
@@ -46,11 +53,22 @@ npm run infra:down
 Uses [Drizzle ORM](https://orm.drizzle.team) with [Supabase](https://supabase.com) (Postgres). Schema is defined in `lib/schema.ts`.
 
 ```bash
-npm run db:generate  # generate migrations from schema changes
-npm run db:migrate   # apply migrations
-npm run db:studio    # open Drizzle Studio
-npm run db:seed      # seed the database
+# After editing lib/schema.ts:
+npm run db:generate  # creates a new migration file in drizzle/
+npm run db:migrate   # applies pending migrations to the database
 ```
+
+## Roles
+
+```
+System          (out-of-band — platform bootstrap)
+ └── Owner      (business owner — full control)
+      └── Admin (manages staff)
+           └── Member  (processes orders)
+                └── Guest   (future — submits orders, sees only their own)
+```
+
+Each role can only create the tier directly below it. Signup is disabled — all users are invited except guests (future).
 
 ## Testing
 
@@ -59,7 +77,7 @@ npm test                     # unit tests
 npm run test:integration     # explicit Testcontainers-backed integration tests
 ```
 
-`infra:up` and `infra:down` only manage the local Supabase stack. Integration tests manage their own Testcontainers lifecycle.
+`supabase start` and `supabase stop` only manage the local Supabase stack. Integration tests manage their own Testcontainers lifecycle.
 
 ## Learn More
 
