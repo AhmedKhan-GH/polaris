@@ -7,7 +7,7 @@ const csp = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-inline'",
   "style-src 'self' 'unsafe-inline'",
-  `connect-src 'self' ${supabaseUrl} wss://${supabaseHost}`,
+  `connect-src 'self' ${supabaseUrl} ws://${supabaseHost} wss://${supabaseHost}`,
   "img-src 'self' data:",
   "font-src 'self'",
   "frame-ancestors 'none'",

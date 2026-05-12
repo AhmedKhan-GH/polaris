@@ -45,6 +45,7 @@ describe('orderRepository (integration)', () => {
 
   afterEach(async () => {
     await pool.query('TRUNCATE TABLE orders, order_status_history CASCADE')
+    await pool.query('UPDATE order_status_counts SET count = 0')
     await pool.query('ALTER SEQUENCE order_number_seq RESTART WITH 1000000')
   })
 
@@ -324,6 +325,114 @@ describe('orderRepository (integration)', () => {
     })
 
     await expect(repo.countOrders()).resolves.toBe(2)
+  })
+
+  test('countOrdersByStatus reads from the trigger-maintained counts table', async () => {
+    const a = await repo.insertOrder()
+    await repo.insertOrder()
+    await repo.transitionOrderStatus({
+      orderId: a.id,
+      toStatus: 'submitted',
+      changedBy: '11111111-1111-1111-1111-111111111111',
+    })
+
+    const counts = await repo.countOrdersByStatus()
+
+    expect(counts.drafted).toBe(1)
+    expect(counts.submitted).toBe(1)
+    expect(counts.invoiced).toBe(0)
+  })
+
+  test('findOrdersPage returns an empty array when no orders exist', async () => {
+    const page = await repo.findOrdersPage(null, 10)
+    expect(page).toEqual([])
+  })
+
+  test('findOrdersPage returns an empty array when cursor is past the last record', async () => {
+    await seedOrder({
+      id: '00000000-0000-0000-0000-000000000001',
+      orderNumber: 1_000_001,
+      createdAt: Date.parse('2026-04-19T10:00:00Z'),
+    })
+
+    const cursor = { createdAt: 0, id: '00000000-0000-0000-0000-000000000000' }
+    const page = await repo.findOrdersPage(cursor, 10)
+    expect(page).toEqual([])
+  })
+
+  test('findOrdersPageByStatus only returns orders matching the requested status', async () => {
+    await seedOrder({
+      id: '00000000-0000-0000-0000-000000000001',
+      orderNumber: 1_000_001,
+      status: 'drafted',
+      createdAt: Date.parse('2026-04-19T10:00:00Z'),
+    })
+    await seedOrder({
+      id: '00000000-0000-0000-0000-000000000002',
+      orderNumber: 1_000_002,
+      status: 'submitted',
+      createdAt: Date.parse('2026-04-19T11:00:00Z'),
+    })
+    await seedOrder({
+      id: '00000000-0000-0000-0000-000000000003',
+      orderNumber: 1_000_003,
+      status: 'drafted',
+      createdAt: Date.parse('2026-04-19T12:00:00Z'),
+    })
+
+    const page = await repo.findOrdersPageByStatus('drafted', null, 10)
+
+    expect(page).toHaveLength(2)
+    expect(page.every((o) => o.status === 'drafted')).toBe(true)
+    expect(page[0].id).toBe('00000000-0000-0000-0000-000000000003')
+  })
+
+  test('findFilteredOrdersPage returns empty when no orders match filters', async () => {
+    await seedOrder({
+      id: '00000000-0000-0000-0000-000000000001',
+      orderNumber: 1_000_001,
+      status: 'drafted',
+      createdAt: Date.parse('2026-04-19T10:00:00Z'),
+    })
+
+    const page = await repo.findFilteredOrdersPage(
+      { statuses: ['submitted'] },
+      null,
+      10,
+    )
+    expect(page).toEqual([])
+  })
+
+  test('concurrent transitions on the same order serialize via FOR UPDATE', async () => {
+    const order = await repo.insertOrder()
+
+    const results = await Promise.allSettled([
+      repo.transitionOrderStatus({
+        orderId: order.id,
+        toStatus: 'submitted',
+        changedBy: '11111111-1111-1111-1111-111111111111',
+      }),
+      repo.transitionOrderStatus({
+        orderId: order.id,
+        toStatus: 'submitted',
+        changedBy: '22222222-2222-2222-2222-222222222222',
+      }),
+    ])
+
+    const fulfilled = results.filter((r) => r.status === 'fulfilled')
+    const rejected = results.filter((r) => r.status === 'rejected')
+
+    expect(fulfilled).toHaveLength(1)
+    expect(rejected).toHaveLength(1)
+
+    const final = await repo.findOrderById(order.id)
+    expect(final?.status).toBe('submitted')
+
+    const { rows } = await pool.query(
+      'SELECT COUNT(*) as c FROM order_status_history WHERE order_id = $1',
+      [order.id],
+    )
+    expect(Number(rows[0].c)).toBe(1)
   })
 
   describe('transitionOrderStatus', () => {

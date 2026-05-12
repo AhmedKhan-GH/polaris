@@ -75,6 +75,26 @@ Each role can only create the tier directly below it. Signup is disabled — all
 ```bash
 npm test                     # unit tests
 npm run test:integration     # explicit Testcontainers-backed integration tests
+npm run test:e2e             # Playwright end-to-end tests
+```
+
+### E2E setup
+
+E2E tests need a user in local Supabase Auth. Create one with the secret key from `npx supabase status`:
+
+```bash
+curl -s -X POST 'http://localhost:54321/auth/v1/admin/users' \
+  -H 'apikey: <secret-key>' \
+  -H 'Authorization: Bearer <secret-key>' \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"<email>","password":"<password>","email_confirm":true}'
+```
+
+Then add the credentials to `.env.local`:
+
+```
+E2E_TEST_EMAIL=<email>
+E2E_TEST_PASSWORD=<password>
 ```
 
 `supabase start` and `supabase stop` only manage the local Supabase stack. Integration tests manage their own Testcontainers lifecycle.
