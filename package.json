@@ -4,9 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "drizzle-kit migrate && next dev",
-    "dev:up": "npx supabase start",
-    "dev:all": "npm run dev:up && npm run dev",
-    "dev:down": "npx supabase stop",
+    "infra:up": "npx supabase start",
+    "infra:down": "npx supabase stop",
+    "dev:all": "npm run infra:up && npm run dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
@@ -21,6 +21,7 @@
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
     "db:seed": "npx tsx lib/seed.ts",
+    "db:reset": "supabase db reset",
     "sim:other-user": "npx tsx scripts/simulate-other-user.ts"
   },
   "dependencies": {

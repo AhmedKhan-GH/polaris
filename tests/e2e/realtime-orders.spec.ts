@@ -8,7 +8,7 @@ import { expect, test, type Page } from "@playwright/test";
 // KanbanColumnShell re-render.
 //
 // Prerequisites for this test to actually run:
-//   1. `npm run dev:up` (local Supabase) is up.
+//   1. `npm run infra:up` (local Supabase) is up.
 //   2. The dev DB has an auth user matching E2E_TEST_EMAIL +
 //      E2E_TEST_PASSWORD. Create one in the Supabase Studio Auth tab,
 //      or via `supabase auth admin create-user` if scripted.
