@@ -29,7 +29,7 @@ export async function AppTopBar() {
         <BackLink />
         <div className="flex-1" />
         {profile && (
-          <span className="text-xs text-zinc-500">
+          <span className="rounded bg-zinc-800 px-2 py-0.5 text-xs font-medium text-zinc-300">
             {ROLE_LABELS[profile.role]}
           </span>
         )}
