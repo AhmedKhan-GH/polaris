@@ -26,6 +26,7 @@
     "sim:other-user": "npx tsx scripts/simulate-other-user.ts"
   },
   "dependencies": {
+    "@casl/ability": "^6.8.1",
     "@heroicons/react": "^2.2.0",
     "@internationalized/date": "^3.12.1",
     "@radix-ui/react-popover": "^1.1.15",
