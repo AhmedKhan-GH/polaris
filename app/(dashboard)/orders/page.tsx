@@ -1,3 +1,4 @@
+import { notFound } from 'next/navigation'
 import { Suspense } from 'react'
 import {
   HydrationBoundary,
@@ -13,9 +14,9 @@ import {
   findOrdersPageByStatus,
 } from '@/lib/db/orderRepository'
 import type { OrderStatus } from '@/lib/domain/order'
-import { OrdersHeaderShell } from './_features/orders/header/OrdersHeaderShell'
-import { OrdersPageShell } from './_features/orders/OrdersPageShell'
-import { OrdersPage } from './_features/orders/OrdersPage'
+import { OrdersHeaderShell } from '../../_features/orders/header/OrdersHeaderShell'
+import { OrdersPageShell } from '../../_features/orders/OrdersPageShell'
+import { OrdersPage } from '../../_features/orders/OrdersPage'
 import {
   DEFAULT_ACTIVE_ORDER_FILTERS,
   ORDERS_COUNT_QUERY_KEY,
@@ -25,9 +26,11 @@ import {
   listOrdersCountQueryKey,
   listOrdersQueryKey,
   ordersByStatusQueryKey,
-} from './_features/orders/data/queryKeys'
-import { KanbanBoardShell } from './_features/orders/views/kanban/KanbanBoardShell'
-import { KanbanColumnShell } from './_features/orders/views/kanban/KanbanColumnShell'
+} from '../../_features/orders/data/queryKeys'
+import { KanbanBoardShell } from '../../_features/orders/views/kanban/KanbanBoardShell'
+import { KanbanColumnShell } from '../../_features/orders/views/kanban/KanbanColumnShell'
+import { getProfile } from '@/lib/profile'
+import { defineAbilityFor } from '@/lib/abilities'
 
 // Statuses surfaced by the kanban (terminal states stay in the
 // list only). Each gets its own prefetch so columns paint with
@@ -51,7 +54,13 @@ const FALLBACK = (
   </OrdersPageShell>
 )
 
-export default function Home() {
+export default async function Home() {
+  const profile = await getProfile()
+  if (!profile) notFound()
+
+  const ability = defineAbilityFor(profile.role)
+  if (!ability.can('read', 'Order')) notFound()
+
   return (
     <Suspense fallback={FALLBACK}>
       <OrdersPageData />

@@ -2,6 +2,10 @@
   "name": "polaris",
   "version": "0.1.0",
   "private": true,
+  "overrides": {
+    "esbuild": ">=0.25.0",
+    "postcss": ">=8.5.10"
+  },
   "scripts": {
     "dev": "drizzle-kit migrate && next dev",
     "build": "next build",
@@ -22,6 +26,7 @@
     "sim:other-user": "npx tsx scripts/simulate-other-user.ts"
   },
   "dependencies": {
+    "@casl/ability": "^6.8.1",
     "@heroicons/react": "^2.2.0",
     "@internationalized/date": "^3.12.1",
     "@radix-ui/react-popover": "^1.1.15",
@@ -38,10 +43,10 @@
     "next": "^16.2.6",
     "pg": "^8.13.3",
     "pino": "^10.3.1",
-    "react": "19.2.4",
+    "react": "^19.2.6",
     "react-aria-components": "^1.17.0",
     "react-day-picker": "^9.14.0",
-    "react-dom": "19.2.4",
+    "react-dom": "^19.2.6",
     "tailwind-merge": "^3.5.0",
     "zod": "^4.3.6"
   },
@@ -63,7 +68,7 @@
     "eslint-config-next": "16.2.3",
     "jsdom": "^29.1.0",
     "pino-pretty": "^13.1.3",
-    "supabase": "^2.93.0",
+    "supabase": "^2.98.2",
     "tailwindcss": "^4",
     "testcontainers": "^11.14.0",
     "typescript": "^5",

@@ -21,6 +21,20 @@ const epochMs = (name: string) =>
     .notNull()
     .default(sql`(extract(epoch from now()) * 1000)::bigint`);
 
+export const userRole = pgEnum("user_role", [
+  "system",
+  "owner",
+  "admin",
+  "member",
+  "guest",
+]);
+
+export const profiles = pgTable("profiles", {
+  id: uuid("id").primaryKey(),
+  role: userRole("role").notNull().default("member"),
+  createdAt: epochMs("created_at"),
+});
+
 // Active states are the operational pipeline; the three terminal sinks
 // (discarded, rejected, voided) are forward-only exits enforced by the
 // orders_forward_status trigger. Reverts happen by duplicating into a

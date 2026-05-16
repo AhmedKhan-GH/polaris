@@ -5,7 +5,7 @@ import type { OrderStatusCounts } from '@/lib/db/orderRepository'
 import { KanbanBoardShell } from './KanbanBoardShell'
 import { KanbanColumn } from './KanbanColumn'
 
-const KANBAN_COLUMNS: ReadonlyArray<{ name: string; status: OrderStatus }> = [
+const ALL_COLUMNS: ReadonlyArray<{ name: string; status: OrderStatus }> = [
   { name: 'Drafted',   status: 'drafted' },
   { name: 'Submitted', status: 'submitted' },
   { name: 'Invoiced',  status: 'invoiced' },
@@ -16,17 +16,20 @@ export function KanbanBoard({
   statusCounts,
   selectedId,
   onSelect,
+  statuses,
 }: {
   statusCounts: OrderStatusCounts | undefined
   selectedId: string | null
   onSelect: (id: string) => void
+  statuses?: ReadonlyArray<OrderStatus>
 }) {
-  // Each column owns its own per-status infinite query (see
-  // useOrdersByStatus). Buckets and pagination live inside the
-  // column, so this board is a thin shell over the per-column views.
+  const columns = statuses
+    ? ALL_COLUMNS.filter((col) => statuses.includes(col.status))
+    : ALL_COLUMNS
+
   return (
     <KanbanBoardShell
-      columns={KANBAN_COLUMNS.map(({ name, status }) => (
+      columns={columns.map(({ name, status }) => (
         <KanbanColumn
           key={status}
           name={name}

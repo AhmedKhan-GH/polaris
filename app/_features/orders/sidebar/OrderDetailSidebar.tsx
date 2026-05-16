@@ -63,12 +63,16 @@ const ACTIONS_BY_STATUS: Record<OrderStatus, ActionConfig[]> = {
   voided:    [],
 }
 
+export type SidebarMode = 'full' | 'draft'
+
 export function OrderDetailSidebar({
   order,
   onClose,
+  mode = 'full',
 }: {
   order: Order | null
   onClose: () => void
+  mode?: SidebarMode
 }) {
   const isOpen = order !== null
 
@@ -84,6 +88,7 @@ export function OrderDetailSidebar({
           key={order.id}
           order={order}
           onClose={onClose}
+          mode={mode}
         />
       )}
     </aside>
@@ -93,9 +98,11 @@ export function OrderDetailSidebar({
 function SidebarBody({
   order,
   onClose,
+  mode,
 }: {
   order: Order
   onClose: () => void
+  mode: SidebarMode
 }) {
   const { transition, discardDraft, duplicate, isPending, error } =
     useOrderActions()
@@ -104,9 +111,13 @@ function SidebarBody({
   const [pendingAction, setPendingAction] = useState<ActionConfig | null>(null)
   const [duplicatePending, setDuplicatePending] = useState(false)
 
-  const actions = ACTIONS_BY_STATUS[order.status]
+  const allActions = ACTIONS_BY_STATUS[order.status]
+  const actions = mode === 'draft'
+    ? allActions.filter((a) => a.toStatus === 'submitted' || a.toStatus === 'discarded')
+    : allActions
   const primaryAction = actions.find((a) => a.tone === 'primary') ?? null
   const terminalAction = actions.find((a) => a.tone === 'terminal') ?? null
+  const showDuplicate = true
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -222,16 +233,18 @@ function SidebarBody({
               </button>
             )}
           </div>
-          <div className="flex-1">
-            <button
-              type="button"
-              disabled={isPending}
-              onClick={() => setDuplicatePending(true)}
-              className={`${ACTION_BUTTON_BASE} ${STATUS_BUTTON_TONES.drafted}`}
-            >
-              Duplicate
-            </button>
-          </div>
+          {showDuplicate && (
+            <div className="flex-1">
+              <button
+                type="button"
+                disabled={isPending}
+                onClick={() => setDuplicatePending(true)}
+                className={`${ACTION_BUTTON_BASE} ${STATUS_BUTTON_TONES.drafted}`}
+              >
+                Duplicate
+              </button>
+            </div>
+          )}
           <div className="flex-1">
             {primaryAction && (
               <button

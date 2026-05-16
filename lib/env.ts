@@ -24,6 +24,7 @@ export const clientEnv = clientSchema.parse({
 // Server-only env. Parsed eagerly on the server, null on the client.
 const serverSchema = z.object({
   DATABASE_URL: z.string().url(),
+  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).optional(),
 })
 
@@ -34,6 +35,7 @@ const isServer = typeof window === 'undefined'
 export const serverEnv: ServerEnv | null = isServer
   ? serverSchema.parse({
       DATABASE_URL: process.env.DATABASE_URL,
+      SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
       LOG_LEVEL: process.env.LOG_LEVEL,
     })
   : null

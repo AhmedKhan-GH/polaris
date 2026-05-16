@@ -92,17 +92,24 @@ export function useOrders(): UseOrdersResult {
   // counts cache --- no GROUP BY refetch on every change.
   useEffect(() => {
     const supabase = getSupabaseClient()
+    let cancelled = false
+    let activeChannel: ReturnType<typeof supabase.channel> | null = null
     const invalidateListQueries = () => {
       void queryClient.invalidateQueries({
         queryKey: LIST_ORDERS_QUERY_KEY,
       })
     }
-    const channel = supabase
-      .channel('orders-board')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'orders' },
-        (payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => {
+
+    async function subscribe() {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (cancelled || !session) return
+
+      activeChannel = supabase
+        .channel('orders-board', { config: { private: true } })
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'orders' },
+          (payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => {
           if (payload.eventType === 'INSERT') {
             const row = safeParseOrder(payload.new, 'insert')
             if (!row) return
@@ -196,10 +203,14 @@ export function useOrders(): UseOrdersResult {
           )
         },
       )
-      .subscribe()
+        .subscribe()
+    }
+
+    void subscribe()
 
     return () => {
-      void supabase.removeChannel(channel)
+      cancelled = true
+      if (activeChannel) void supabase.removeChannel(activeChannel)
     }
   }, [queryClient])
 

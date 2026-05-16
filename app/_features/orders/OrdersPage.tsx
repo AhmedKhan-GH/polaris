@@ -2,7 +2,8 @@
 
 import { useCallback, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { OrderDetailSidebar } from './sidebar/OrderDetailSidebar'
+import type { OrderStatus } from '@/lib/domain/order'
+import { OrderDetailSidebar, type SidebarMode } from './sidebar/OrderDetailSidebar'
 import { OrdersHeader } from './header/OrdersHeader'
 import { OrdersPageShell } from './OrdersPageShell'
 import { useOrders } from './data/useOrders'
@@ -11,7 +12,12 @@ import { type View } from './header/ViewSwitcher'
 import { KanbanBoard } from './views/kanban/KanbanBoard'
 import { ListView } from './views/list/ListView'
 
-export function OrdersPage() {
+interface OrdersPageProps {
+  statuses?: ReadonlyArray<OrderStatus>
+  sidebarMode?: SidebarMode
+}
+
+export function OrdersPage({ statuses, sidebarMode = 'full' }: OrdersPageProps) {
   const {
     orders,
     totalCount,
@@ -56,6 +62,7 @@ export function OrdersPage() {
           statusCounts={statusCounts}
           selectedId={selectedId}
           onSelect={handleSelect}
+          statuses={statuses}
         />
       </div>
       <div
@@ -73,7 +80,7 @@ export function OrdersPage() {
           onSelect={handleSelect}
         />
       </div>
-      <OrderDetailSidebar order={selectedOrder} onClose={handleClose} />
+      <OrderDetailSidebar order={selectedOrder} onClose={handleClose} mode={sidebarMode} />
     </OrdersPageShell>
   )
 }

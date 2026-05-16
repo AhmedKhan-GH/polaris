@@ -134,6 +134,41 @@
       "when": 1777695324299,
       "tag": "0018_fix_status_counts_enum",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1778566029975,
+      "tag": "0019_cuddly_matthew_murdock",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1778566100000,
+      "tag": "0020_profiles_rls",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1778567000000,
+      "tag": "0021_fix_rls_for_realtime",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1778570372875,
+      "tag": "0022_add_sysadmin_role",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1747094400000,
+      "tag": "0023_rename_sysadmin_to_system",
+      "breakpoints": true
     }
   ]
 }
