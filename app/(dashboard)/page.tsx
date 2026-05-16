@@ -1,118 +1,57 @@
-import { notFound } from 'next/navigation'
-import { Suspense } from 'react'
-import {
-  HydrationBoundary,
-  QueryClient,
-  dehydrate,
-} from '@tanstack/react-query'
-import {
-  countOrders,
-  countFilteredOrders,
-  countOrdersByStatus,
-  findFilteredOrdersPage,
-  findOrdersPage,
-  findOrdersPageByStatus,
-} from '@/lib/db/orderRepository'
-import type { OrderStatus } from '@/lib/domain/order'
-import { OrdersHeaderShell } from '../_features/orders/header/OrdersHeaderShell'
-import { OrdersPageShell } from '../_features/orders/OrdersPageShell'
-import { OrdersPage } from '../_features/orders/OrdersPage'
-import {
-  DEFAULT_ACTIVE_ORDER_FILTERS,
-  ORDERS_COUNT_QUERY_KEY,
-  ORDERS_PAGE_SIZE,
-  ORDERS_QUERY_KEY,
-  ORDERS_STATUS_COUNTS_QUERY_KEY,
-  listOrdersCountQueryKey,
-  listOrdersQueryKey,
-  ordersByStatusQueryKey,
-} from '../_features/orders/data/queryKeys'
-import { KanbanBoardShell } from '../_features/orders/views/kanban/KanbanBoardShell'
-import { KanbanColumnShell } from '../_features/orders/views/kanban/KanbanColumnShell'
+import Link from 'next/link'
 import { getProfile } from '@/lib/profile'
 import { defineAbilityFor } from '@/lib/abilities'
 
-// Statuses surfaced by the kanban (terminal states stay in the
-// list only). Each gets its own prefetch so columns paint with
-// real cards on first load instead of waiting for realtime to fill in.
-const KANBAN_STATUSES: ReadonlyArray<OrderStatus> =
-  DEFAULT_ACTIVE_ORDER_FILTERS.statuses
-
-const FALLBACK = (
-  <OrdersPageShell
-    loading
-    header={<OrdersHeaderShell loading />}
-  >
-    <KanbanBoardShell
-      columns={[
-        <KanbanColumnShell key="drafted"   loading name="Drafted"   status="drafted"   count="—" />,
-        <KanbanColumnShell key="submitted" loading name="Submitted" status="submitted" count="—" />,
-        <KanbanColumnShell key="invoiced"  loading name="Invoiced"  status="invoiced"  count="—" />,
-        <KanbanColumnShell key="closed"    loading name="Closed"    status="closed"    count="—" />,
-      ]}
-    />
-  </OrdersPageShell>
-)
-
-export default async function Home() {
-  const profile = await getProfile()
-  if (!profile) notFound()
-
-  const ability = defineAbilityFor(profile.role)
-  if (!ability.can('read', 'Order')) notFound()
-
-  return (
-    <Suspense fallback={FALLBACK}>
-      <OrdersPageData />
-    </Suspense>
-  )
+interface AppTile {
+  label: string
+  description: string
+  href: string
+  check: (ability: ReturnType<typeof defineAbilityFor>) => boolean
 }
 
-async function OrdersPageData() {
-  // Prefetch every cache the client will need on first paint so
-  // useInfiniteQuery / useQuery hydrate without an extra round-trip:
-  // the list's global/default-filtered pages, the count + per-status
-  // aggregates, and the first page of each kanban column.
-  const queryClient = new QueryClient()
-  await Promise.all([
-    queryClient.prefetchInfiniteQuery({
-      queryKey: ORDERS_QUERY_KEY,
-      queryFn: () => findOrdersPage(null, ORDERS_PAGE_SIZE),
-      initialPageParam: null,
-    }),
-    queryClient.prefetchQuery({
-      queryKey: ORDERS_COUNT_QUERY_KEY,
-      queryFn: () => countOrders(),
-    }),
-    queryClient.prefetchInfiniteQuery({
-      queryKey: listOrdersQueryKey(DEFAULT_ACTIVE_ORDER_FILTERS),
-      queryFn: () =>
-        findFilteredOrdersPage(
-          DEFAULT_ACTIVE_ORDER_FILTERS,
-          null,
-          ORDERS_PAGE_SIZE,
-        ),
-      initialPageParam: null,
-    }),
-    queryClient.prefetchQuery({
-      queryKey: listOrdersCountQueryKey(DEFAULT_ACTIVE_ORDER_FILTERS),
-      queryFn: () => countFilteredOrders(DEFAULT_ACTIVE_ORDER_FILTERS),
-    }),
-    queryClient.prefetchQuery({
-      queryKey: ORDERS_STATUS_COUNTS_QUERY_KEY,
-      queryFn: () => countOrdersByStatus(),
-    }),
-    ...KANBAN_STATUSES.map((status) =>
-      queryClient.prefetchInfiniteQuery({
-        queryKey: ordersByStatusQueryKey(status),
-        queryFn: () => findOrdersPageByStatus(status, null, ORDERS_PAGE_SIZE),
-        initialPageParam: null,
-      }),
-    ),
-  ])
+const APPS: AppTile[] = [
+  {
+    label: 'Orders',
+    description: 'Manage and track order lifecycle',
+    href: '/orders',
+    check: (ability) => ability.can('read', 'Order'),
+  },
+  {
+    label: 'Settings',
+    description: 'Team accounts and system configuration',
+    href: '/settings/team',
+    check: (ability) => ability.can('manage', 'Settings'),
+  },
+]
+
+export default async function AppsPage() {
+  const profile = (await getProfile())!
+  const ability = defineAbilityFor(profile.role)
+  const visibleApps = APPS.filter((app) => app.check(ability))
+
   return (
-    <HydrationBoundary state={dehydrate(queryClient)}>
-      <OrdersPage />
-    </HydrationBoundary>
+    <div className="flex flex-1 items-center justify-center p-6">
+      <div className="w-full max-w-2xl">
+        <h1 className="mb-8 text-center text-lg font-semibold text-zinc-100">
+          Polaris
+        </h1>
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+          {visibleApps.map((app) => (
+            <Link
+              key={app.href}
+              href={app.href}
+              className="group rounded-lg border border-zinc-800 bg-zinc-900/50 p-5 transition-colors hover:border-zinc-700 hover:bg-zinc-900"
+            >
+              <div className="text-sm font-medium text-zinc-100 group-hover:text-white">
+                {app.label}
+              </div>
+              <div className="mt-1 text-xs text-zinc-500 group-hover:text-zinc-400">
+                {app.description}
+              </div>
+            </Link>
+          ))}
+        </div>
+      </div>
+    </div>
   )
 }
