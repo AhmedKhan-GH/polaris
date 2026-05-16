@@ -58,7 +58,7 @@ async function DraftOrdersData() {
   ])
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
-      <OrdersPage statuses={['drafted']} />
+      <OrdersPage statuses={['drafted']} sidebarMode="draft" />
     </HydrationBoundary>
   )
 }
