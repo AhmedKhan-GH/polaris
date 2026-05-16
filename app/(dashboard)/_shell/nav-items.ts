@@ -3,10 +3,13 @@ import type { AppAbility } from '@/lib/abilities'
 export interface NavItem {
   label: string
   href: string
+}
+
+interface NavItemDef extends NavItem {
   check: (ability: AppAbility) => boolean
 }
 
-export const NAV_ITEMS: NavItem[] = [
+const NAV_ITEMS: NavItemDef[] = [
   {
     label: 'Orders',
     href: '/',
@@ -20,5 +23,7 @@ export const NAV_ITEMS: NavItem[] = [
 ]
 
 export function getVisibleNavItems(ability: AppAbility): NavItem[] {
-  return NAV_ITEMS.filter((item) => item.check(ability))
+  return NAV_ITEMS
+    .filter((item) => item.check(ability))
+    .map(({ label, href }) => ({ label, href }))
 }
