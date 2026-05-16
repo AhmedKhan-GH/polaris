@@ -39,7 +39,9 @@ async function getAbility() {
 
 export async function createOrderAction(): Promise<Order> {
   const { ability } = await getAbility()
-  ForbiddenError.from(ability).throwUnlessCan('create', 'Order')
+  if (!ability.can('create', 'DraftOrder') && !ability.can('create', 'Order')) {
+    ForbiddenError.from(ability).throwUnlessCan('create', 'Order')
+  }
 
   try {
     return await createOrder()
@@ -54,12 +56,13 @@ export async function findOrdersPageAction(
   limit: number,
 ): Promise<Order[]> {
   const { ability, profile } = await getAbility()
-  ForbiddenError.from(ability).throwUnlessCan('read', 'Order')
 
   if (profile.role === 'member') {
+    ForbiddenError.from(ability).throwUnlessCan('read', 'DraftOrder')
     return await findOrdersPageByStatus('drafted', cursor, limit)
   }
 
+  ForbiddenError.from(ability).throwUnlessCan('read', 'Order')
   return await findOrdersPage(cursor, limit)
 }
 
@@ -69,12 +72,14 @@ export async function findOrdersPageByStatusAction(
   limit: number,
 ): Promise<Order[]> {
   const { ability, profile } = await getAbility()
-  ForbiddenError.from(ability).throwUnlessCan('read', 'Order')
 
-  if (profile.role === 'member' && status !== 'drafted') {
-    return []
+  if (profile.role === 'member') {
+    ForbiddenError.from(ability).throwUnlessCan('read', 'DraftOrder')
+    if (status !== 'drafted') return []
+    return await findOrdersPageByStatus('drafted', cursor, limit)
   }
 
+  ForbiddenError.from(ability).throwUnlessCan('read', 'Order')
   return await findOrdersPageByStatus(status, cursor, limit)
 }
 
@@ -84,19 +89,22 @@ export async function findFilteredOrdersPageAction(
   limit: number,
 ): Promise<Order[]> {
   const { ability, profile } = await getAbility()
-  ForbiddenError.from(ability).throwUnlessCan('read', 'Order')
 
   if (profile.role === 'member') {
+    ForbiddenError.from(ability).throwUnlessCan('read', 'DraftOrder')
     const memberFilters: OrderFilters = { ...filters, statuses: ['drafted'] }
     return await findFilteredOrdersPage(memberFilters, cursor, limit)
   }
 
+  ForbiddenError.from(ability).throwUnlessCan('read', 'Order')
   return await findFilteredOrdersPage(filters, cursor, limit)
 }
 
 export async function countOrdersAction(): Promise<number> {
   const { ability } = await getAbility()
-  ForbiddenError.from(ability).throwUnlessCan('read', 'Order')
+  if (!ability.can('read', 'Order') && !ability.can('read', 'DraftOrder')) {
+    ForbiddenError.from(ability).throwUnlessCan('read', 'Order')
+  }
   return await countOrders()
 }
 
@@ -104,12 +112,13 @@ export async function countFilteredOrdersAction(
   filters: OrderFilters,
 ): Promise<number> {
   const { ability, profile } = await getAbility()
-  ForbiddenError.from(ability).throwUnlessCan('read', 'Order')
 
   if (profile.role === 'member') {
+    ForbiddenError.from(ability).throwUnlessCan('read', 'DraftOrder')
     return await countFilteredOrders({ ...filters, statuses: ['drafted'] })
   }
 
+  ForbiddenError.from(ability).throwUnlessCan('read', 'Order')
   return await countFilteredOrders(filters)
 }
 
@@ -117,18 +126,21 @@ export async function countFilteredOrdersByStatusAction(
   filters: OrderFilters,
 ): Promise<OrderStatusCounts> {
   const { ability, profile } = await getAbility()
-  ForbiddenError.from(ability).throwUnlessCan('read', 'Order')
 
   if (profile.role === 'member') {
+    ForbiddenError.from(ability).throwUnlessCan('read', 'DraftOrder')
     return await countFilteredOrdersByStatus({ ...filters, statuses: ['drafted'] })
   }
 
+  ForbiddenError.from(ability).throwUnlessCan('read', 'Order')
   return await countFilteredOrdersByStatus(filters)
 }
 
 export async function countOrdersByStatusAction(): Promise<OrderStatusCounts> {
   const { ability } = await getAbility()
-  ForbiddenError.from(ability).throwUnlessCan('read', 'Order')
+  if (!ability.can('read', 'Order') && !ability.can('read', 'DraftOrder')) {
+    ForbiddenError.from(ability).throwUnlessCan('read', 'Order')
+  }
   return await countOrdersByStatus()
 }
 
@@ -162,7 +174,9 @@ export async function discardDraftOrderAction(args: {
   reason?: string
 }): Promise<Order> {
   const { ability } = await getAbility()
-  ForbiddenError.from(ability).throwUnlessCan('discard', 'Order')
+  if (!ability.can('discard', 'DraftOrder') && !ability.can('discard', 'Order')) {
+    ForbiddenError.from(ability).throwUnlessCan('discard', 'Order')
+  }
 
   const actor = await getActorId()
   try {
