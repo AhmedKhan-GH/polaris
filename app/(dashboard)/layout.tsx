@@ -21,7 +21,7 @@ export default async function DashboardLayout({
       <AppSidebar items={visibleNav} />
       <div className="flex flex-1 flex-col overflow-hidden">
         <AppTopBar />
-        <main className="flex-1 overflow-auto">{children}</main>
+        <main className="flex min-h-0 flex-1 flex-col">{children}</main>
       </div>
     </div>
   )
