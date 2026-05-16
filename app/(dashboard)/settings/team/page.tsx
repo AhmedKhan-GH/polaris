@@ -1,6 +1,7 @@
 import { sql } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { getProfile, type UserRole } from '@/lib/profile'
+import { ROLE_LABELS, ROLE_BADGE_COLORS } from '@/lib/roles'
 import { CreateAccountForm } from './CreateOwnerForm'
 import { ResetPasswordButton } from './ResetPasswordButton'
 
@@ -31,21 +32,6 @@ async function getTeamMembers(): Promise<TeamMember[]> {
   }))
 }
 
-const ROLE_LABELS: Record<UserRole, string> = {
-  system: 'System',
-  owner: 'Owner',
-  admin: 'Admin',
-  member: 'Member',
-  guest: 'Guest',
-}
-
-const ROLE_COLORS: Record<UserRole, string> = {
-  system: 'bg-red-900/50 text-red-300',
-  owner: 'bg-amber-900/50 text-amber-300',
-  admin: 'bg-blue-900/50 text-blue-300',
-  member: 'bg-zinc-800 text-zinc-300',
-  guest: 'bg-zinc-800/50 text-zinc-500',
-}
 
 export default async function TeamPage() {
   const profile = (await getProfile())!
@@ -74,7 +60,7 @@ export default async function TeamPage() {
                 <td className="px-4 py-3 text-zinc-200">{m.email}</td>
                 <td className="px-4 py-3">
                   <span
-                    className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${ROLE_COLORS[m.role]}`}
+                    className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${ROLE_BADGE_COLORS[m.role]}`}
                   >
                     {ROLE_LABELS[m.role]}
                   </span>

@@ -16,13 +16,15 @@ async function signOut() {
 }
 
 interface SignOutFormProps {
-  email: string
+  email?: string
 }
 
 export function SignOutForm({ email }: SignOutFormProps) {
   return (
     <form action={signOut} className="flex shrink-0 items-center gap-3">
-      <span className="whitespace-nowrap text-sm text-zinc-400">{email}</span>
+      {email && (
+        <span className="whitespace-nowrap text-sm text-zinc-400">{email}</span>
+      )}
       <button
         type="submit"
         className="shrink-0 whitespace-nowrap text-sm text-zinc-500 hover:text-zinc-300 transition-colors"
