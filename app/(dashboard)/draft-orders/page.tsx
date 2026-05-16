@@ -6,28 +6,14 @@ import {
   dehydrate,
 } from '@tanstack/react-query'
 import { findOrdersPageByStatus, countOrdersByStatus } from '@/lib/db/orderRepository'
-import { OrdersHeaderShell } from '../../_features/orders/header/OrdersHeaderShell'
-import { OrdersPageShell } from '../../_features/orders/OrdersPageShell'
-import { OrdersPage } from '../../_features/orders/OrdersPage'
 import {
   ORDERS_PAGE_SIZE,
   ORDERS_STATUS_COUNTS_QUERY_KEY,
   ordersByStatusQueryKey,
 } from '../../_features/orders/data/queryKeys'
-import { KanbanBoardShell } from '../../_features/orders/views/kanban/KanbanBoardShell'
-import { KanbanColumnShell } from '../../_features/orders/views/kanban/KanbanColumnShell'
+import { DraftOrdersView } from '../../_features/orders/views/drafts/DraftOrdersView'
 import { getProfile } from '@/lib/profile'
 import { defineAbilityFor } from '@/lib/abilities'
-
-const FALLBACK = (
-  <OrdersPageShell loading header={<OrdersHeaderShell loading />}>
-    <KanbanBoardShell
-      columns={[
-        <KanbanColumnShell key="drafted" loading name="Drafted" status="drafted" count="—" />,
-      ]}
-    />
-  </OrdersPageShell>
-)
 
 export default async function DraftOrdersPage() {
   const profile = await getProfile()
@@ -37,9 +23,18 @@ export default async function DraftOrdersPage() {
   if (!ability.can('read', 'DraftOrder')) notFound()
 
   return (
-    <Suspense fallback={FALLBACK}>
+    <Suspense fallback={<DraftOrdersLoading />}>
       <DraftOrdersData />
     </Suspense>
+  )
+}
+
+function DraftOrdersLoading() {
+  return (
+    <div className="flex min-h-0 flex-1">
+      <div className="w-72 shrink-0 border-r border-zinc-800 animate-pulse" />
+      <div className="flex-1" />
+    </div>
   )
 }
 
@@ -58,7 +53,7 @@ async function DraftOrdersData() {
   ])
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
-      <OrdersPage statuses={['drafted']} sidebarMode="draft" />
+      <DraftOrdersView />
     </HydrationBoundary>
   )
 }

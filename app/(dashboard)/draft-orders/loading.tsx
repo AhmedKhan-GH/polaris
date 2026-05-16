@@ -1,16 +1,8 @@
-import { OrdersHeaderShell } from '../../_features/orders/header/OrdersHeaderShell'
-import { OrdersPageShell } from '../../_features/orders/OrdersPageShell'
-import { KanbanBoardShell } from '../../_features/orders/views/kanban/KanbanBoardShell'
-import { KanbanColumnShell } from '../../_features/orders/views/kanban/KanbanColumnShell'
-
 export default function DraftOrdersLoading() {
   return (
-    <OrdersPageShell loading header={<OrdersHeaderShell loading />}>
-      <KanbanBoardShell
-        columns={[
-          <KanbanColumnShell key="drafted" loading name="Drafted" status="drafted" count="—" />,
-        ]}
-      />
-    </OrdersPageShell>
+    <div className="flex min-h-0 flex-1">
+      <div className="w-72 shrink-0 border-r border-zinc-800 animate-pulse" />
+      <div className="flex-1" />
+    </div>
   )
 }
