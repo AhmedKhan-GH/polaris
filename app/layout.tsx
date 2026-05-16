@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { AuthBar } from "./_features/auth/AuthBar";
 import { Providers } from "./providers";
 
 const geistSans = Geist({
@@ -15,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Polaris — Cold Chain Orders",
-  description: "Order-taking platform for cold chain logistics.",
+  title: "Polaris",
+  description: "All-in-one business platform.",
 };
 
 export default function RootLayout({
@@ -32,7 +31,6 @@ export default function RootLayout({
     >
       <body className="h-full flex flex-col bg-zinc-950 font-sans text-zinc-100">
         <Providers>
-          <AuthBar />
           {children}
         </Providers>
       </body>

@@ -1,4 +1,3 @@
-import { redirect } from 'next/navigation'
 import { sql } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { getProfile, type UserRole } from '@/lib/profile'
@@ -49,10 +48,7 @@ const ROLE_COLORS: Record<UserRole, string> = {
 }
 
 export default async function TeamPage() {
-  const profile = await getProfile()
-  if (!profile) redirect('/no-access')
-  if (profile.role !== 'system' && profile.role !== 'owner') redirect('/')
-
+  const profile = (await getProfile())!
   const members = await getTeamMembers()
 
   return (
