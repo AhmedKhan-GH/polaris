@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
+import type { OrderStatus } from '@/lib/domain/order'
 import { OrderDetailSidebar } from './sidebar/OrderDetailSidebar'
 import { OrdersHeader } from './header/OrdersHeader'
 import { OrdersPageShell } from './OrdersPageShell'
@@ -11,7 +12,11 @@ import { type View } from './header/ViewSwitcher'
 import { KanbanBoard } from './views/kanban/KanbanBoard'
 import { ListView } from './views/list/ListView'
 
-export function OrdersPage() {
+interface OrdersPageProps {
+  statuses?: ReadonlyArray<OrderStatus>
+}
+
+export function OrdersPage({ statuses }: OrdersPageProps) {
   const {
     orders,
     totalCount,
@@ -56,6 +61,7 @@ export function OrdersPage() {
           statusCounts={statusCounts}
           selectedId={selectedId}
           onSelect={handleSelect}
+          statuses={statuses}
         />
       </div>
       <div
