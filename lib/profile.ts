@@ -27,10 +27,3 @@ export async function getProfile(): Promise<Profile | null> {
   return row ?? null
 }
 
-export async function requireOwner(): Promise<Profile> {
-  const profile = await getProfile()
-  if (!profile || profile.role !== 'owner') {
-    throw new Error('Forbidden: owner role required')
-  }
-  return profile
-}
