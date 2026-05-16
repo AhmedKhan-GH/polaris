@@ -195,7 +195,9 @@ export async function duplicateOrderAction(args: {
   sourceOrderId: string
 }): Promise<Order> {
   const { ability } = await getAbility()
-  ForbiddenError.from(ability).throwUnlessCan('duplicate', 'Order')
+  if (!ability.can('duplicate', 'DraftOrder') && !ability.can('duplicate', 'Order')) {
+    ForbiddenError.from(ability).throwUnlessCan('duplicate', 'Order')
+  }
 
   const actor = await getActorId()
   try {

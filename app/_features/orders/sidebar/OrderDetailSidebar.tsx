@@ -117,7 +117,7 @@ function SidebarBody({
     : allActions
   const primaryAction = actions.find((a) => a.tone === 'primary') ?? null
   const terminalAction = actions.find((a) => a.tone === 'terminal') ?? null
-  const showDuplicate = mode === 'full'
+  const showDuplicate = true
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
