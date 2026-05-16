@@ -1,15 +1,20 @@
 'use server'
 
+import { ForbiddenError } from '@casl/ability'
 import { db } from '@/lib/db'
 import { profiles } from '@/lib/schema'
 import { getProfile, type UserRole } from '@/lib/profile'
+import { defineAbilityFor } from '@/lib/abilities'
 import { getServiceRoleSupabase } from '@/lib/supabase/server'
 
 const ALLOWED_ROLES: UserRole[] = ['owner', 'admin', 'member', 'guest']
 
 export async function createAccountAction(formData: FormData): Promise<{ error?: string }> {
   const profile = await getProfile()
-  if (!profile || profile.role !== 'system') {
+  if (!profile) return { error: 'Unauthenticated' }
+
+  const ability = defineAbilityFor(profile.role)
+  if (!ability.can('manage', 'Settings')) {
     return { error: 'Forbidden' }
   }
 
@@ -53,7 +58,10 @@ export async function createAccountAction(formData: FormData): Promise<{ error?:
 
 export async function resetPasswordAction(formData: FormData): Promise<{ error?: string }> {
   const profile = await getProfile()
-  if (!profile || profile.role !== 'system') {
+  if (!profile) return { error: 'Unauthenticated' }
+
+  const ability = defineAbilityFor(profile.role)
+  if (!ability.can('manage', 'Settings')) {
     return { error: 'Forbidden' }
   }
 
