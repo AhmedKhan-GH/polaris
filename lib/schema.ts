@@ -70,6 +70,7 @@ export const orders = pgTable(
     status: orderStatus("status").notNull().default("drafted"),
     statusUpdatedAt: epochMs("status_updated_at"),
     duplicatedFromOrderId: uuid("duplicated_from_order_id"),
+    createdBy: uuid("created_by").references(() => profiles.id),
     createdAt: epochMs("created_at"),
   },
   (table) => [

@@ -62,7 +62,7 @@ describe('signInAction', () => {
       { email: 'a@b.com', userId: 'user-1' },
       'login succeeded',
     )
-    expect(redirectMock).toHaveBeenCalledWith('/')
+    expect(redirectMock).toHaveBeenCalledWith('/apps')
     expect(warnMock).not.toHaveBeenCalled()
   })
 
@@ -95,6 +95,6 @@ describe('signInAction', () => {
       { email: 'a@b.com', userId: undefined },
       'login succeeded',
     )
-    expect(redirectMock).toHaveBeenCalledWith('/')
+    expect(redirectMock).toHaveBeenCalledWith('/apps')
   })
 })

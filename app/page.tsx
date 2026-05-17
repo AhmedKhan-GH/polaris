@@ -81,12 +81,20 @@ export default async function LandingPage() {
         <p className="mt-4 text-zinc-400">
           Zee Foods, LLC. Logistics
         </p>
-        <Link
-          href="/login"
-          className="mt-3 inline-block rounded bg-zinc-100 px-6 py-2.5 text-sm font-medium text-zinc-900 hover:bg-zinc-200 transition-colors"
-        >
-          Sign in
-        </Link>
+        <div className="mt-3 flex items-center gap-3">
+          <Link
+            href="/login"
+            className="inline-block rounded bg-zinc-100 px-6 py-2.5 text-sm font-medium text-zinc-900 hover:bg-zinc-200 transition-colors"
+          >
+            Sign in
+          </Link>
+          <Link
+            href="/register"
+            className="inline-block rounded border border-zinc-700 px-6 py-2.5 text-sm font-medium text-zinc-300 hover:bg-zinc-800 transition-colors"
+          >
+            Register
+          </Link>
+        </div>
       </div>
     </main>
   )

@@ -2,14 +2,16 @@
 
 import { ForbiddenError } from '@casl/ability'
 import { log } from '@/lib/log'
-import type { Order, OrderStatus } from '@/lib/domain/order'
+import { ORDER_STATUSES, type Order, type OrderStatus } from '@/lib/domain/order'
 import {
+  countDraftsByCreator,
   countFilteredOrders,
   countFilteredOrdersByStatus,
   countOrders,
   countOrdersByStatus,
   discardDraftOrder,
   duplicateOrder,
+  findDraftsByCreator,
   findFilteredOrdersPage,
   findOrdersPage,
   findOrdersPageByStatus,
@@ -43,8 +45,9 @@ export async function createOrderAction(): Promise<Order> {
     ForbiddenError.from(ability).throwUnlessCan('create', 'Order')
   }
 
+  const actor = await getActorId()
   try {
-    return await createOrder()
+    return await createOrder(actor)
   } catch (err) {
     log.error({ err }, 'createOrderAction failed')
     throw err
@@ -56,6 +59,11 @@ export async function findOrdersPageAction(
   limit: number,
 ): Promise<Order[]> {
   const { ability, profile } = await getAbility()
+
+  if (profile.role === 'guest') {
+    ForbiddenError.from(ability).throwUnlessCan('read', 'DraftOrder')
+    return await findDraftsByCreator(profile.id, cursor, limit)
+  }
 
   if (profile.role === 'member') {
     ForbiddenError.from(ability).throwUnlessCan('read', 'DraftOrder')
@@ -72,6 +80,12 @@ export async function findOrdersPageByStatusAction(
   limit: number,
 ): Promise<Order[]> {
   const { ability, profile } = await getAbility()
+
+  if (profile.role === 'guest') {
+    ForbiddenError.from(ability).throwUnlessCan('read', 'DraftOrder')
+    if (status !== 'drafted') return []
+    return await findDraftsByCreator(profile.id, cursor, limit)
+  }
 
   if (profile.role === 'member') {
     ForbiddenError.from(ability).throwUnlessCan('read', 'DraftOrder')
@@ -90,6 +104,11 @@ export async function findFilteredOrdersPageAction(
 ): Promise<Order[]> {
   const { ability, profile } = await getAbility()
 
+  if (profile.role === 'guest') {
+    ForbiddenError.from(ability).throwUnlessCan('read', 'DraftOrder')
+    return await findDraftsByCreator(profile.id, cursor, limit)
+  }
+
   if (profile.role === 'member') {
     ForbiddenError.from(ability).throwUnlessCan('read', 'DraftOrder')
     const memberFilters: OrderFilters = { ...filters, statuses: ['drafted'] }
@@ -101,9 +120,12 @@ export async function findFilteredOrdersPageAction(
 }
 
 export async function countOrdersAction(): Promise<number> {
-  const { ability } = await getAbility()
+  const { ability, profile } = await getAbility()
   if (!ability.can('read', 'Order') && !ability.can('read', 'DraftOrder')) {
     ForbiddenError.from(ability).throwUnlessCan('read', 'Order')
+  }
+  if (profile.role === 'guest') {
+    return await countDraftsByCreator(profile.id)
   }
   return await countOrders()
 }
@@ -112,6 +134,11 @@ export async function countFilteredOrdersAction(
   filters: OrderFilters,
 ): Promise<number> {
   const { ability, profile } = await getAbility()
+
+  if (profile.role === 'guest') {
+    ForbiddenError.from(ability).throwUnlessCan('read', 'DraftOrder')
+    return await countDraftsByCreator(profile.id)
+  }
 
   if (profile.role === 'member') {
     ForbiddenError.from(ability).throwUnlessCan('read', 'DraftOrder')
@@ -127,6 +154,16 @@ export async function countFilteredOrdersByStatusAction(
 ): Promise<OrderStatusCounts> {
   const { ability, profile } = await getAbility()
 
+  if (profile.role === 'guest') {
+    ForbiddenError.from(ability).throwUnlessCan('read', 'DraftOrder')
+    const n = await countDraftsByCreator(profile.id)
+    const zeros = Object.fromEntries(
+      ORDER_STATUSES.map((s) => [s, 0]),
+    ) as OrderStatusCounts
+    zeros.drafted = n
+    return zeros
+  }
+
   if (profile.role === 'member') {
     ForbiddenError.from(ability).throwUnlessCan('read', 'DraftOrder')
     return await countFilteredOrdersByStatus({ ...filters, statuses: ['drafted'] })
@@ -137,9 +174,17 @@ export async function countFilteredOrdersByStatusAction(
 }
 
 export async function countOrdersByStatusAction(): Promise<OrderStatusCounts> {
-  const { ability } = await getAbility()
+  const { ability, profile } = await getAbility()
   if (!ability.can('read', 'Order') && !ability.can('read', 'DraftOrder')) {
     ForbiddenError.from(ability).throwUnlessCan('read', 'Order')
+  }
+  if (profile.role === 'guest') {
+    const n = await countDraftsByCreator(profile.id)
+    const zeros = Object.fromEntries(
+      ORDER_STATUSES.map((s) => [s, 0]),
+    ) as OrderStatusCounts
+    zeros.drafted = n
+    return zeros
   }
   return await countOrdersByStatus()
 }

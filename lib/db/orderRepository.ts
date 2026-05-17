@@ -172,10 +172,56 @@ export async function findFilteredOrdersPage(
 }
 
 
-export async function insertOrder(): Promise<Order> {
-  const [row] = await db.insert(orders).values({}).returning()
-  log.debug({ orderId: row.id, orderNumber: row.orderNumber }, 'insertOrder')
+export async function insertOrder(createdBy?: string | null): Promise<Order> {
+  const [row] = await db
+    .insert(orders)
+    .values(createdBy ? { createdBy } : {})
+    .returning()
+  log.debug({ orderId: row.id, orderNumber: row.orderNumber, createdBy }, 'insertOrder')
   return toOrder(row)
+}
+
+export async function findDraftsByCreator(
+  creatorId: string,
+  cursor: OrdersCursor | null,
+  limit: number,
+): Promise<Order[]> {
+  const conditions = [
+    eq(orders.status, 'drafted' as OrderStatus),
+    eq(orders.createdBy, creatorId),
+  ]
+  if (cursor) {
+    conditions.push(
+      or(
+        lt(orders.createdAt, cursor.createdAt),
+        and(
+          eq(orders.createdAt, cursor.createdAt),
+          lt(orders.id, sql`${cursor.id}::uuid`),
+        ),
+      )!,
+    )
+  }
+  const rows = await db
+    .select()
+    .from(orders)
+    .where(and(...conditions))
+    .orderBy(desc(orders.createdAt), desc(orders.id))
+    .limit(limit)
+  log.debug({ creatorId, cursor, limit, count: rows.length }, 'findDraftsByCreator')
+  return rows.map(toOrder)
+}
+
+export async function countDraftsByCreator(creatorId: string): Promise<number> {
+  const [row] = await db
+    .select({ value: count() })
+    .from(orders)
+    .where(
+      and(
+        eq(orders.status, 'drafted' as OrderStatus),
+        eq(orders.createdBy, creatorId),
+      ),
+    )
+  return Number(row.value) || 0
 }
 
 export async function countOrders(): Promise<number> {
@@ -313,7 +359,7 @@ export async function duplicateOrder(args: {
 
     const [created] = await tx
       .insert(orders)
-      .values({ duplicatedFromOrderId: source.id })
+      .values({ duplicatedFromOrderId: source.id, createdBy: changedBy })
       .returning()
 
     await tx.insert(orderStatusHistory).values({

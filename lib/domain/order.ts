@@ -28,6 +28,7 @@ export type Order = {
   status: OrderStatus
   statusUpdatedAt: number
   duplicatedFromOrderId: string | null
+  createdBy: string | null
   createdAt: number
 }
 
@@ -37,6 +38,7 @@ export function toOrder(row: {
   status: OrderStatus
   statusUpdatedAt: number
   duplicatedFromOrderId: string | null
+  createdBy: string | null
   createdAt: number
 }): Order {
   return {
@@ -45,6 +47,7 @@ export function toOrder(row: {
     status: row.status,
     statusUpdatedAt: row.statusUpdatedAt,
     duplicatedFromOrderId: row.duplicatedFromOrderId,
+    createdBy: row.createdBy,
     createdAt: row.createdAt,
   }
 }
@@ -69,6 +72,7 @@ export const orderRowSchema = z
     status: z.enum(ORDER_STATUSES),
     status_updated_at: epochMs,
     duplicated_from_order_id: z.string().uuid().nullable(),
+    created_by: z.string().uuid().nullable().optional().default(null),
     created_at: epochMs,
   })
   .transform((row): Order => ({
@@ -77,6 +81,7 @@ export const orderRowSchema = z
     status: row.status,
     statusUpdatedAt: row.status_updated_at,
     duplicatedFromOrderId: row.duplicated_from_order_id,
+    createdBy: row.created_by,
     createdAt: row.created_at,
   }))
 

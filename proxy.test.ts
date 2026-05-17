@@ -61,13 +61,13 @@ describe('proxy middleware', () => {
     expect(res.status).toBe(200)
   })
 
-  test('allows unauthenticated access to /auth/callback', async () => {
+  test('allows unauthenticated access to /register', async () => {
     getUserMock.mockResolvedValue({
       data: { user: null },
       error: null,
     })
 
-    const req = new NextRequest('http://localhost:3000/auth/callback')
+    const req = new NextRequest('http://localhost:3000/register')
     const res = await proxy(req)
 
     expect(res.status).toBe(200)
@@ -86,13 +86,13 @@ describe('proxy middleware', () => {
     expect(new URL(res.headers.get('location')!).pathname).toBe('/login')
   })
 
-  test('does not treat /auth/callback/extra as a public route', async () => {
+  test('does not treat /register-admin as a public route', async () => {
     getUserMock.mockResolvedValue({
       data: { user: null },
       error: null,
     })
 
-    const req = new NextRequest('http://localhost:3000/auth/callback/extra')
+    const req = new NextRequest('http://localhost:3000/register-admin')
     const res = await proxy(req)
 
     expect(res.status).toBe(307)
@@ -105,7 +105,7 @@ describe('proxy middleware', () => {
       error: { code: 'refresh_token_not_found' },
     })
 
-    const req = new NextRequest('http://localhost:3000/')
+    const req = new NextRequest('http://localhost:3000/orders')
     req.cookies.set('sb-access-token', 'stale')
     req.cookies.set('sb-refresh-token', 'stale')
     req.cookies.set('other-cookie', 'keep')
@@ -129,7 +129,7 @@ describe('proxy middleware', () => {
       error: { code: 'session_not_found' },
     })
 
-    const req = new NextRequest('http://localhost:3000/')
+    const req = new NextRequest('http://localhost:3000/orders')
     req.cookies.set('sb-access-token', 'stale')
 
     const res = await proxy(req)

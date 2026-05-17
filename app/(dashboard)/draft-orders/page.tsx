@@ -5,7 +5,14 @@ import {
   QueryClient,
   dehydrate,
 } from '@tanstack/react-query'
-import { findOrdersPageByStatus, countOrdersByStatus } from '@/lib/db/orderRepository'
+import {
+  findOrdersPageByStatus,
+  findDraftsByCreator,
+  countOrdersByStatus,
+  countDraftsByCreator,
+} from '@/lib/db/orderRepository'
+import { ORDER_STATUSES } from '@/lib/domain/order'
+import type { OrderStatusCounts } from '@/lib/db/orderRepository'
 import {
   ORDERS_PAGE_SIZE,
   ORDERS_STATUS_COUNTS_QUERY_KEY,
@@ -39,16 +46,31 @@ function DraftOrdersLoading() {
 }
 
 async function DraftOrdersData() {
+  const profile = (await getProfile())!
+  const isGuest = profile.role === 'guest'
   const queryClient = new QueryClient()
   await Promise.all([
     queryClient.prefetchInfiniteQuery({
       queryKey: ordersByStatusQueryKey('drafted'),
-      queryFn: () => findOrdersPageByStatus('drafted', null, ORDERS_PAGE_SIZE),
+      queryFn: () =>
+        isGuest
+          ? findDraftsByCreator(profile.id, null, ORDERS_PAGE_SIZE)
+          : findOrdersPageByStatus('drafted', null, ORDERS_PAGE_SIZE),
       initialPageParam: null,
     }),
     queryClient.prefetchQuery({
       queryKey: ORDERS_STATUS_COUNTS_QUERY_KEY,
-      queryFn: () => countOrdersByStatus(),
+      queryFn: async () => {
+        if (isGuest) {
+          const n = await countDraftsByCreator(profile.id)
+          const zeros = Object.fromEntries(
+            ORDER_STATUSES.map((s) => [s, 0]),
+          ) as OrderStatusCounts
+          zeros.drafted = n
+          return zeros
+        }
+        return countOrdersByStatus()
+      },
     }),
   ])
   return (

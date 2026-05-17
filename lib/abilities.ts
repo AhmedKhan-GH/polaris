@@ -47,6 +47,9 @@ export function defineAbilityFor(role: UserRole): AppAbility {
       break
 
     case 'guest':
+      can('create', 'DraftOrder')
+      can('read', 'DraftOrder')
+      can('discard', 'DraftOrder')
       break
   }
 
