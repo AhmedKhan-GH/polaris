@@ -1,19 +1,15 @@
-import { OrdersHeaderShell } from '../../_features/orders/header/OrdersHeaderShell'
-import { OrdersPageShell } from '../../_features/orders/OrdersPageShell'
-import { KanbanBoardShell } from '../../_features/orders/views/kanban/KanbanBoardShell'
-import { KanbanColumnShell } from '../../_features/orders/views/kanban/KanbanColumnShell'
-
 export default function OrdersLoading() {
   return (
-    <OrdersPageShell loading header={<OrdersHeaderShell loading />}>
-      <KanbanBoardShell
-        columns={[
-          <KanbanColumnShell key="drafted"   loading name="Drafted"   status="drafted"   count="—" />,
-          <KanbanColumnShell key="submitted" loading name="Submitted" status="submitted" count="—" />,
-          <KanbanColumnShell key="invoiced"  loading name="Invoiced"  status="invoiced"  count="—" />,
-          <KanbanColumnShell key="closed"    loading name="Closed"    status="closed"    count="—" />,
-        ]}
-      />
-    </OrdersPageShell>
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="flex items-center gap-1 border-b border-zinc-800 px-4 py-2.5">
+        <div className="h-5 w-20 animate-pulse rounded bg-zinc-800" />
+        <div className="h-5 w-20 animate-pulse rounded bg-zinc-800" />
+        <div className="h-5 w-20 animate-pulse rounded bg-zinc-800" />
+      </div>
+      <div className="flex min-h-0 flex-1">
+        <div className="w-72 shrink-0 border-r border-zinc-800 animate-pulse" />
+        <div className="flex-1" />
+      </div>
+    </div>
   )
 }
