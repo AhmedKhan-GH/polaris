@@ -20,6 +20,7 @@ export function OrdersShell({
 }) {
   const [view, setView] = useState<View>('detail')
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
   const queryClient = useQueryClient()
 
   const {
@@ -33,12 +34,21 @@ export function OrdersShell({
     fetchNextPage,
   } = useOrders()
 
-  const selectedOrder = selectedId
+  const selectedOrder = sidebarOpen && selectedId
     ? findInCaches(queryClient, selectedId)
     : null
 
-  const handleSelect = useCallback((id: string) => setSelectedId(id), [])
-  const handleClose = useCallback(() => setSelectedId(null), [])
+  const handleSelect = useCallback((id: string) => {
+    setSelectedId((prev) => {
+      if (prev === id) {
+        setSidebarOpen((open) => !open)
+        return prev
+      }
+      setSidebarOpen(false)
+      return id
+    })
+  }, [])
+  const handleClose = useCallback(() => setSidebarOpen(false), [])
 
   return (
     <main className="flex min-h-0 flex-1 flex-col p-6">
