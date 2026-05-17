@@ -13,22 +13,21 @@ import { OrderDetailPanel } from './OrderDetailPanel'
 export interface StatusOrdersViewProps {
   statuses: readonly OrderStatus[]
   statusCounts: OrderStatusCounts | undefined
-  initialSelectedId?: string | null
+  selectedId: string | null
+  onSelect: (id: string) => void
 }
 
-export function StatusOrdersView({ statuses, statusCounts, initialSelectedId }: StatusOrdersViewProps) {
+export function StatusOrdersView({ statuses, statusCounts, selectedId, onSelect }: StatusOrdersViewProps) {
   const [activeStatus, setActiveStatus] = useState<OrderStatus>(statuses[0])
-  const [selectedId, setSelectedId] = useState<string | null>(null)
   const queryClient = useQueryClient()
 
   useEffect(() => {
-    if (!initialSelectedId) return
-    const order = findInCaches(queryClient, initialSelectedId)
+    if (!selectedId) return
+    const order = findInCaches(queryClient, selectedId)
     if (order && statuses.includes(order.status)) {
       setActiveStatus(order.status)
     }
-    setSelectedId(initialSelectedId)
-  }, [initialSelectedId, queryClient, statuses])
+  }, [selectedId, queryClient, statuses])
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -38,7 +37,7 @@ export function StatusOrdersView({ statuses, statusCounts, initialSelectedId }: 
           <button
             key={status}
             type="button"
-            onClick={() => { setActiveStatus(status); setSelectedId(null) }}
+            onClick={() => setActiveStatus(status)}
             className={`relative px-3 py-2.5 text-sm font-medium capitalize transition-colors ${
               activeStatus === status
                 ? 'text-zinc-100'
@@ -63,7 +62,7 @@ export function StatusOrdersView({ statuses, statusCounts, initialSelectedId }: 
         key={activeStatus}
         status={activeStatus}
         selectedId={selectedId}
-        onSelect={setSelectedId}
+        onSelect={onSelect}
       />
     </div>
   )

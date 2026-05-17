@@ -1,12 +1,15 @@
 'use client'
 
 import { useCallback, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import type { OrderStatus } from '@/lib/domain/order'
 import { useOrders } from '../data/useOrders'
+import { findInCaches } from '../data/cacheHelpers'
 import { ViewSwitcher, type View } from '../header/ViewSwitcher'
 import { StatusOrdersView } from './StatusOrdersView'
 import { KanbanBoard } from './kanban/KanbanBoard'
 import { ListView } from './list/ListView'
+import { OrderDetailSidebar } from '../sidebar/OrderDetailSidebar'
 
 export function OrdersShell({
   statuses,
@@ -16,7 +19,8 @@ export function OrdersShell({
   canCreate: boolean
 }) {
   const [view, setView] = useState<View>('detail')
-  const [detailSelectedId, setDetailSelectedId] = useState<string | null>(null)
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const queryClient = useQueryClient()
 
   const {
     orders,
@@ -29,10 +33,12 @@ export function OrdersShell({
     fetchNextPage,
   } = useOrders()
 
-  const handleSelectFromList = useCallback((id: string) => {
-    setDetailSelectedId(id)
-    setView('detail')
-  }, [])
+  const selectedOrder = selectedId
+    ? findInCaches(queryClient, selectedId)
+    : null
+
+  const handleSelect = useCallback((id: string) => setSelectedId(id), [])
+  const handleClose = useCallback(() => setSelectedId(null), [])
 
   return (
     <main className="flex min-h-0 flex-1 flex-col p-6">
@@ -64,7 +70,8 @@ export function OrdersShell({
           <StatusOrdersView
             statuses={statuses}
             statusCounts={statusCounts}
-            initialSelectedId={detailSelectedId}
+            selectedId={selectedId}
+            onSelect={handleSelect}
           />
         </div>
         <div
@@ -73,8 +80,8 @@ export function OrdersShell({
         >
           <KanbanBoard
             statusCounts={statusCounts}
-            selectedId={null}
-            onSelect={handleSelectFromList}
+            selectedId={selectedId}
+            onSelect={handleSelect}
             statuses={statuses}
           />
         </div>
@@ -89,10 +96,13 @@ export function OrdersShell({
             hasNextPage={hasNextPage}
             isFetchingNextPage={isFetchingNextPage}
             fetchNextPage={fetchNextPage}
-            selectedId={null}
-            onSelect={handleSelectFromList}
+            selectedId={selectedId}
+            onSelect={handleSelect}
           />
         </div>
+        {view !== 'detail' && (
+          <OrderDetailSidebar order={selectedOrder} onClose={handleClose} />
+        )}
       </div>
     </main>
   )
