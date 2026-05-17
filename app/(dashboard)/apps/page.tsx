@@ -11,16 +11,10 @@ interface AppTile {
 
 const APPS: AppTile[] = [
   {
-    label: 'Draft Orders',
-    description: 'Create and manage draft orders',
-    href: '/draft-orders',
-    check: (ability) => ability.can('read', 'DraftOrder'),
-  },
-  {
-    label: 'Manage Orders',
-    description: 'Track and transition orders through the pipeline',
+    label: 'Orders',
+    description: 'Create, track, and manage orders through the pipeline',
     href: '/orders',
-    check: (ability) => ability.can('read', 'Order'),
+    check: (ability) => ability.can('read', 'Order') || ability.can('read', 'DraftOrder'),
   },
   {
     label: 'Settings',
