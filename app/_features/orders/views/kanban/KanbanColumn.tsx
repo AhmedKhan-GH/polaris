@@ -56,6 +56,15 @@ export function KanbanColumn({
 
   const [isAtTop, setIsAtTop] = useState(true)
 
+  useEffect(() => {
+    if (!selectedId) return
+    const index = cards.findIndex((c) => c.id === selectedId)
+    if (index >= 0) {
+      virtualizer.scrollToIndex(index, { align: 'center' })
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const items = virtualizer.getVirtualItems()
   const totalSize = totalSlots * SLOT_HEIGHT
 

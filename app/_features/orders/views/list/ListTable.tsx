@@ -97,6 +97,15 @@ export function ListTable({
     ROW_HEIGHT,
   )
 
+  useEffect(() => {
+    if (!selectedId) return
+    const index = visibleOrders.findIndex((o) => o.id === selectedId)
+    if (index >= 0) {
+      virtualizer.scrollToIndex(index, { align: 'center' })
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   useLayoutEffect(() => {
     const el = scrollRef.current
     if (!el) return
