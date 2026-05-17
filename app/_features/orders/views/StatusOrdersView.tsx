@@ -221,10 +221,46 @@ function StatusPanel({
         {selectedOrder ? (
           <OrderDetailPanel order={selectedOrder} role={role} />
         ) : (
-          <div className="flex flex-1 items-center justify-center text-sm text-zinc-500">
-            Click an order for details
-          </div>
+          <DetailPanelSkeleton />
         )}
+      </div>
+    </div>
+  )
+}
+
+function DetailPanelSkeleton() {
+  return (
+    <div className="flex flex-1 flex-col animate-pulse">
+      {/* Header */}
+      <div className="flex items-center gap-3 border-b border-zinc-800 px-6 py-4">
+        <span className="h-5 w-20 rounded bg-zinc-700/60" />
+        <span className="h-6 w-16 rounded-full bg-zinc-700/40" />
+      </div>
+
+      {/* Metadata */}
+      <div className="border-b border-zinc-800 px-6 py-4">
+        <div className="grid grid-cols-[max-content_1fr] gap-x-4 gap-y-2">
+          <span className="h-4 w-14 rounded bg-zinc-700/40" />
+          <span className="h-4 w-40 rounded bg-zinc-700/60" />
+          <span className="h-4 w-20 rounded bg-zinc-700/40" />
+          <span className="h-4 w-36 rounded bg-zinc-700/60" />
+          <span className="h-4 w-24 rounded bg-zinc-700/40" />
+          <span className="h-4 w-40 rounded bg-zinc-700/60" />
+        </div>
+      </div>
+
+      {/* Content area */}
+      <div className="flex-1 px-6 py-4">
+        <div className="rounded-lg border border-dashed border-zinc-800 py-12 flex items-center justify-center text-sm text-zinc-600">
+          Select an order
+        </div>
+      </div>
+
+      {/* Actions */}
+      <div className="flex gap-2 border-t border-zinc-800 px-5 py-4">
+        <span className="h-9 flex-1 rounded bg-zinc-700/30" />
+        <span className="h-9 flex-1 rounded bg-zinc-700/30" />
+        <span className="h-9 flex-1 rounded bg-zinc-700/30" />
       </div>
     </div>
   )
