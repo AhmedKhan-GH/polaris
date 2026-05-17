@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { formatCreatedAt, type Order, type OrderStatus } from '@/lib/domain/order'
 import type { OrderStatusCounts } from '@/lib/db/orderRepository'
@@ -13,10 +13,22 @@ import { OrderDetailPanel } from './OrderDetailPanel'
 export interface StatusOrdersViewProps {
   statuses: readonly OrderStatus[]
   statusCounts: OrderStatusCounts | undefined
+  initialSelectedId?: string | null
 }
 
-export function StatusOrdersView({ statuses, statusCounts }: StatusOrdersViewProps) {
+export function StatusOrdersView({ statuses, statusCounts, initialSelectedId }: StatusOrdersViewProps) {
   const [activeStatus, setActiveStatus] = useState<OrderStatus>(statuses[0])
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const queryClient = useQueryClient()
+
+  useEffect(() => {
+    if (!initialSelectedId) return
+    const order = findInCaches(queryClient, initialSelectedId)
+    if (order && statuses.includes(order.status)) {
+      setActiveStatus(order.status)
+    }
+    setSelectedId(initialSelectedId)
+  }, [initialSelectedId, queryClient, statuses])
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -26,7 +38,7 @@ export function StatusOrdersView({ statuses, statusCounts }: StatusOrdersViewPro
           <button
             key={status}
             type="button"
-            onClick={() => setActiveStatus(status)}
+            onClick={() => { setActiveStatus(status); setSelectedId(null) }}
             className={`relative px-3 py-2.5 text-sm font-medium capitalize transition-colors ${
               activeStatus === status
                 ? 'text-zinc-100'
@@ -47,23 +59,35 @@ export function StatusOrdersView({ statuses, statusCounts }: StatusOrdersViewPro
       </div>
 
       {/* Per-status content */}
-      <StatusPanel key={activeStatus} status={activeStatus} />
+      <StatusPanel
+        key={activeStatus}
+        status={activeStatus}
+        selectedId={selectedId}
+        onSelect={setSelectedId}
+      />
     </div>
   )
 }
 
-function StatusPanel({ status }: { status: OrderStatus }) {
+function StatusPanel({
+  status,
+  selectedId,
+  onSelect,
+}: {
+  status: OrderStatus
+  selectedId: string | null
+  onSelect: (id: string) => void
+}) {
   const { cards, hasNextPage, isFetchingNextPage, fetchNextPage } =
     useOrdersByStatus(status)
   const queryClient = useQueryClient()
   const { timezone, hour12 } = usePreferences()
-  const [selectedId, setSelectedId] = useState<string | null>(null)
 
   const selectedOrder = selectedId
     ? findInCaches(queryClient, selectedId)
     : null
 
-  const handleSelect = useCallback((id: string) => setSelectedId(id), [])
+  const handleSelect = useCallback((id: string) => onSelect(id), [onSelect])
 
   return (
     <div className="flex min-h-0 flex-1">

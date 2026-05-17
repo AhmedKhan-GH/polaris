@@ -1,15 +1,12 @@
 'use client'
 
 import { useCallback, useState } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
 import type { OrderStatus } from '@/lib/domain/order'
 import { useOrders } from '../data/useOrders'
-import { findInCaches } from '../data/cacheHelpers'
 import { ViewSwitcher, type View } from '../header/ViewSwitcher'
 import { StatusOrdersView } from './StatusOrdersView'
 import { KanbanBoard } from './kanban/KanbanBoard'
 import { ListView } from './list/ListView'
-import { OrderDetailSidebar } from '../sidebar/OrderDetailSidebar'
 
 export function OrdersShell({
   statuses,
@@ -19,8 +16,7 @@ export function OrdersShell({
   canCreate: boolean
 }) {
   const [view, setView] = useState<View>('detail')
-  const [selectedId, setSelectedId] = useState<string | null>(null)
-  const queryClient = useQueryClient()
+  const [detailSelectedId, setDetailSelectedId] = useState<string | null>(null)
 
   const {
     orders,
@@ -33,12 +29,10 @@ export function OrdersShell({
     fetchNextPage,
   } = useOrders()
 
-  const selectedOrder = selectedId
-    ? findInCaches(queryClient, selectedId)
-    : null
-
-  const handleSelect = useCallback((id: string) => setSelectedId(id), [])
-  const handleClose = useCallback(() => setSelectedId(null), [])
+  const handleSelectFromList = useCallback((id: string) => {
+    setDetailSelectedId(id)
+    setView('detail')
+  }, [])
 
   return (
     <main className="flex min-h-0 flex-1 flex-col p-6">
@@ -67,7 +61,11 @@ export function OrdersShell({
           className={view === 'detail' ? 'flex min-h-0 flex-1 flex-col' : 'hidden'}
           aria-hidden={view !== 'detail'}
         >
-          <StatusOrdersView statuses={statuses} statusCounts={statusCounts} />
+          <StatusOrdersView
+            statuses={statuses}
+            statusCounts={statusCounts}
+            initialSelectedId={detailSelectedId}
+          />
         </div>
         <div
           className={view === 'board' ? 'flex min-h-0 flex-1' : 'hidden'}
@@ -75,8 +73,8 @@ export function OrdersShell({
         >
           <KanbanBoard
             statusCounts={statusCounts}
-            selectedId={selectedId}
-            onSelect={handleSelect}
+            selectedId={null}
+            onSelect={handleSelectFromList}
             statuses={statuses}
           />
         </div>
@@ -91,13 +89,10 @@ export function OrdersShell({
             hasNextPage={hasNextPage}
             isFetchingNextPage={isFetchingNextPage}
             fetchNextPage={fetchNextPage}
-            selectedId={selectedId}
-            onSelect={handleSelect}
+            selectedId={null}
+            onSelect={handleSelectFromList}
           />
         </div>
-        {view !== 'detail' && (
-          <OrderDetailSidebar order={selectedOrder} onClose={handleClose} />
-        )}
       </div>
     </main>
   )
