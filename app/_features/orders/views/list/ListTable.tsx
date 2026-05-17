@@ -57,22 +57,21 @@ export function ListTable({
       columnHelper.accessor('orderNumber', {
         header: 'Order #',
         cell: (info) => info.getValue(),
-        meta: { cellClassName: 'font-mono text-zinc-50' },
+        meta: { cellClassName: 'truncate font-mono text-zinc-50' },
       }),
       columnHelper.accessor('status', {
         header: 'Status',
         cell: (info) => <StatusPill status={info.getValue()} />,
-        meta: { cellClassName: 'text-zinc-300' },
       }),
       columnHelper.accessor('createdByEmail', {
         header: 'Created by',
         cell: (info) => info.getValue() ?? '—',
-        meta: { cellClassName: 'text-zinc-400' },
+        meta: { cellClassName: 'truncate text-zinc-400' },
       }),
       columnHelper.accessor('createdAt', {
         header: 'Created',
         cell: (info) => formatCreatedAt(info.getValue(), timezone, hour12),
-        meta: { cellClassName: 'text-zinc-300' },
+        meta: { cellClassName: 'truncate whitespace-nowrap text-zinc-300' },
       }),
     ],
     [timezone, hour12],
@@ -275,7 +274,7 @@ export function ListTable({
                   <div
                     key={cell.id}
                     role="cell"
-                    className={`truncate px-4 py-3 ${cell.column.columnDef.meta?.cellClassName ?? ''}`}
+                    className={`min-w-0 overflow-hidden px-4 py-3 ${cell.column.columnDef.meta?.cellClassName ?? ''}`}
                   >
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </div>

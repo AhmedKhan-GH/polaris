@@ -230,7 +230,7 @@ function StatusPanel({
 
 function DetailPanelSkeleton() {
   return (
-    <div className="flex flex-1 flex-col animate-pulse">
+    <div className="flex flex-1 flex-col">
       {/* Header */}
       <div className="flex items-center gap-3 border-b border-zinc-800 px-6 py-4">
         <span className="h-5 w-20 rounded bg-zinc-700/60" />
