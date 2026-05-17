@@ -39,15 +39,13 @@ export function OrdersShell({
     : null
 
   const handleSelect = useCallback((id: string) => {
-    setSelectedId((prev) => {
-      if (prev === id) {
-        setSidebarOpen((open) => !open)
-        return prev
-      }
+    if (id === selectedId) {
+      setSidebarOpen((open) => !open)
+    } else {
+      setSelectedId(id)
       setSidebarOpen(false)
-      return id
-    })
-  }, [])
+    }
+  }, [selectedId])
   const handleClose = useCallback(() => setSidebarOpen(false), [])
 
   return (
