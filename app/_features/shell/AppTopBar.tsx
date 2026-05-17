@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { getServerSupabase } from '@/lib/supabase/server'
 import { getProfile } from '@/lib/profile'
 import { ROLE_LABELS, ROLE_BADGE_COLORS } from '@/lib/roles'
@@ -31,6 +32,12 @@ export async function AppTopBar() {
             </span>
           )}
         </div>
+        <Link
+          href="/settings"
+          className="text-sm text-zinc-400 transition-colors hover:text-zinc-100"
+        >
+          Settings
+        </Link>
         <SignOutForm />
       </div>
     </header>

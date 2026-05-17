@@ -6,9 +6,8 @@ import { ArrowLeftIcon } from '@heroicons/react/24/outline'
 
 export function BackLink() {
   const pathname = usePathname()
-  const isHome = pathname === '/'
 
-  if (isHome) {
+  if (pathname === '/apps') {
     return (
       <span className="text-sm font-semibold text-zinc-100">Polaris</span>
     )
@@ -16,7 +15,7 @@ export function BackLink() {
 
   return (
     <Link
-      href="/"
+      href="/apps"
       className="flex items-center gap-2 text-sm font-medium text-zinc-400 hover:text-zinc-100 transition-colors"
     >
       <ArrowLeftIcon className="h-4 w-4" />

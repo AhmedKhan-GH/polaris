@@ -20,6 +20,7 @@ export const ROLE_ROUTES: Record<UserRole, readonly string[] | '*'> = {
     '/orders',
     '/fulfillment',
     '/accounting',
+    '/settings',
   ],
 
   member: [
@@ -37,6 +38,7 @@ export const ROLE_ROUTES: Record<UserRole, readonly string[] | '*'> = {
     '/equipment',
     '/locations',
     '/sales',
+    '/settings',
   ],
 
   admin: '*',
