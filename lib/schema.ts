@@ -31,6 +31,7 @@ export const userRole = pgEnum("user_role", [
 
 export const profiles = pgTable("profiles", {
   id: uuid("id").primaryKey(),
+  email: text("email"),
   role: userRole("role").notNull().default("member"),
   createdAt: epochMs("created_at"),
 });

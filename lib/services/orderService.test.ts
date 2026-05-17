@@ -31,6 +31,7 @@ describe('createOrder', () => {
       statusUpdatedAt: Date.UTC(2026, 3, 19, 12, 0, 0),
       duplicatedFromOrderId: null,
       createdBy: null,
+      createdByEmail: null,
       createdAt: Date.UTC(2026, 3, 19, 12, 0, 0),
     }
     insertOrderMock.mockResolvedValue(order)

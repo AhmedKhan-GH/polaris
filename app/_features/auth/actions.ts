@@ -55,7 +55,7 @@ export async function registerAction(
     return { error: error.message }
   }
 
-  await db.insert(profiles).values({ id: data.user.id, role: 'guest' })
+  await db.insert(profiles).values({ id: data.user.id, email, role: 'guest' })
 
   const supabase = await getServerSupabase()
   const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })

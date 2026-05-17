@@ -1,7 +1,7 @@
 import type { OrderStatus } from '@/lib/domain/order'
 
 export const ROW_HEIGHT = 44
-export const GRID_COLUMNS = 'grid-cols-[120px_140px_1fr]'
+export const GRID_COLUMNS = 'grid-cols-[100px_130px_1fr_200px]'
 export const ORDER_COUNT_FORMATTER = new Intl.NumberFormat('en-US')
 
 export const STATUS_FILTER_GROUPS: readonly (readonly OrderStatus[])[] = [

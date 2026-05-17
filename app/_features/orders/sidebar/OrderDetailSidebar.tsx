@@ -193,6 +193,13 @@ function SidebarBody({
           {formatCreatedAt(order.createdAt, timezone, hour12)}
         </dd>
 
+        {order.createdByEmail && (
+          <>
+            <dt className="text-zinc-500">Created by</dt>
+            <dd className="text-zinc-200">{order.createdByEmail}</dd>
+          </>
+        )}
+
         <dt className="text-zinc-500">Status changed</dt>
         <dd className="text-zinc-200">
           {formatCreatedAt(order.statusUpdatedAt, timezone, hour12)}

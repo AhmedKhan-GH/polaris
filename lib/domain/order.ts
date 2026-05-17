@@ -29,6 +29,7 @@ export type Order = {
   statusUpdatedAt: number
   duplicatedFromOrderId: string | null
   createdBy: string | null
+  createdByEmail: string | null
   createdAt: number
 }
 
@@ -39,6 +40,7 @@ export function toOrder(row: {
   statusUpdatedAt: number
   duplicatedFromOrderId: string | null
   createdBy: string | null
+  createdByEmail?: string | null
   createdAt: number
 }): Order {
   return {
@@ -48,6 +50,7 @@ export function toOrder(row: {
     statusUpdatedAt: row.statusUpdatedAt,
     duplicatedFromOrderId: row.duplicatedFromOrderId,
     createdBy: row.createdBy,
+    createdByEmail: row.createdByEmail ?? null,
     createdAt: row.createdAt,
   }
 }
@@ -73,6 +76,7 @@ export const orderRowSchema = z
     status_updated_at: epochMs,
     duplicated_from_order_id: z.string().uuid().nullable(),
     created_by: z.string().uuid().nullable().optional().default(null),
+    created_by_email: z.string().nullable().optional().default(null),
     created_at: epochMs,
   })
   .transform((row): Order => ({
@@ -82,6 +86,7 @@ export const orderRowSchema = z
     statusUpdatedAt: row.status_updated_at,
     duplicatedFromOrderId: row.duplicated_from_order_id,
     createdBy: row.created_by,
+    createdByEmail: row.created_by_email,
     createdAt: row.created_at,
   }))
 

@@ -64,6 +64,11 @@ export function ListTable({
         cell: (info) => <StatusBadge status={info.getValue()} />,
         meta: { cellClassName: 'text-zinc-300' },
       }),
+      columnHelper.accessor('createdByEmail', {
+        header: 'Created by',
+        cell: (info) => info.getValue() ?? '—',
+        meta: { cellClassName: 'text-zinc-400' },
+      }),
       columnHelper.accessor('createdAt', {
         header: 'Created',
         cell: (info) => formatCreatedAt(info.getValue(), timezone, hour12),

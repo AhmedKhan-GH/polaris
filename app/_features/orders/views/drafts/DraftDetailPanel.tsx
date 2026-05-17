@@ -48,6 +48,12 @@ export function DraftDetailPanel({ order }: { order: Order }) {
           <dd className="text-zinc-200">
             {formatCreatedAt(order.createdAt, timezone, hour12)}
           </dd>
+          {order.createdByEmail && (
+            <>
+              <dt className="text-zinc-500">Created by</dt>
+              <dd className="text-zinc-200">{order.createdByEmail}</dd>
+            </>
+          )}
           <dt className="text-zinc-500">Last updated</dt>
           <dd className="text-zinc-200">
             {formatCreatedAt(order.statusUpdatedAt, timezone, hour12)}

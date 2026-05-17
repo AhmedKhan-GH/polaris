@@ -17,6 +17,7 @@ describe('toOrder', () => {
     statusUpdatedAt: Date.UTC(2026, 3, 19, 12, 0, 0),
     duplicatedFromOrderId: null,
     createdBy: null,
+    createdByEmail: null,
     createdAt: Date.UTC(2026, 3, 19, 12, 0, 0),
   }
 
@@ -58,6 +59,7 @@ describe('parseOrderRow', () => {
       statusUpdatedAt: tsMs,
       duplicatedFromOrderId: null,
       createdBy: null,
+      createdByEmail: null,
       createdAt: tsMs,
     })
   })
@@ -131,6 +133,7 @@ describe('safeParseOrder', () => {
       statusUpdatedAt: tsMs,
       duplicatedFromOrderId: null,
       createdBy: null,
+      createdByEmail: null,
       createdAt: tsMs,
     })
   })
