@@ -96,7 +96,7 @@ export function OrderList({
             return (
               <div
                 key={`shell-${vi.index}`}
-                className="absolute left-0 right-0 px-2"
+                className="absolute left-0 right-0"
                 style={{
                   transform: `translateY(${vi.start}px)`,
                   height: vi.size,
@@ -114,7 +114,7 @@ export function OrderList({
           return (
             <div
               key={order.id}
-              className="absolute left-0 right-0 px-2"
+              className="absolute left-0 right-0"
               style={{
                 transform: `translateY(${vi.start}px)`,
                 height: vi.size,

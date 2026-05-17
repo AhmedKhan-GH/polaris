@@ -10,6 +10,7 @@ import { useOrdersByStatus } from '../data/useOrdersByStatus'
 import { findInCaches } from '../data/cacheHelpers'
 import { OrderList } from '../shared/OrderList'
 import { StatusPill } from '../shared/StatusPill'
+import { KanbanColumnShell } from './kanban/KanbanColumnShell'
 import { OrderDetailPanel } from './OrderDetailPanel'
 
 export interface StatusOrdersViewProps {
@@ -172,15 +173,17 @@ function StatusPanel({
   return (
     <div className="flex min-h-0 flex-1">
       {/* Order list */}
-      <div className="flex w-72 shrink-0 flex-col border-r border-zinc-800">
-        <OrderList
-          orders={cards}
-          selectedId={selectedId}
-          onSelect={onSelect}
-          hasNextPage={hasNextPage}
-          isFetchingNextPage={isFetchingNextPage}
-          fetchNextPage={fetchNextPage}
-        />
+      <div className="flex w-72 shrink-0 flex-col">
+        <KanbanColumnShell name={status} status={status} count={cards.length}>
+          <OrderList
+            orders={cards}
+            selectedId={selectedId}
+            onSelect={onSelect}
+            hasNextPage={hasNextPage}
+            isFetchingNextPage={isFetchingNextPage}
+            fetchNextPage={fetchNextPage}
+          />
+        </KanbanColumnShell>
       </div>
 
       {/* Detail panel */}
@@ -189,7 +192,7 @@ function StatusPanel({
           <OrderDetailPanel order={selectedOrder} role={role} />
         ) : (
           <div className="flex flex-1 items-center justify-center text-sm text-zinc-500">
-            Select an order to view details
+            Click an order for details
           </div>
         )}
       </div>
