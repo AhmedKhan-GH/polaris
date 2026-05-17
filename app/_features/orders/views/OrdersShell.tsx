@@ -46,9 +46,9 @@ export function OrdersShell({
         {/* Header */}
         <header className="shrink-0 flex items-center justify-between gap-3">
           <div className="flex shrink-0 items-center gap-4">
-            <h1 className="whitespace-nowrap text-xl font-semibold text-zinc-50">
-              Orders
-            </h1>
+            <ViewSwitcher current={view} onChange={setView} />
+          </div>
+          <div className="shrink-0">
             {canCreate && (
               <button
                 type="button"
@@ -59,9 +59,6 @@ export function OrdersShell({
                 Draft
               </button>
             )}
-          </div>
-          <div className="shrink-0">
-            <ViewSwitcher current={view} onChange={setView} />
           </div>
         </header>
 
