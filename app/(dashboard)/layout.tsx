@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import { getProfile } from '@/lib/profile'
-import { AppTopBar } from './_shell/AppTopBar'
+import { AppTopBar } from '@/app/_features/shell/AppTopBar'
 
 export default async function DashboardLayout({
   children,
@@ -8,7 +8,7 @@ export default async function DashboardLayout({
   children: React.ReactNode
 }) {
   const profile = await getProfile()
-  if (!profile) redirect('/no-access')
+  if (!profile) redirect('/login')
 
   return (
     <div className="flex h-full flex-col">

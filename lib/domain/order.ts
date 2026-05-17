@@ -20,6 +20,13 @@ export const ACTIVE_ORDER_STATUSES: readonly OrderStatus[] = [
   'closed',
 ]
 
+export const TERMINAL_ORDER_STATUSES: readonly OrderStatus[] = [
+  'archived',
+  'discarded',
+  'rejected',
+  'voided',
+]
+
 // Timestamps are unix epoch milliseconds (UTC). Display layer converts
 // to the user's chosen timezone at render time.
 export type Order = {
@@ -28,6 +35,8 @@ export type Order = {
   status: OrderStatus
   statusUpdatedAt: number
   duplicatedFromOrderId: string | null
+  createdBy: string | null
+  createdByEmail: string | null
   createdAt: number
 }
 
@@ -37,6 +46,8 @@ export function toOrder(row: {
   status: OrderStatus
   statusUpdatedAt: number
   duplicatedFromOrderId: string | null
+  createdBy: string | null
+  createdByEmail?: string | null
   createdAt: number
 }): Order {
   return {
@@ -45,6 +56,8 @@ export function toOrder(row: {
     status: row.status,
     statusUpdatedAt: row.statusUpdatedAt,
     duplicatedFromOrderId: row.duplicatedFromOrderId,
+    createdBy: row.createdBy,
+    createdByEmail: row.createdByEmail ?? null,
     createdAt: row.createdAt,
   }
 }
@@ -69,6 +82,8 @@ export const orderRowSchema = z
     status: z.enum(ORDER_STATUSES),
     status_updated_at: epochMs,
     duplicated_from_order_id: z.string().uuid().nullable(),
+    created_by: z.string().uuid().nullable().optional().default(null),
+    created_by_email: z.string().nullable().optional().default(null),
     created_at: epochMs,
   })
   .transform((row): Order => ({
@@ -77,6 +92,8 @@ export const orderRowSchema = z
     status: row.status,
     statusUpdatedAt: row.status_updated_at,
     duplicatedFromOrderId: row.duplicated_from_order_id,
+    createdBy: row.created_by,
+    createdByEmail: row.created_by_email,
     createdAt: row.created_at,
   }))
 

@@ -16,6 +16,8 @@ describe('toOrder', () => {
     status: 'drafted' as const,
     statusUpdatedAt: Date.UTC(2026, 3, 19, 12, 0, 0),
     duplicatedFromOrderId: null,
+    createdBy: null,
+    createdByEmail: null,
     createdAt: Date.UTC(2026, 3, 19, 12, 0, 0),
   }
 
@@ -56,6 +58,8 @@ describe('parseOrderRow', () => {
       status: 'drafted',
       statusUpdatedAt: tsMs,
       duplicatedFromOrderId: null,
+      createdBy: null,
+      createdByEmail: null,
       createdAt: tsMs,
     })
   })
@@ -128,6 +132,8 @@ describe('safeParseOrder', () => {
       status: 'drafted',
       statusUpdatedAt: tsMs,
       duplicatedFromOrderId: null,
+      createdBy: null,
+      createdByEmail: null,
       createdAt: tsMs,
     })
   })

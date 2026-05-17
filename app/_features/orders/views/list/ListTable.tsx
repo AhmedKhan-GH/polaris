@@ -13,7 +13,7 @@ import {
   type Order,
 } from '@/lib/domain/order'
 import { usePreferences } from '../../../preferences/PreferencesProvider'
-import { StatusBadge } from '../../shared/StatusBadge'
+import { StatusPill } from '../../shared/StatusPill'
 import { useScrollAnchor } from '../../shared/useScrollAnchor'
 import { GRID_COLUMNS, ROW_HEIGHT } from './constants'
 import { ListRowShell } from './ListRowShell'
@@ -57,17 +57,21 @@ export function ListTable({
       columnHelper.accessor('orderNumber', {
         header: 'Order #',
         cell: (info) => info.getValue(),
-        meta: { cellClassName: 'font-mono text-zinc-50' },
+        meta: { cellClassName: 'truncate font-mono text-zinc-50' },
       }),
       columnHelper.accessor('status', {
         header: 'Status',
-        cell: (info) => <StatusBadge status={info.getValue()} />,
-        meta: { cellClassName: 'text-zinc-300' },
+        cell: (info) => <StatusPill status={info.getValue()} />,
+      }),
+      columnHelper.accessor('createdByEmail', {
+        header: 'Created by',
+        cell: (info) => info.getValue() ?? '—',
+        meta: { cellClassName: 'truncate text-zinc-400' },
       }),
       columnHelper.accessor('createdAt', {
         header: 'Created',
         cell: (info) => formatCreatedAt(info.getValue(), timezone, hour12),
-        meta: { cellClassName: 'text-zinc-300' },
+        meta: { cellClassName: 'truncate whitespace-nowrap text-zinc-300' },
       }),
     ],
     [timezone, hour12],
@@ -91,6 +95,15 @@ export function ListTable({
     displayCount,
     ROW_HEIGHT,
   )
+
+  useEffect(() => {
+    if (!selectedId) return
+    const index = visibleOrders.findIndex((o) => o.id === selectedId)
+    if (index >= 0) {
+      virtualizer.scrollToIndex(index, { align: 'center' })
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   useLayoutEffect(() => {
     const el = scrollRef.current
@@ -261,7 +274,7 @@ export function ListTable({
                   <div
                     key={cell.id}
                     role="cell"
-                    className={`truncate px-4 py-3 ${cell.column.columnDef.meta?.cellClassName ?? ''}`}
+                    className={`min-w-0 overflow-hidden px-4 py-3 ${cell.column.columnDef.meta?.cellClassName ?? ''}`}
                   >
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </div>

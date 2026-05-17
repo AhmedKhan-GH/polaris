@@ -1,6 +1,8 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { clientEnv } from './lib/env'
+import { canAccessRoute } from './lib/routes'
+import type { UserRole } from './lib/profile'
 
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request })
@@ -22,8 +24,6 @@ export async function proxy(request: NextRequest) {
     },
   )
 
-  // Validates with the auth server and refreshes the token if near expiry.
-  // Must use getUser() not getSession() — getSession() is local-only and unverified.
   const {
     data: { user },
     error,
@@ -31,9 +31,9 @@ export async function proxy(request: NextRequest) {
 
   const { pathname } = request.nextUrl
   const isPublic =
+    pathname === '/' ||
     pathname === '/login' ||
-    pathname === '/auth/callback' ||
-    pathname === '/no-access'
+    pathname === '/register'
 
   if (!user && !isPublic) {
     const url = request.nextUrl.clone()
@@ -47,6 +47,22 @@ export async function proxy(request: NextRequest) {
     }
 
     return redirect
+  }
+
+  if (user && !isPublic) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+
+    const role: UserRole = profile?.role ?? 'guest'
+
+    if (!canAccessRoute(role, pathname)) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/apps'
+      return NextResponse.redirect(url)
+    }
   }
 
   return response

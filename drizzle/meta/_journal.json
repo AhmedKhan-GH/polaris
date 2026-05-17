@@ -169,6 +169,20 @@
       "when": 1747094400000,
       "tag": "0023_rename_sysadmin_to_system",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1747180800000,
+      "tag": "0024_add_created_by_to_orders",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1747267200000,
+      "tag": "0025_add_email_to_profiles",
+      "breakpoints": true
     }
   ]
 }

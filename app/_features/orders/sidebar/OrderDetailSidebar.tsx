@@ -7,8 +7,10 @@ import {
   type Order,
   type OrderStatus,
 } from '@/lib/domain/order'
+import type { UserRole } from '@/lib/profile'
+import { getAllowedTransitions, canDuplicate } from '@/lib/abilities'
 import { usePreferences } from '../../preferences/PreferencesProvider'
-import { StatusBadge } from '../shared/StatusBadge'
+import { StatusPill } from '../shared/StatusPill'
 import {
   STATUS_BUTTON_TONES,
   STATUS_PANEL_BORDER_TONES,
@@ -63,16 +65,14 @@ const ACTIONS_BY_STATUS: Record<OrderStatus, ActionConfig[]> = {
   voided:    [],
 }
 
-export type SidebarMode = 'full' | 'draft'
-
 export function OrderDetailSidebar({
   order,
   onClose,
-  mode = 'full',
+  role = 'owner',
 }: {
   order: Order | null
   onClose: () => void
-  mode?: SidebarMode
+  role?: UserRole
 }) {
   const isOpen = order !== null
 
@@ -88,7 +88,7 @@ export function OrderDetailSidebar({
           key={order.id}
           order={order}
           onClose={onClose}
-          mode={mode}
+          role={role}
         />
       )}
     </aside>
@@ -98,11 +98,11 @@ export function OrderDetailSidebar({
 function SidebarBody({
   order,
   onClose,
-  mode,
+  role,
 }: {
   order: Order
   onClose: () => void
-  mode: SidebarMode
+  role: UserRole
 }) {
   const { transition, discardDraft, duplicate, isPending, error } =
     useOrderActions()
@@ -111,13 +111,13 @@ function SidebarBody({
   const [pendingAction, setPendingAction] = useState<ActionConfig | null>(null)
   const [duplicatePending, setDuplicatePending] = useState(false)
 
-  const allActions = ACTIONS_BY_STATUS[order.status]
-  const actions = mode === 'draft'
-    ? allActions.filter((a) => a.toStatus === 'submitted' || a.toStatus === 'discarded')
-    : allActions
+  const allowedTransitions = getAllowedTransitions(role, order.status)
+  const actions = ACTIONS_BY_STATUS[order.status].filter((a) =>
+    allowedTransitions.includes(a.toStatus),
+  )
   const primaryAction = actions.find((a) => a.tone === 'primary') ?? null
   const terminalAction = actions.find((a) => a.tone === 'terminal') ?? null
-  const showDuplicate = true
+  const showDuplicate = canDuplicate(role)
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -175,7 +175,7 @@ function SidebarBody({
           <span className="font-mono text-base font-medium text-zinc-50">
             #{order.orderNumber}
           </span>
-          <StatusBadge status={order.status} />
+          <StatusPill status={order.status} />
         </div>
         <button
           type="button"
@@ -192,6 +192,13 @@ function SidebarBody({
         <dd className="text-zinc-200">
           {formatCreatedAt(order.createdAt, timezone, hour12)}
         </dd>
+
+        {order.createdByEmail && (
+          <>
+            <dt className="text-zinc-500">Created by</dt>
+            <dd className="text-zinc-200">{order.createdByEmail}</dd>
+          </>
+        )}
 
         <dt className="text-zinc-500">Status changed</dt>
         <dd className="text-zinc-200">
@@ -383,12 +390,12 @@ function ConfirmActionModal({
           {action.label} order #{orderNumber}?
         </h3>
         <div className="mt-2 flex items-center gap-2">
-          <StatusBadge status={currentStatus} />
+          <StatusPill status={currentStatus} />
           <ArrowRightIcon
             aria-hidden
             className="h-3.5 w-3.5 text-zinc-500"
           />
-          <StatusBadge status={action.toStatus} />
+          <StatusPill status={action.toStatus} />
         </div>
         <p className="mt-2 text-xs text-zinc-400">
           {bodyCopy}{' '}

@@ -20,8 +20,11 @@ export interface UseOrdersByStatusResult {
 // in useOrders is the single writer that syncs INSERT/UPDATE/DELETE
 // across these per-status caches; this hook itself only handles
 // fetching and pagination.
+export type DateFilters = { createdFrom?: number; createdTo?: number }
+
 export function useOrdersByStatus(
   status: OrderStatus,
+  dateFilters?: DateFilters,
 ): UseOrdersByStatusResult {
   const query = useInfiniteQuery<
     Order[],
@@ -30,9 +33,9 @@ export function useOrdersByStatus(
     ReturnType<typeof ordersByStatusQueryKey>,
     OrdersCursor | null
   >({
-    queryKey: ordersByStatusQueryKey(status),
+    queryKey: ordersByStatusQueryKey(status, dateFilters),
     queryFn: ({ pageParam }) =>
-      findOrdersPageByStatusAction(status, pageParam, ORDERS_PAGE_SIZE),
+      findOrdersPageByStatusAction(status, pageParam, ORDERS_PAGE_SIZE, dateFilters),
     initialPageParam: null,
     getNextPageParam: (lastPage) => {
       if (lastPage.length < ORDERS_PAGE_SIZE) return undefined

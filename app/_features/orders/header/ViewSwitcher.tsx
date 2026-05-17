@@ -1,9 +1,10 @@
 'use client'
 
-export type View = 'kanban' | 'list'
+export type View = 'detail' | 'board' | 'list'
 
 const VIEWS: { value: View; label: string }[] = [
-  { value: 'kanban', label: 'Kanban' },
+  { value: 'detail', label: 'Detail' },
+  { value: 'board', label: 'Board' },
   { value: 'list', label: 'List' },
 ]
 

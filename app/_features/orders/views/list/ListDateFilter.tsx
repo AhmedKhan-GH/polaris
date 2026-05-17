@@ -128,56 +128,52 @@ export function ListDateFilter({
         <div
           role="dialog"
           aria-label="Created date range filter"
-          className="absolute left-0 top-full z-10 mt-1 w-max max-w-[calc(100vw-2rem)] rounded-md border border-zinc-700 bg-zinc-900 p-2 shadow-lg"
+          className="absolute left-0 top-full z-10 mt-1 rounded-md border border-zinc-700 bg-zinc-900 p-2 shadow-lg"
         >
-          <div className="flex flex-col gap-2">
-            <div className="grid grid-cols-[2.5rem_auto] items-center gap-1 rounded px-2 py-1">
-              <span className="inline-flex h-7 items-center text-xs font-medium uppercase tracking-wider text-zinc-300">
-                From
-              </span>
-              <div className="flex items-center gap-1">
-                <DateTimeInput
-                  key={fromResetKey}
-                  value={{ date: dateFrom, time: timeFrom }}
-                  onChange={(next) =>
-                    patch({ dateFrom: next.date, timeFrom: next.time })
-                  }
-                  onTimeContentChange={setFromHasTimeContent}
-                  max={dateTo || undefined}
-                  hour12={hour12}
-                  dateAriaLabel="Created from date"
-                  timeAriaLabel="Created from time (defaults to 00:00 when blank)"
-                />
-                <ResetButton
-                  ariaLabel="Clear from date and time"
-                  disabled={!canResetFrom}
-                  onClick={clearFrom}
-                />
-              </div>
+          <div className="grid grid-cols-[auto_1fr] items-center gap-x-2 gap-y-2 px-2 py-1">
+            <span className="inline-flex h-7 items-center justify-end text-xs font-medium uppercase tracking-wider text-zinc-300">
+              From
+            </span>
+            <div className="flex items-center gap-1">
+              <DateTimeInput
+                key={fromResetKey}
+                value={{ date: dateFrom, time: timeFrom }}
+                onChange={(next) =>
+                  patch({ dateFrom: next.date, timeFrom: next.time })
+                }
+                onTimeContentChange={setFromHasTimeContent}
+                max={dateTo || undefined}
+                hour12={hour12}
+                dateAriaLabel="Created from date"
+                timeAriaLabel="Created from time (defaults to 00:00 when blank)"
+              />
+              <ResetButton
+                ariaLabel="Clear from date and time"
+                disabled={!canResetFrom}
+                onClick={clearFrom}
+              />
             </div>
-            <div className="grid grid-cols-[2.5rem_auto] items-center gap-1 rounded px-2 py-1">
-              <span className="inline-flex h-7 items-center text-xs font-medium uppercase tracking-wider text-zinc-300">
-                To
-              </span>
-              <div className="flex items-center gap-1">
-                <DateTimeInput
-                  key={toResetKey}
-                  value={{ date: dateTo, time: timeTo }}
-                  onChange={(next) =>
-                    patch({ dateTo: next.date, timeTo: next.time })
-                  }
-                  onTimeContentChange={setToHasTimeContent}
-                  min={dateFrom || undefined}
-                  hour12={hour12}
-                  dateAriaLabel="Created to date"
-                  timeAriaLabel="Created to time (defaults to 23:59 when blank)"
-                />
-                <ResetButton
-                  ariaLabel="Clear to date and time"
-                  disabled={!canResetTo}
-                  onClick={clearTo}
-                />
-              </div>
+            <span className="inline-flex h-7 items-center justify-end text-xs font-medium uppercase tracking-wider text-zinc-300">
+              To
+            </span>
+            <div className="flex items-center gap-1">
+              <DateTimeInput
+                key={toResetKey}
+                value={{ date: dateTo, time: timeTo }}
+                onChange={(next) =>
+                  patch({ dateTo: next.date, timeTo: next.time })
+                }
+                onTimeContentChange={setToHasTimeContent}
+                min={dateFrom || undefined}
+                hour12={hour12}
+                dateAriaLabel="Created to date"
+                timeAriaLabel="Created to time (defaults to 23:59 when blank)"
+              />
+              <ResetButton
+                ariaLabel="Clear to date and time"
+                disabled={!canResetTo}
+                onClick={clearTo}
+              />
             </div>
           </div>
           <div className="my-1 border-t border-zinc-800" />

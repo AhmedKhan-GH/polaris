@@ -30,6 +30,8 @@ describe('createOrder', () => {
       status: 'drafted',
       statusUpdatedAt: Date.UTC(2026, 3, 19, 12, 0, 0),
       duplicatedFromOrderId: null,
+      createdBy: null,
+      createdByEmail: null,
       createdAt: Date.UTC(2026, 3, 19, 12, 0, 0),
     }
     insertOrderMock.mockResolvedValue(order)
@@ -38,7 +40,7 @@ describe('createOrder', () => {
 
     expect(insertOrderMock).toHaveBeenCalledTimes(1)
     expect(infoMock).toHaveBeenCalledWith(
-      { orderId: order.id, orderNumber: order.orderNumber },
+      { orderId: order.id, orderNumber: order.orderNumber, createdBy: undefined },
       'order created',
     )
   })

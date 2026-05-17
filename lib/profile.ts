@@ -7,6 +7,7 @@ export type UserRole = 'system' | 'owner' | 'admin' | 'member' | 'guest'
 
 export interface Profile {
   id: string
+  email: string | null
   role: UserRole
   createdAt: number
 }

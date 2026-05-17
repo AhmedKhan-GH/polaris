@@ -31,6 +31,9 @@ export function ListRowShell({
         </span>
       </div>
       <div role="cell" className="flex items-center px-4">
+        <span className="block h-4 w-24 rounded bg-zinc-700/60" />
+      </div>
+      <div role="cell" className="flex items-center px-4">
         <span className="block h-4 w-36 rounded bg-zinc-700/70" />
       </div>
     </div>

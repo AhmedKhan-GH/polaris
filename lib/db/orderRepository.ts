@@ -13,7 +13,7 @@ import {
 } from 'drizzle-orm'
 import { db } from '../db'
 import { log } from '../log'
-import { orders, orderStatusCounts, orderStatusHistory } from '../schema'
+import { orders, orderStatusCounts, orderStatusHistory, profiles } from '../schema'
 import {
   ORDER_STATUSES,
   toOrder,
@@ -24,6 +24,7 @@ import {
 export type OrdersCursor = { createdAt: number; id: string }
 export type OrderFilters = {
   statuses?: readonly OrderStatus[]
+  createdBy?: string
   createdFrom?: number
   createdTo?: number
 }
@@ -73,6 +74,9 @@ function orderFiltersWhere(filters: OrderFilters): SQL | undefined {
   } else if (statuses.length > 1) {
     predicates.push(inArray(orders.status, statuses))
   }
+  if (filters.createdBy) {
+    predicates.push(eq(orders.createdBy, filters.createdBy))
+  }
   if (filters.createdFrom !== undefined) {
     predicates.push(gte(orders.createdAt, filters.createdFrom))
   }
@@ -107,15 +111,30 @@ export class InvalidTransitionError extends Error {
   }
 }
 
+const orderWithCreator = {
+  id: orders.id,
+  orderNumber: orders.orderNumber,
+  status: orders.status,
+  statusUpdatedAt: orders.statusUpdatedAt,
+  duplicatedFromOrderId: orders.duplicatedFromOrderId,
+  createdBy: orders.createdBy,
+  createdByEmail: profiles.email,
+  createdAt: orders.createdAt,
+}
+
+function ordersWithJoin() {
+  return db.select(orderWithCreator).from(orders).leftJoin(profiles, eq(orders.createdBy, profiles.id))
+}
+
 export async function findOrderById(id: string): Promise<Order | null> {
-  const rows = await db.select().from(orders).where(eq(orders.id, id)).limit(1)
+  const rows = await ordersWithJoin().where(eq(orders.id, id)).limit(1)
   const order = rows[0] ? toOrder(rows[0]) : null
   log.debug({ id, found: order !== null }, 'findOrderById')
   return order
 }
 
 export async function findAllOrders(): Promise<Order[]> {
-  const rows = await db.select().from(orders)
+  const rows = await ordersWithJoin()
   log.debug({ count: rows.length }, 'findAllOrders')
   return rows.map(toOrder)
 }
@@ -125,9 +144,7 @@ export async function findOrdersPage(
   limit: number,
 ): Promise<Order[]> {
   const where = cursorWhere(cursor)
-  const rows = await db
-    .select()
-    .from(orders)
+  const rows = await ordersWithJoin()
     .where(where)
     .orderBy(desc(orders.createdAt), desc(orders.id))
     .limit(limit)
@@ -145,9 +162,7 @@ export async function findOrdersPageByStatus(
   limit: number,
 ): Promise<Order[]> {
   const where = orderPageWhere({ statuses: [status] }, cursor)
-  const rows = await db
-    .select()
-    .from(orders)
+  const rows = await ordersWithJoin()
     .where(where)
     .orderBy(desc(orders.createdAt), desc(orders.id))
     .limit(limit)
@@ -161,9 +176,7 @@ export async function findFilteredOrdersPage(
   limit: number,
 ): Promise<Order[]> {
   const where = orderPageWhere(filters, cursor)
-  const rows = await db
-    .select()
-    .from(orders)
+  const rows = await ordersWithJoin()
     .where(where)
     .orderBy(desc(orders.createdAt), desc(orders.id))
     .limit(limit)
@@ -172,10 +185,57 @@ export async function findFilteredOrdersPage(
 }
 
 
-export async function insertOrder(): Promise<Order> {
-  const [row] = await db.insert(orders).values({}).returning()
-  log.debug({ orderId: row.id, orderNumber: row.orderNumber }, 'insertOrder')
-  return toOrder(row)
+export async function insertOrder(createdBy?: string | null): Promise<Order> {
+  const [row] = await db
+    .insert(orders)
+    .values(createdBy ? { createdBy } : {})
+    .returning()
+  const email = createdBy
+    ? (await db.select({ email: profiles.email }).from(profiles).where(eq(profiles.id, createdBy)).limit(1))[0]?.email ?? null
+    : null
+  log.debug({ orderId: row.id, orderNumber: row.orderNumber, createdBy }, 'insertOrder')
+  return toOrder({ ...row, createdByEmail: email })
+}
+
+export async function findDraftsByCreator(
+  creatorId: string,
+  cursor: OrdersCursor | null,
+  limit: number,
+): Promise<Order[]> {
+  const conditions = [
+    eq(orders.status, 'drafted' as OrderStatus),
+    eq(orders.createdBy, creatorId),
+  ]
+  if (cursor) {
+    conditions.push(
+      or(
+        lt(orders.createdAt, cursor.createdAt),
+        and(
+          eq(orders.createdAt, cursor.createdAt),
+          lt(orders.id, sql`${cursor.id}::uuid`),
+        ),
+      )!,
+    )
+  }
+  const rows = await ordersWithJoin()
+    .where(and(...conditions))
+    .orderBy(desc(orders.createdAt), desc(orders.id))
+    .limit(limit)
+  log.debug({ creatorId, cursor, limit, count: rows.length }, 'findDraftsByCreator')
+  return rows.map(toOrder)
+}
+
+export async function countDraftsByCreator(creatorId: string): Promise<number> {
+  const [row] = await db
+    .select({ value: count() })
+    .from(orders)
+    .where(
+      and(
+        eq(orders.status, 'drafted' as OrderStatus),
+        eq(orders.createdBy, creatorId),
+      ),
+    )
+  return Number(row.value) || 0
 }
 
 export async function countOrders(): Promise<number> {
@@ -274,6 +334,10 @@ export async function transitionOrderStatus(args: {
       reason,
     })
 
+    const email = updated.createdBy
+      ? (await tx.select({ email: profiles.email }).from(profiles).where(eq(profiles.id, updated.createdBy)).limit(1))[0]?.email ?? null
+      : null
+
     log.info(
       {
         orderId,
@@ -283,7 +347,7 @@ export async function transitionOrderStatus(args: {
       },
       'order status transitioned',
     )
-    return toOrder(updated)
+    return toOrder({ ...updated, createdByEmail: email })
   })
 }
 
@@ -313,7 +377,7 @@ export async function duplicateOrder(args: {
 
     const [created] = await tx
       .insert(orders)
-      .values({ duplicatedFromOrderId: source.id })
+      .values({ duplicatedFromOrderId: source.id, createdBy: changedBy })
       .returning()
 
     await tx.insert(orderStatusHistory).values({
@@ -323,6 +387,10 @@ export async function duplicateOrder(args: {
       changedBy,
       reason: `Duplicated from order #${source.orderNumber}`,
     })
+
+    const email = changedBy
+      ? (await tx.select({ email: profiles.email }).from(profiles).where(eq(profiles.id, changedBy)).limit(1))[0]?.email ?? null
+      : null
 
     log.info(
       {
@@ -334,6 +402,6 @@ export async function duplicateOrder(args: {
       },
       'order duplicated',
     )
-    return toOrder(created)
+    return toOrder({ ...created, createdByEmail: email })
   })
 }

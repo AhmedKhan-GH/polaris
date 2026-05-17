@@ -31,6 +31,7 @@ export const userRole = pgEnum("user_role", [
 
 export const profiles = pgTable("profiles", {
   id: uuid("id").primaryKey(),
+  email: text("email"),
   role: userRole("role").notNull().default("member"),
   createdAt: epochMs("created_at"),
 });
@@ -70,6 +71,7 @@ export const orders = pgTable(
     status: orderStatus("status").notNull().default("drafted"),
     statusUpdatedAt: epochMs("status_updated_at"),
     duplicatedFromOrderId: uuid("duplicated_from_order_id"),
+    createdBy: uuid("created_by").references(() => profiles.id),
     createdAt: epochMs("created_at"),
   },
   (table) => [
