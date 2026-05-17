@@ -2,6 +2,7 @@
 
 import type { OrderStatus } from '@/lib/domain/order'
 import type { OrderStatusCounts } from '@/lib/db/orderRepository'
+import type { DateFilters } from '../../data/useOrdersByStatus'
 import { KanbanBoardShell } from './KanbanBoardShell'
 import { KanbanColumn } from './KanbanColumn'
 
@@ -17,11 +18,13 @@ export function KanbanBoard({
   selectedId,
   onSelect,
   statuses,
+  dateFilters,
 }: {
   statusCounts: OrderStatusCounts | undefined
   selectedId: string | null
   onSelect: (id: string) => void
   statuses?: ReadonlyArray<OrderStatus>
+  dateFilters?: DateFilters
 }) {
   const columns = statuses
     ? ALL_COLUMNS.filter((col) => statuses.includes(col.status))
@@ -37,6 +40,7 @@ export function KanbanBoard({
           expectedTotal={statusCounts?.[status]}
           selectedId={selectedId}
           onSelect={onSelect}
+          dateFilters={dateFilters}
         />
       ))}
     />

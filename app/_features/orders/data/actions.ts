@@ -69,15 +69,19 @@ export async function findOrdersPageByStatusAction(
   status: OrderStatus,
   cursor: OrdersCursor | null,
   limit: number,
+  dateFilters?: { createdFrom?: number; createdTo?: number },
 ): Promise<Order[]> {
   const { ability, profile } = await getAbility()
   ForbiddenError.from(ability).throwUnlessCan('read', 'Order')
 
-  if (profile.role === 'guest') {
-    return await findFilteredOrdersPage({ statuses: [status], createdBy: profile.id }, cursor, limit)
+  const filters: OrderFilters = { statuses: [status], ...dateFilters }
+  if (profile.role === 'guest') filters.createdBy = profile.id
+
+  if (!dateFilters?.createdFrom && !dateFilters?.createdTo && profile.role !== 'guest') {
+    return await findOrdersPageByStatus(status, cursor, limit)
   }
 
-  return await findOrdersPageByStatus(status, cursor, limit)
+  return await findFilteredOrdersPage(filters, cursor, limit)
 }
 
 export async function findFilteredOrdersPageAction(

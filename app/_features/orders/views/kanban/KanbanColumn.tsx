@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import type { OrderStatus } from '@/lib/domain/order'
-import { useOrdersByStatus } from '../../data/useOrdersByStatus'
+import { useOrdersByStatus, type DateFilters } from '../../data/useOrdersByStatus'
 import { useScrollAnchor } from '../../shared/useScrollAnchor'
 import { KanbanCard } from './KanbanCard'
 import { OrderCard } from '../../shared/OrderCard'
@@ -23,15 +23,17 @@ export function KanbanColumn({
   expectedTotal,
   selectedId,
   onSelect,
+  dateFilters,
 }: {
   name: string
   status: OrderStatus
   expectedTotal?: number
   selectedId: string | null
   onSelect: (id: string) => void
+  dateFilters?: DateFilters
 }) {
   const { cards, hasNextPage, isFetchingNextPage, fetchNextPage } =
-    useOrdersByStatus(status)
+    useOrdersByStatus(status, dateFilters)
   const scrollRef = useRef<HTMLDivElement>(null)
 
   const totalSlots = Math.max(cards.length, expectedTotal ?? 0)

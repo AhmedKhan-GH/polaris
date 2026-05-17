@@ -1,17 +1,30 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline'
 import { TERMINAL_ORDER_STATUSES, type OrderStatus } from '@/lib/domain/order'
 import type { UserRole } from '@/lib/profile'
 import type { OrderStatusCounts } from '@/lib/db/orderRepository'
-import { useOrdersByStatus } from '../data/useOrdersByStatus'
+import { useOrdersByStatus, type DateFilters } from '../data/useOrdersByStatus'
 import { findInCaches } from '../data/cacheHelpers'
+import { usePreferences } from '../../preferences/PreferencesProvider'
 import { OrderList } from '../shared/OrderList'
 import { StatusPill } from '../shared/StatusPill'
 import { KanbanColumnShell } from './kanban/KanbanColumnShell'
 import { OrderDetailPanel } from './OrderDetailPanel'
+import {
+  boundToTimestamp,
+  ListDateFilter,
+  type ListDateFilterValues,
+} from './list/ListDateFilter'
+
+const EMPTY_DATE_RANGE: ListDateFilterValues = {
+  dateFrom: '',
+  timeFrom: '',
+  dateTo: '',
+  timeTo: '',
+}
 
 export interface StatusOrdersViewProps {
   statuses: readonly OrderStatus[]
@@ -22,6 +35,17 @@ export interface StatusOrdersViewProps {
 export function StatusOrdersView({ statuses, statusCounts, role = 'owner' }: StatusOrdersViewProps) {
   const [activeStatus, setActiveStatus] = useState<OrderStatus>(statuses[0])
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [dateRange, setDateRange] = useState<ListDateFilterValues>(EMPTY_DATE_RANGE)
+  const { timezone } = usePreferences()
+
+  const dateFilters = useMemo(() => {
+    const createdFrom = boundToTimestamp(dateRange.dateFrom, dateRange.timeFrom, 'start', timezone)
+    const createdTo = boundToTimestamp(dateRange.dateTo, dateRange.timeTo, 'end', timezone)
+    const f: { createdFrom?: number; createdTo?: number } = {}
+    if (createdFrom !== null) f.createdFrom = createdFrom
+    if (createdTo !== null) f.createdTo = createdTo
+    return Object.keys(f).length > 0 ? f : undefined
+  }, [dateRange, timezone])
 
   const handleSelect = useCallback((id: string) => {
     setSelectedId((prev) => (prev === id ? null : id))
@@ -29,12 +53,15 @@ export function StatusOrdersView({ statuses, statusCounts, role = 'owner' }: Sta
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3">
-      <DetailStatusDropdown
-        statuses={statuses}
-        statusCounts={statusCounts}
-        active={activeStatus}
-        onChange={setActiveStatus}
-      />
+      <div className="flex shrink-0 items-center gap-3">
+        <DetailStatusDropdown
+          statuses={statuses}
+          statusCounts={statusCounts}
+          active={activeStatus}
+          onChange={setActiveStatus}
+        />
+        <ListDateFilter value={dateRange} onChange={setDateRange} />
+      </div>
 
       <StatusPanel
         key={activeStatus}
@@ -42,6 +69,7 @@ export function StatusOrdersView({ statuses, statusCounts, role = 'owner' }: Sta
         selectedId={selectedId}
         onSelect={handleSelect}
         role={role}
+        dateFilters={dateFilters}
       />
     </div>
   )
@@ -156,14 +184,16 @@ function StatusPanel({
   selectedId,
   onSelect,
   role,
+  dateFilters,
 }: {
   status: OrderStatus
   selectedId: string | null
   onSelect: (id: string) => void
   role: UserRole
+  dateFilters?: DateFilters
 }) {
   const { cards, hasNextPage, isFetchingNextPage, fetchNextPage } =
-    useOrdersByStatus(status)
+    useOrdersByStatus(status, dateFilters)
   const queryClient = useQueryClient()
 
   const selectedOrder = selectedId
