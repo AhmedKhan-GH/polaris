@@ -2,17 +2,16 @@
 
 import { ForbiddenError } from '@casl/ability'
 import { log } from '@/lib/log'
-import { ORDER_STATUSES, type Order, type OrderStatus } from '@/lib/domain/order'
+import { type Order, type OrderStatus } from '@/lib/domain/order'
 import {
-  countDraftsByCreator,
   countFilteredOrders,
   countFilteredOrdersByStatus,
   countOrders,
   countOrdersByStatus,
   discardDraftOrder,
   duplicateOrder,
-  findDraftsByCreator,
   findFilteredOrdersPage,
+  findOrderById,
   findOrdersPage,
   findOrdersPageByStatus,
   transitionOrderStatus,
@@ -41,9 +40,7 @@ async function getAbility() {
 
 export async function createOrderAction(): Promise<Order> {
   const { ability } = await getAbility()
-  if (!ability.can('create', 'DraftOrder') && !ability.can('create', 'Order')) {
-    ForbiddenError.from(ability).throwUnlessCan('create', 'Order')
-  }
+  ForbiddenError.from(ability).throwUnlessCan('create', 'Order')
 
   const actor = await getActorId()
   try {
@@ -59,18 +56,12 @@ export async function findOrdersPageAction(
   limit: number,
 ): Promise<Order[]> {
   const { ability, profile } = await getAbility()
+  ForbiddenError.from(ability).throwUnlessCan('read', 'Order')
 
   if (profile.role === 'guest') {
-    ForbiddenError.from(ability).throwUnlessCan('read', 'DraftOrder')
-    return await findDraftsByCreator(profile.id, cursor, limit)
+    return await findFilteredOrdersPage({ createdBy: profile.id }, cursor, limit)
   }
 
-  if (profile.role === 'member') {
-    ForbiddenError.from(ability).throwUnlessCan('read', 'DraftOrder')
-    return await findOrdersPageByStatus('drafted', cursor, limit)
-  }
-
-  ForbiddenError.from(ability).throwUnlessCan('read', 'Order')
   return await findOrdersPage(cursor, limit)
 }
 
@@ -80,20 +71,12 @@ export async function findOrdersPageByStatusAction(
   limit: number,
 ): Promise<Order[]> {
   const { ability, profile } = await getAbility()
+  ForbiddenError.from(ability).throwUnlessCan('read', 'Order')
 
   if (profile.role === 'guest') {
-    ForbiddenError.from(ability).throwUnlessCan('read', 'DraftOrder')
-    if (status !== 'drafted') return []
-    return await findDraftsByCreator(profile.id, cursor, limit)
+    return await findFilteredOrdersPage({ statuses: [status], createdBy: profile.id }, cursor, limit)
   }
 
-  if (profile.role === 'member') {
-    ForbiddenError.from(ability).throwUnlessCan('read', 'DraftOrder')
-    if (status !== 'drafted') return []
-    return await findOrdersPageByStatus('drafted', cursor, limit)
-  }
-
-  ForbiddenError.from(ability).throwUnlessCan('read', 'Order')
   return await findOrdersPageByStatus(status, cursor, limit)
 }
 
@@ -103,29 +86,21 @@ export async function findFilteredOrdersPageAction(
   limit: number,
 ): Promise<Order[]> {
   const { ability, profile } = await getAbility()
+  ForbiddenError.from(ability).throwUnlessCan('read', 'Order')
 
   if (profile.role === 'guest') {
-    ForbiddenError.from(ability).throwUnlessCan('read', 'DraftOrder')
-    return await findDraftsByCreator(profile.id, cursor, limit)
+    return await findFilteredOrdersPage({ ...filters, createdBy: profile.id }, cursor, limit)
   }
 
-  if (profile.role === 'member') {
-    ForbiddenError.from(ability).throwUnlessCan('read', 'DraftOrder')
-    const memberFilters: OrderFilters = { ...filters, statuses: ['drafted'] }
-    return await findFilteredOrdersPage(memberFilters, cursor, limit)
-  }
-
-  ForbiddenError.from(ability).throwUnlessCan('read', 'Order')
   return await findFilteredOrdersPage(filters, cursor, limit)
 }
 
 export async function countOrdersAction(): Promise<number> {
   const { ability, profile } = await getAbility()
-  if (!ability.can('read', 'Order') && !ability.can('read', 'DraftOrder')) {
-    ForbiddenError.from(ability).throwUnlessCan('read', 'Order')
-  }
+  ForbiddenError.from(ability).throwUnlessCan('read', 'Order')
+
   if (profile.role === 'guest') {
-    return await countDraftsByCreator(profile.id)
+    return await countFilteredOrders({ createdBy: profile.id })
   }
   return await countOrders()
 }
@@ -134,18 +109,12 @@ export async function countFilteredOrdersAction(
   filters: OrderFilters,
 ): Promise<number> {
   const { ability, profile } = await getAbility()
+  ForbiddenError.from(ability).throwUnlessCan('read', 'Order')
 
   if (profile.role === 'guest') {
-    ForbiddenError.from(ability).throwUnlessCan('read', 'DraftOrder')
-    return await countDraftsByCreator(profile.id)
+    return await countFilteredOrders({ ...filters, createdBy: profile.id })
   }
 
-  if (profile.role === 'member') {
-    ForbiddenError.from(ability).throwUnlessCan('read', 'DraftOrder')
-    return await countFilteredOrders({ ...filters, statuses: ['drafted'] })
-  }
-
-  ForbiddenError.from(ability).throwUnlessCan('read', 'Order')
   return await countFilteredOrders(filters)
 }
 
@@ -153,38 +122,21 @@ export async function countFilteredOrdersByStatusAction(
   filters: OrderFilters,
 ): Promise<OrderStatusCounts> {
   const { ability, profile } = await getAbility()
+  ForbiddenError.from(ability).throwUnlessCan('read', 'Order')
 
   if (profile.role === 'guest') {
-    ForbiddenError.from(ability).throwUnlessCan('read', 'DraftOrder')
-    const n = await countDraftsByCreator(profile.id)
-    const zeros = Object.fromEntries(
-      ORDER_STATUSES.map((s) => [s, 0]),
-    ) as OrderStatusCounts
-    zeros.drafted = n
-    return zeros
+    return await countFilteredOrdersByStatus({ ...filters, createdBy: profile.id })
   }
 
-  if (profile.role === 'member') {
-    ForbiddenError.from(ability).throwUnlessCan('read', 'DraftOrder')
-    return await countFilteredOrdersByStatus({ ...filters, statuses: ['drafted'] })
-  }
-
-  ForbiddenError.from(ability).throwUnlessCan('read', 'Order')
   return await countFilteredOrdersByStatus(filters)
 }
 
 export async function countOrdersByStatusAction(): Promise<OrderStatusCounts> {
   const { ability, profile } = await getAbility()
-  if (!ability.can('read', 'Order') && !ability.can('read', 'DraftOrder')) {
-    ForbiddenError.from(ability).throwUnlessCan('read', 'Order')
-  }
+  ForbiddenError.from(ability).throwUnlessCan('read', 'Order')
+
   if (profile.role === 'guest') {
-    const n = await countDraftsByCreator(profile.id)
-    const zeros = Object.fromEntries(
-      ORDER_STATUSES.map((s) => [s, 0]),
-    ) as OrderStatusCounts
-    zeros.drafted = n
-    return zeros
+    return await countFilteredOrdersByStatus({ createdBy: profile.id })
   }
   return await countOrdersByStatus()
 }
@@ -194,9 +146,14 @@ export async function transitionOrderAction(args: {
   toStatus: OrderStatus
   reason?: string
 }): Promise<Order> {
-  const { ability } = await getAbility()
-  if (!ability.can('transition', 'Order') && !ability.can('transition', 'DraftOrder')) {
-    ForbiddenError.from(ability).throwUnlessCan('transition', 'Order')
+  const { ability, profile } = await getAbility()
+  ForbiddenError.from(ability).throwUnlessCan('transition', 'Order')
+
+  if (profile.role === 'guest') {
+    const order = await findOrderById(args.orderId)
+    if (!order || order.status !== 'drafted') {
+      throw new Error('Guests can only submit drafted orders')
+    }
   }
 
   const actor = await getActorId()
@@ -220,9 +177,14 @@ export async function discardDraftOrderAction(args: {
   orderId: string
   reason?: string
 }): Promise<Order> {
-  const { ability } = await getAbility()
-  if (!ability.can('discard', 'DraftOrder') && !ability.can('discard', 'Order')) {
-    ForbiddenError.from(ability).throwUnlessCan('discard', 'Order')
+  const { ability, profile } = await getAbility()
+  ForbiddenError.from(ability).throwUnlessCan('discard', 'Order')
+
+  if (profile.role === 'guest') {
+    const order = await findOrderById(args.orderId)
+    if (!order || order.status !== 'drafted') {
+      throw new Error('Guests can only discard drafted orders')
+    }
   }
 
   const actor = await getActorId()
@@ -242,9 +204,7 @@ export async function duplicateOrderAction(args: {
   sourceOrderId: string
 }): Promise<Order> {
   const { ability } = await getAbility()
-  if (!ability.can('duplicate', 'DraftOrder') && !ability.can('duplicate', 'Order')) {
-    ForbiddenError.from(ability).throwUnlessCan('duplicate', 'Order')
-  }
+  ForbiddenError.from(ability).throwUnlessCan('duplicate', 'Order')
 
   const actor = await getActorId()
   try {

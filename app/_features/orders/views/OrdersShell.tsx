@@ -14,9 +14,13 @@ import { OrderDetailSidebar } from '../sidebar/OrderDetailSidebar'
 export function OrdersShell({
   statuses,
   canCreate,
+  isGuest = false,
+  profileId,
 }: {
   statuses: readonly OrderStatus[]
   canCreate: boolean
+  isGuest?: boolean
+  profileId?: string
 }) {
   const [view, setView] = useState<View>('detail')
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -32,7 +36,7 @@ export function OrdersShell({
     hasNextPage,
     isFetchingNextPage,
     fetchNextPage,
-  } = useOrders()
+  } = useOrders({ isGuest, profileId })
 
   const selectedOrder = sidebarOpen && selectedId
     ? findInCaches(queryClient, selectedId)
@@ -99,7 +103,7 @@ export function OrdersShell({
           />
         )}
         {view !== 'detail' && (
-          <OrderDetailSidebar order={selectedOrder} onClose={handleClose} />
+          <OrderDetailSidebar order={selectedOrder} onClose={handleClose} mode={isGuest ? 'draft' : 'full'} />
         )}
       </div>
     </main>

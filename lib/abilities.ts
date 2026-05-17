@@ -6,7 +6,7 @@ import {
 import type { UserRole } from './profile'
 
 type Actions = 'create' | 'read' | 'transition' | 'discard' | 'duplicate' | 'manage'
-type Subjects = 'Order' | 'DraftOrder' | 'Settings' | 'all'
+type Subjects = 'Order' | 'Settings' | 'all'
 
 export type AppAbility = MongoAbility<[Actions, Subjects]>
 
@@ -14,17 +14,23 @@ export function defineAbilityFor(role: UserRole): AppAbility {
   const { can, build } = new AbilityBuilder<AppAbility>(createMongoAbility)
 
   switch (role) {
+    case 'guest':
+      can('create', 'Order')
+      can('read', 'Order')
+      can('transition', 'Order')
+      can('discard', 'Order')
+      can('duplicate', 'Order')
+      break
+
     case 'member':
-      can('create', 'DraftOrder')
-      can('read', 'DraftOrder')
-      can('discard', 'DraftOrder')
-      can('duplicate', 'DraftOrder')
+      can('create', 'Order')
+      can('read', 'Order')
+      can('discard', 'Order')
+      can('duplicate', 'Order')
       break
 
     case 'admin':
-      can('create', 'DraftOrder')
-      can('read', 'DraftOrder')
-      can('discard', 'DraftOrder')
+      can('create', 'Order')
       can('read', 'Order')
       can('transition', 'Order')
       can('discard', 'Order')
@@ -32,9 +38,7 @@ export function defineAbilityFor(role: UserRole): AppAbility {
       break
 
     case 'owner':
-      can('create', 'DraftOrder')
-      can('read', 'DraftOrder')
-      can('discard', 'DraftOrder')
+      can('create', 'Order')
       can('read', 'Order')
       can('transition', 'Order')
       can('discard', 'Order')
@@ -44,13 +48,6 @@ export function defineAbilityFor(role: UserRole): AppAbility {
 
     case 'system':
       can('manage', 'Settings')
-      break
-
-    case 'guest':
-      can('create', 'DraftOrder')
-      can('read', 'DraftOrder')
-      can('discard', 'DraftOrder')
-      can('transition', 'DraftOrder')
       break
   }
 

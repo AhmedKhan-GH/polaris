@@ -54,7 +54,7 @@ export interface UseOrdersResult {
   isFetchingNextPage: boolean
 }
 
-export function useOrders(): UseOrdersResult {
+export function useOrders({ isGuest = false, profileId }: { isGuest?: boolean; profileId?: string } = {}): UseOrdersResult {
   const queryClient = useQueryClient()
 
   const pages = useInfiniteQuery<
@@ -113,9 +113,7 @@ export function useOrders(): UseOrdersResult {
           if (payload.eventType === 'INSERT') {
             const row = safeParseOrder(payload.new, 'insert')
             if (!row) return
-            // New rows always start as 'drafted' (DB default + insertOrder
-            // / duplicateOrder both go through default values), so we
-            // can hardcode the per-status target and skip the lookup.
+            if (isGuest && row.createdBy !== profileId) return
             queryClient.setQueryData<OrdersCache>(ORDERS_QUERY_KEY, (old) =>
               prependToCache(old, row),
             )
@@ -126,12 +124,11 @@ export function useOrders(): UseOrdersResult {
             queryClient.setQueryData<number>(ORDERS_COUNT_QUERY_KEY, (n) =>
               (n ?? 0) + 1,
             )
-            // Status counts arrive separately on the order_status_counts
-            // stream below.
             invalidateListQueries()
           } else if (payload.eventType === 'UPDATE') {
             const row = safeParseOrder(payload.new, 'update')
             if (!row) return
+            if (isGuest && row.createdBy !== profileId) return
             queryClient.setQueryData<OrdersCache>(ORDERS_QUERY_KEY, (old) =>
               updateInCache(old, row),
             )
@@ -182,13 +179,11 @@ export function useOrders(): UseOrdersResult {
         'postgres_changes',
         { event: '*', schema: 'public', table: 'order_status_counts' },
         (payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => {
-          // The trigger emits one UPDATE per status whose count moved.
-          // INSERT events show up only on the very first migration seed.
-          // Either way we just take the canonical (status, count) pair
-          // from payload.new and overwrite that single slot in the
-          // status-counts cache --- no refetch, no race against the
-          // optimistic shifts from useOrderActions.
           if (payload.eventType !== 'UPDATE' && payload.eventType !== 'INSERT') {
+            return
+          }
+          if (isGuest) {
+            void queryClient.invalidateQueries({ queryKey: ORDERS_STATUS_COUNTS_QUERY_KEY })
             return
           }
           const row = payload.new as { status?: string; count?: number | string }

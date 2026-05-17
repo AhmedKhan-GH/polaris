@@ -7,34 +7,31 @@ import {
 } from '@tanstack/react-query'
 import {
   countOrdersByStatus,
-  countDraftsByCreator,
+  countFilteredOrdersByStatus,
   findOrdersPageByStatus,
-  findDraftsByCreator,
+  findFilteredOrdersPage,
 } from '@/lib/db/orderRepository'
-import { ACTIVE_ORDER_STATUSES, ORDER_STATUSES, type OrderStatus } from '@/lib/domain/order'
-import type { OrderStatusCounts } from '@/lib/db/orderRepository'
+import { ACTIVE_ORDER_STATUSES, type OrderStatus } from '@/lib/domain/order'
 import {
   ORDERS_PAGE_SIZE,
   ORDERS_STATUS_COUNTS_QUERY_KEY,
   ordersByStatusQueryKey,
-} from '../../_features/orders/data/queryKeys'
-import { OrdersShell } from '../../_features/orders/views/OrdersShell'
+} from '../../../_features/orders/data/queryKeys'
+import { OrdersShell } from '../../../_features/orders/views/OrdersShell'
 import { getProfile } from '@/lib/profile'
 import { defineAbilityFor } from '@/lib/abilities'
-
-const GUEST_STATUSES: readonly OrderStatus[] = ['drafted', 'submitted']
 
 export default async function OrdersPage() {
   const profile = await getProfile()
   if (!profile) notFound()
 
   const ability = defineAbilityFor(profile.role)
-  if (!ability.can('read', 'Order') && !ability.can('read', 'DraftOrder')) {
+  if (!ability.can('read', 'Order')) {
     notFound()
   }
 
   const isGuest = profile.role === 'guest'
-  const statuses = isGuest ? GUEST_STATUSES : ACTIVE_ORDER_STATUSES
+  const statuses = ACTIVE_ORDER_STATUSES
 
   return (
     <Suspense fallback={<OrdersLoading />}>
@@ -70,8 +67,8 @@ async function OrdersData({
       queryClient.prefetchInfiniteQuery({
         queryKey: ordersByStatusQueryKey(status),
         queryFn: () =>
-          isGuest && status === 'drafted'
-            ? findDraftsByCreator(profileId, null, ORDERS_PAGE_SIZE)
+          isGuest
+            ? findFilteredOrdersPage({ statuses: [status], createdBy: profileId }, null, ORDERS_PAGE_SIZE)
             : findOrdersPageByStatus(status, null, ORDERS_PAGE_SIZE),
         initialPageParam: null,
       }),
@@ -79,17 +76,10 @@ async function OrdersData({
     // Status counts
     queryClient.prefetchQuery({
       queryKey: ORDERS_STATUS_COUNTS_QUERY_KEY,
-      queryFn: async () => {
-        if (isGuest) {
-          const n = await countDraftsByCreator(profileId)
-          const zeros = Object.fromEntries(
-            ORDER_STATUSES.map((s) => [s, 0]),
-          ) as OrderStatusCounts
-          zeros.drafted = n
-          return zeros
-        }
-        return countOrdersByStatus()
-      },
+      queryFn: () =>
+        isGuest
+          ? countFilteredOrdersByStatus({ createdBy: profileId })
+          : countOrdersByStatus(),
     }),
   ])
 
@@ -97,7 +87,9 @@ async function OrdersData({
     <HydrationBoundary state={dehydrate(queryClient)}>
       <OrdersShell
         statuses={statuses}
-        canCreate={!isGuest || statuses.includes('drafted')}
+        canCreate={true}
+        isGuest={isGuest}
+        profileId={profileId}
       />
     </HydrationBoundary>
   )

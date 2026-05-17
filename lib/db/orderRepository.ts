@@ -24,6 +24,7 @@ import {
 export type OrdersCursor = { createdAt: number; id: string }
 export type OrderFilters = {
   statuses?: readonly OrderStatus[]
+  createdBy?: string
   createdFrom?: number
   createdTo?: number
 }
@@ -72,6 +73,9 @@ function orderFiltersWhere(filters: OrderFilters): SQL | undefined {
     predicates.push(eq(orders.status, statuses[0]))
   } else if (statuses.length > 1) {
     predicates.push(inArray(orders.status, statuses))
+  }
+  if (filters.createdBy) {
+    predicates.push(eq(orders.createdBy, filters.createdBy))
   }
   if (filters.createdFrom !== undefined) {
     predicates.push(gte(orders.createdAt, filters.createdFrom))
