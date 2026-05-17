@@ -24,5 +24,5 @@ export async function signInAction(
     return { error: error.message }
   }
   log.info({ email, userId: data.user?.id }, 'login succeeded')
-  redirect('/')
+  redirect('/apps')
 }

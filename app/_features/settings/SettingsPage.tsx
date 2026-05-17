@@ -1,8 +1,9 @@
 import { sql } from 'drizzle-orm'
 import { db } from '@/lib/db'
-import { getProfile, type UserRole } from '@/lib/profile'
+import { type UserRole } from '@/lib/profile'
+import { defineAbilityFor } from '@/lib/abilities'
 import { ROLE_LABELS, ROLE_BADGE_COLORS } from '@/lib/roles'
-import { CreateAccountForm } from './CreateOwnerForm'
+import { CreateAccountForm } from './CreateAccountForm'
 import { ResetPasswordButton } from './ResetPasswordButton'
 
 interface TeamMember {
@@ -32,14 +33,22 @@ async function getTeamMembers(): Promise<TeamMember[]> {
   }))
 }
 
+interface SettingsPageProps {
+  profile: { id: string; role: UserRole }
+}
 
-export default async function TeamPage() {
-  const profile = (await getProfile())!
-  const members = await getTeamMembers()
+export async function SettingsPage({ profile }: SettingsPageProps) {
+  const ability = defineAbilityFor(profile.role)
+  const canManageTeam = ability.can('manage', 'Settings')
+  const members = canManageTeam ? await getTeamMembers() : []
 
   return (
     <main className="mx-auto w-full max-w-2xl px-6 py-12">
-      <h1 className="mb-1 text-xl font-semibold text-zinc-50">Team</h1>
+      <h1 className="mb-1 text-xl font-semibold text-zinc-50">Settings</h1>
+
+      {canManageTeam && (
+        <>
+      <h2 className="mt-8 mb-1 text-lg font-semibold text-zinc-50">Team</h2>
       <p className="mb-8 text-sm text-zinc-400">
         {members.length} {members.length === 1 ? 'account' : 'accounts'}
       </p>
@@ -86,6 +95,8 @@ export default async function TeamPage() {
           </p>
           <CreateAccountForm />
         </section>
+      )}
+        </>
       )}
     </main>
   )

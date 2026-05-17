@@ -25,7 +25,7 @@ const APPS: AppTile[] = [
   {
     label: 'Settings',
     description: 'Team accounts and system configuration',
-    href: '/settings/team',
+    href: '/settings',
     check: (ability) => ability.can('manage', 'Settings'),
   },
 ]

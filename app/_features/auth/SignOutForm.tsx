@@ -12,7 +12,7 @@ async function signOut() {
   if (user) {
     log.info({ email: user.email, userId: user.id }, 'logout succeeded')
   }
-  redirect('/login')
+  redirect('/')
 }
 
 interface SignOutFormProps {
