@@ -62,33 +62,23 @@ export function OrdersShell({
           </div>
         </header>
 
-        {/* Views — always mounted, toggled with hidden to preserve scroll state */}
-        <div
-          className={view === 'detail' ? 'flex min-h-0 flex-1 flex-col' : 'hidden'}
-          aria-hidden={view !== 'detail'}
-        >
+        {view === 'detail' && (
           <StatusOrdersView
             statuses={statuses}
             statusCounts={statusCounts}
             selectedId={selectedId}
             onSelect={handleSelect}
           />
-        </div>
-        <div
-          className={view === 'board' ? 'flex min-h-0 flex-1' : 'hidden'}
-          aria-hidden={view !== 'board'}
-        >
+        )}
+        {view === 'board' && (
           <KanbanBoard
             statusCounts={statusCounts}
             selectedId={selectedId}
             onSelect={handleSelect}
             statuses={statuses}
           />
-        </div>
-        <div
-          className={view === 'table' ? 'flex min-h-0 flex-1' : 'hidden'}
-          aria-hidden={view !== 'table'}
-        >
+        )}
+        {view === 'table' && (
           <ListView
             orders={orders}
             totalCount={totalCount}
@@ -99,7 +89,7 @@ export function OrdersShell({
             selectedId={selectedId}
             onSelect={handleSelect}
           />
-        </div>
+        )}
         {view !== 'detail' && (
           <OrderDetailSidebar order={selectedOrder} onClose={handleClose} />
         )}
