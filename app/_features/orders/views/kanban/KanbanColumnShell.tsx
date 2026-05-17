@@ -26,7 +26,10 @@ export function KanbanColumnShell({
   return (
     <section aria-hidden={loading || undefined} className={sectionClass}>
       <div className="flex items-center justify-between gap-2 px-1">
-        <StatusPill status={status} count={count} />
+        <div className="flex items-center gap-2">
+          <StatusPill status={status} />
+          <span className="font-mono text-xs tabular-nums text-zinc-500">{count}</span>
+        </div>
         {headerAlert}
       </div>
       {children}

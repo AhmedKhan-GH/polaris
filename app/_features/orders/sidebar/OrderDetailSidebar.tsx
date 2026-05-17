@@ -10,7 +10,7 @@ import {
 import type { UserRole } from '@/lib/profile'
 import { getAllowedTransitions, canDuplicate } from '@/lib/abilities'
 import { usePreferences } from '../../preferences/PreferencesProvider'
-import { StatusBadge } from '../shared/StatusBadge'
+import { StatusPill } from '../shared/StatusPill'
 import {
   STATUS_BUTTON_TONES,
   STATUS_PANEL_BORDER_TONES,
@@ -175,7 +175,7 @@ function SidebarBody({
           <span className="font-mono text-base font-medium text-zinc-50">
             #{order.orderNumber}
           </span>
-          <StatusBadge status={order.status} />
+          <StatusPill status={order.status} />
         </div>
         <button
           type="button"
@@ -390,12 +390,12 @@ function ConfirmActionModal({
           {action.label} order #{orderNumber}?
         </h3>
         <div className="mt-2 flex items-center gap-2">
-          <StatusBadge status={currentStatus} />
+          <StatusPill status={currentStatus} />
           <ArrowRightIcon
             aria-hidden
             className="h-3.5 w-3.5 text-zinc-500"
           />
-          <StatusBadge status={action.toStatus} />
+          <StatusPill status={action.toStatus} />
         </div>
         <p className="mt-2 text-xs text-zinc-400">
           {bodyCopy}{' '}

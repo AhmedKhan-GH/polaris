@@ -7,7 +7,7 @@ import type { UserRole } from '@/lib/profile'
 import { getAllowedTransitions, canDuplicate } from '@/lib/abilities'
 import { usePreferences } from '../../preferences/PreferencesProvider'
 import { useOrderActions } from '../data/useOrderActions'
-import { StatusBadge } from '../shared/StatusBadge'
+import { StatusPill } from '../shared/StatusPill'
 import {
   STATUS_BUTTON_TONES,
   STATUS_PANEL_BORDER_TONES,
@@ -80,7 +80,7 @@ export function OrderDetailPanel({ order, role = 'owner' }: { order: Order; role
         <span className="font-mono text-base font-medium text-zinc-50">
           #{order.orderNumber}
         </span>
-        <StatusBadge status={order.status} />
+        <StatusPill status={order.status} />
       </div>
 
       {/* Metadata */}
@@ -193,9 +193,9 @@ export function OrderDetailPanel({ order, role = 'owner' }: { order: Order; role
             </h3>
             {pendingAction !== 'duplicate' && (
               <div className="mt-2 flex items-center gap-2">
-                <StatusBadge status={order.status} />
+                <StatusPill status={order.status} />
                 <ArrowRightIcon aria-hidden className="h-3.5 w-3.5 text-zinc-500" />
-                <StatusBadge status={pendingAction} />
+                <StatusPill status={pendingAction} />
               </div>
             )}
             <p className="mt-2 text-xs text-zinc-400">

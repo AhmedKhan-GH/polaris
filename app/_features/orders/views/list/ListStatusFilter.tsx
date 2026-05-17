@@ -7,7 +7,7 @@ import {
 } from '@heroicons/react/24/outline'
 import { ACTIVE_ORDER_STATUSES, type OrderStatus } from '@/lib/domain/order'
 import type { OrderStatusCounts } from '@/lib/db/orderRepository'
-import { StatusBadge } from '../../shared/StatusBadge'
+import { StatusPill } from '../../shared/StatusPill'
 import {
   ORDER_COUNT_FORMATTER,
   STATUS_FILTER_GROUPS,
@@ -111,7 +111,7 @@ export function ListStatusFilter({
                         onChange={() => toggle(status)}
                         className="h-4 w-4 cursor-pointer rounded border-zinc-700 bg-zinc-900 accent-blue-500"
                       />
-                      <StatusBadge status={status} />
+                      <StatusPill status={status} />
                       <span
                         aria-live="polite"
                         aria-label={`${status} count`}

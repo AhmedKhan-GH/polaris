@@ -13,7 +13,7 @@ import {
   type Order,
 } from '@/lib/domain/order'
 import { usePreferences } from '../../../preferences/PreferencesProvider'
-import { StatusBadge } from '../../shared/StatusBadge'
+import { StatusPill } from '../../shared/StatusPill'
 import { useScrollAnchor } from '../../shared/useScrollAnchor'
 import { GRID_COLUMNS, ROW_HEIGHT } from './constants'
 import { ListRowShell } from './ListRowShell'
@@ -61,7 +61,7 @@ export function ListTable({
       }),
       columnHelper.accessor('status', {
         header: 'Status',
-        cell: (info) => <StatusBadge status={info.getValue()} />,
+        cell: (info) => <StatusPill status={info.getValue()} />,
         meta: { cellClassName: 'text-zinc-300' },
       }),
       columnHelper.accessor('createdByEmail', {
