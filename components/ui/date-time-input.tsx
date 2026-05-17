@@ -83,7 +83,7 @@ function DateTimeInput({
           maxValue={maxDate ?? undefined}
           granularity="day"
         >
-          <DateInput className={cn(fieldClass, 'w-[7.5rem] justify-center')}>
+          <DateInput className={cn(fieldClass, 'w-fit')}>
             {(segment) => (
               <DateSegment
                 segment={segment}
@@ -102,7 +102,7 @@ function DateTimeInput({
           <DateInput
             className={cn(
               fieldClass,
-              hour12 ? 'w-[7.5rem] justify-start' : 'w-[5.5rem] justify-end',
+              'w-fit',
             )}
           >
             {(segment) => (
@@ -155,7 +155,7 @@ function isTimeSegment(type: string): boolean {
 // single rounded container that hovers/focuses as one unit even
 // though each segment is its own caret target.
 const fieldClass =
-  'inline-flex h-7 shrink-0 items-center rounded px-1 font-mono text-sm text-zinc-100 hover:bg-zinc-800/50 focus-within:ring-1 focus-within:ring-blue-400/40'
+  'inline-flex h-7 shrink-0 whitespace-nowrap items-center rounded px-1 font-mono text-sm text-zinc-100 hover:bg-zinc-800/50 focus-within:ring-1 focus-within:ring-blue-400/40'
 
 // Each <DateSegment> styles its own focus and placeholder state via
 // react-aria's data attributes. caret-transparent hides the caret on
