@@ -67,7 +67,7 @@ export function OrdersShell({
           className={view === 'detail' ? 'flex min-h-0 flex-1 flex-col' : 'hidden'}
           aria-hidden={view !== 'detail'}
         >
-          <StatusOrdersView statuses={statuses} canCreate={canCreate} />
+          <StatusOrdersView statuses={statuses} statusCounts={statusCounts} />
         </div>
         <div
           className={view === 'board' ? 'flex min-h-0 flex-1' : 'hidden'}

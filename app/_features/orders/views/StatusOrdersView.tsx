@@ -3,21 +3,20 @@
 import { useCallback, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { formatCreatedAt, type Order, type OrderStatus } from '@/lib/domain/order'
+import type { OrderStatusCounts } from '@/lib/db/orderRepository'
 import { usePreferences } from '../../preferences/PreferencesProvider'
 import { useOrdersByStatus } from '../data/useOrdersByStatus'
-import { useOrders } from '../data/useOrders'
 import { findInCaches } from '../data/cacheHelpers'
 import { StatusBadge } from '../shared/StatusBadge'
 import { OrderDetailPanel } from './OrderDetailPanel'
 
 export interface StatusOrdersViewProps {
   statuses: readonly OrderStatus[]
-  canCreate?: boolean
+  statusCounts: OrderStatusCounts | undefined
 }
 
-export function StatusOrdersView({ statuses }: StatusOrdersViewProps) {
+export function StatusOrdersView({ statuses, statusCounts }: StatusOrdersViewProps) {
   const [activeStatus, setActiveStatus] = useState<OrderStatus>(statuses[0])
-  const { statusCounts } = useOrders()
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
