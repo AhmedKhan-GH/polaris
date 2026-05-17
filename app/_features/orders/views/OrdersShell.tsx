@@ -100,22 +100,16 @@ function BoardWithSidebar({
   role: UserRole
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [sidebarOpen, setSidebarOpen] = useState(false)
   const queryClient = useQueryClient()
 
-  const selectedOrder = sidebarOpen && selectedId
+  const selectedOrder = selectedId
     ? findInCaches(queryClient, selectedId)
     : null
 
   const handleSelect = useCallback((id: string) => {
-    if (id === selectedId) {
-      setSidebarOpen((open) => !open)
-    } else {
-      setSelectedId(id)
-      setSidebarOpen(false)
-    }
-  }, [selectedId])
-  const handleClose = useCallback(() => setSidebarOpen(false), [])
+    setSelectedId((prev) => (prev === id ? null : id))
+  }, [])
+  const handleClose = useCallback(() => setSelectedId(null), [])
 
   return (
     <>
@@ -148,22 +142,16 @@ function ListWithSidebar({
   role: UserRole
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [sidebarOpen, setSidebarOpen] = useState(false)
   const queryClient = useQueryClient()
 
-  const selectedOrder = sidebarOpen && selectedId
+  const selectedOrder = selectedId
     ? findInCaches(queryClient, selectedId)
     : null
 
   const handleSelect = useCallback((id: string) => {
-    if (id === selectedId) {
-      setSidebarOpen((open) => !open)
-    } else {
-      setSelectedId(id)
-      setSidebarOpen(false)
-    }
-  }, [selectedId])
-  const handleClose = useCallback(() => setSidebarOpen(false), [])
+    setSelectedId((prev) => (prev === id ? null : id))
+  }, [])
+  const handleClose = useCallback(() => setSelectedId(null), [])
 
   return (
     <>
