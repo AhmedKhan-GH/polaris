@@ -6,13 +6,15 @@ interface AppTile {
   label: string
   description: string
   href: string
-  check: (ability: ReturnType<typeof defineAbilityFor>) => boolean
+  check: (ability: ReturnType<typeof defineAbilityFor>, role: string) => boolean
 }
 
 interface AppCategory {
   label: string
   apps: AppTile[]
 }
+
+const isStaff = (_ability: ReturnType<typeof defineAbilityFor>, role: string) => role !== 'guest'
 
 const CATEGORIES: AppCategory[] = [
   {
@@ -45,19 +47,19 @@ const CATEGORIES: AppCategory[] = [
         label: 'Procurement',
         description: 'Suppliers, purchase orders, and receiving',
         href: '/procurement',
-        check: (ability) => ability.can('read', 'Order'),
+        check: isStaff,
       },
       {
         label: 'Inventory',
         description: 'Products, SKUs, stock levels, and warehouse locations',
         href: '/inventory',
-        check: (ability) => ability.can('read', 'Order'),
+        check: isStaff,
       },
       {
         label: 'Disposal',
         description: 'Waste management, recycling, equipment retirement, and write-offs',
         href: '/disposal',
-        check: (ability) => ability.can('read', 'Order'),
+        check: isStaff,
       },
     ],
   },
@@ -68,19 +70,19 @@ const CATEGORIES: AppCategory[] = [
         label: 'Customers',
         description: 'Manage customers, contacts, and communication history',
         href: '/customers',
-        check: (ability) => ability.can('read', 'Order'),
+        check: isStaff,
       },
       {
         label: 'Personnel',
         description: 'Staff records, scheduling, and workforce management',
         href: '/personnel',
-        check: (ability) => ability.can('read', 'Order'),
+        check: isStaff,
       },
       {
         label: 'Providers',
         description: 'Service providers — repair technicians, electricians, plumbers',
         href: '/providers',
-        check: (ability) => ability.can('read', 'Order'),
+        check: isStaff,
       },
     ],
   },
@@ -91,19 +93,19 @@ const CATEGORIES: AppCategory[] = [
         label: 'Assets',
         description: 'Customer-rented freezers, display cases, and coolers',
         href: '/assets',
-        check: (ability) => ability.can('read', 'Order'),
+        check: isStaff,
       },
       {
         label: 'Equipment',
         description: 'Internal machinery, vehicles, and maintenance tracking',
         href: '/equipment',
-        check: (ability) => ability.can('read', 'Order'),
+        check: isStaff,
       },
       {
         label: 'Locations',
         description: 'Warehouses, cold storage, depots, and delivery sites',
         href: '/locations',
-        check: (ability) => ability.can('read', 'Order'),
+        check: isStaff,
       },
     ],
   },
@@ -114,19 +116,19 @@ const CATEGORIES: AppCategory[] = [
         label: 'Branding',
         description: 'Graphic design, style guides, and brand identity',
         href: '/branding',
-        check: (ability) => ability.can('read', 'Order'),
+        check: isStaff,
       },
       {
         label: 'Marketing',
         description: 'Online ads, social media profiles, and campaigns',
         href: '/marketing',
-        check: (ability) => ability.can('read', 'Order'),
+        check: isStaff,
       },
       {
         label: 'Sales',
         description: 'Leads, pipelines, proposals, and deal tracking',
         href: '/sales',
-        check: (ability) => ability.can('read', 'Order'),
+        check: isStaff,
       },
     ],
   },
@@ -137,19 +139,19 @@ const CATEGORIES: AppCategory[] = [
         label: 'Software',
         description: 'Internal tools and platform development',
         href: '/software',
-        check: (ability) => ability.can('read', 'Order'),
+        check: isStaff,
       },
       {
         label: 'Hardware',
         description: 'Equipment design, electrical, and mechanical engineering',
         href: '/hardware',
-        check: (ability) => ability.can('read', 'Order'),
+        check: isStaff,
       },
       {
         label: 'Recipes',
         description: 'Food science, recipe development, and nutritional analysis',
         href: '/recipes',
-        check: (ability) => ability.can('read', 'Order'),
+        check: isStaff,
       },
     ],
   },
@@ -160,19 +162,19 @@ const CATEGORIES: AppCategory[] = [
         label: 'Analytics',
         description: 'Dashboards, KPIs, and business intelligence',
         href: '/analytics',
-        check: (ability) => ability.can('read', 'Order'),
+        check: isStaff,
       },
       {
         label: 'Augmentation',
         description: 'AI-powered insights, recommendations, and automation',
         href: '/augmentation',
-        check: (ability) => ability.can('read', 'Order'),
+        check: isStaff,
       },
       {
         label: 'Compliance',
         description: 'Taxes, FDA inspections, food safety, and regulatory records',
         href: '/compliance',
-        check: (ability) => ability.can('read', 'Order'),
+        check: isStaff,
       },
     ],
   },
@@ -184,7 +186,7 @@ export default async function AppsPage() {
 
   const visibleCategories = CATEGORIES.map((category) => ({
     ...category,
-    apps: category.apps.filter((app) => app.check(ability)),
+    apps: category.apps.filter((app) => app.check(ability, profile.role)),
   })).filter((category) => category.apps.length > 0)
 
   return (
