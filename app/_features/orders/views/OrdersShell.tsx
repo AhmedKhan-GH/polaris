@@ -3,6 +3,7 @@
 import { useCallback, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import type { OrderStatus } from '@/lib/domain/order'
+import type { UserRole } from '@/lib/profile'
 import { useOrders } from '../data/useOrders'
 import { findInCaches } from '../data/cacheHelpers'
 import { ViewSwitcher, type View } from '../header/ViewSwitcher'
@@ -14,11 +15,13 @@ import { OrderDetailSidebar } from '../sidebar/OrderDetailSidebar'
 export function OrdersShell({
   statuses,
   canCreate,
+  role = 'owner',
   isGuest = false,
   profileId,
 }: {
   statuses: readonly OrderStatus[]
   canCreate: boolean
+  role?: UserRole
   isGuest?: boolean
   profileId?: string
 }) {
@@ -80,6 +83,7 @@ export function OrdersShell({
             statusCounts={statusCounts}
             selectedId={selectedId}
             onSelect={handleSelect}
+            role={role}
           />
         )}
         {view === 'board' && (
@@ -103,7 +107,7 @@ export function OrdersShell({
           />
         )}
         {(view === 'board' || view === 'list') && (
-          <OrderDetailSidebar order={selectedOrder} onClose={handleClose} mode={isGuest ? 'draft' : 'full'} />
+          <OrderDetailSidebar order={selectedOrder} onClose={handleClose} role={role} />
         )}
       </div>
     </main>

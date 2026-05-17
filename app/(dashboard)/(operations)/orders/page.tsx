@@ -12,6 +12,7 @@ import {
   findFilteredOrdersPage,
 } from '@/lib/db/orderRepository'
 import { ACTIVE_ORDER_STATUSES, type OrderStatus } from '@/lib/domain/order'
+import type { UserRole } from '@/lib/profile'
 import {
   ORDERS_PAGE_SIZE,
   ORDERS_STATUS_COUNTS_QUERY_KEY,
@@ -35,7 +36,7 @@ export default async function OrdersPage() {
 
   return (
     <Suspense fallback={<OrdersLoading />}>
-      <OrdersData profileId={profile.id} isGuest={isGuest} statuses={statuses} />
+      <OrdersData profileId={profile.id} role={profile.role} isGuest={isGuest} statuses={statuses} />
     </Suspense>
   )
 }
@@ -52,10 +53,12 @@ function OrdersLoading() {
 
 async function OrdersData({
   profileId,
+  role,
   isGuest,
   statuses,
 }: {
   profileId: string
+  role: UserRole
   isGuest: boolean
   statuses: readonly OrderStatus[]
 }) {
@@ -88,6 +91,7 @@ async function OrdersData({
       <OrdersShell
         statuses={statuses}
         canCreate={true}
+        role={role}
         isGuest={isGuest}
         profileId={profileId}
       />

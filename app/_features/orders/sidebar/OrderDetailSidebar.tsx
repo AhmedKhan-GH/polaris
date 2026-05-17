@@ -7,6 +7,8 @@ import {
   type Order,
   type OrderStatus,
 } from '@/lib/domain/order'
+import type { UserRole } from '@/lib/profile'
+import { getAllowedTransitions, canDuplicate } from '@/lib/abilities'
 import { usePreferences } from '../../preferences/PreferencesProvider'
 import { StatusBadge } from '../shared/StatusBadge'
 import {
@@ -63,16 +65,14 @@ const ACTIONS_BY_STATUS: Record<OrderStatus, ActionConfig[]> = {
   voided:    [],
 }
 
-export type SidebarMode = 'full' | 'draft'
-
 export function OrderDetailSidebar({
   order,
   onClose,
-  mode = 'full',
+  role = 'owner',
 }: {
   order: Order | null
   onClose: () => void
-  mode?: SidebarMode
+  role?: UserRole
 }) {
   const isOpen = order !== null
 
@@ -88,7 +88,7 @@ export function OrderDetailSidebar({
           key={order.id}
           order={order}
           onClose={onClose}
-          mode={mode}
+          role={role}
         />
       )}
     </aside>
@@ -98,11 +98,11 @@ export function OrderDetailSidebar({
 function SidebarBody({
   order,
   onClose,
-  mode,
+  role,
 }: {
   order: Order
   onClose: () => void
-  mode: SidebarMode
+  role: UserRole
 }) {
   const { transition, discardDraft, duplicate, isPending, error } =
     useOrderActions()
@@ -111,13 +111,13 @@ function SidebarBody({
   const [pendingAction, setPendingAction] = useState<ActionConfig | null>(null)
   const [duplicatePending, setDuplicatePending] = useState(false)
 
-  const allActions = ACTIONS_BY_STATUS[order.status]
-  const actions = mode === 'draft'
-    ? allActions.filter((a) => a.toStatus === 'submitted' || a.toStatus === 'discarded')
-    : allActions
+  const allowedTransitions = getAllowedTransitions(role, order.status)
+  const actions = ACTIONS_BY_STATUS[order.status].filter((a) =>
+    allowedTransitions.includes(a.toStatus),
+  )
   const primaryAction = actions.find((a) => a.tone === 'primary') ?? null
   const terminalAction = actions.find((a) => a.tone === 'terminal') ?? null
-  const showDuplicate = true
+  const showDuplicate = canDuplicate(role)
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {

@@ -3,17 +3,8 @@
 import { useEffect, useState } from 'react'
 import { ArrowRightIcon } from '@heroicons/react/24/outline'
 import { formatCreatedAt, type Order, type OrderStatus } from '@/lib/domain/order'
-
-const VALID_TRANSITIONS: Record<OrderStatus, readonly OrderStatus[]> = {
-  drafted:   ['submitted', 'discarded'],
-  submitted: ['invoiced',  'rejected'],
-  invoiced:  ['closed',    'voided'],
-  closed:    ['archived'],
-  archived:  [],
-  discarded: [],
-  rejected:  [],
-  voided:    [],
-}
+import type { UserRole } from '@/lib/profile'
+import { getAllowedTransitions, canDuplicate } from '@/lib/abilities'
 import { usePreferences } from '../../preferences/PreferencesProvider'
 import { useOrderActions } from '../data/useOrderActions'
 import { StatusBadge } from '../shared/StatusBadge'
@@ -50,7 +41,7 @@ const ACTION_DESCRIPTIONS: Record<OrderStatus, string> = {
   voided: 'Voiding is for the accountable cancellation of an active invoice.',
 }
 
-export function OrderDetailPanel({ order }: { order: Order }) {
+export function OrderDetailPanel({ order, role = 'owner' }: { order: Order; role?: UserRole }) {
   const { timezone, hour12 } = usePreferences()
   const { transition, discardDraft, duplicate, isPending, error } =
     useOrderActions()
@@ -65,9 +56,10 @@ export function OrderDetailPanel({ order }: { order: Order }) {
     return () => document.removeEventListener('keydown', onKey)
   }, [pendingAction])
 
-  const transitions = VALID_TRANSITIONS[order.status] ?? []
-  const primaryAction = transitions[0] ?? null
-  const terminalAction = transitions[1] ?? null
+  const transitions = getAllowedTransitions(role, order.status)
+  const primaryAction = transitions.find((s) => s !== 'discarded' && s !== 'rejected' && s !== 'voided' && s !== 'archived') ?? null
+  const terminalAction = transitions.find((s) => s === 'discarded' || s === 'rejected' || s === 'voided' || s === 'archived') ?? null
+  const showDuplicate = canDuplicate(role)
 
   async function handleConfirm() {
     if (!pendingAction) return
@@ -135,7 +127,7 @@ export function OrderDetailPanel({ order }: { order: Order }) {
       </div>
 
       {/* Actions */}
-      {transitions.length > 0 && (
+      {(transitions.length > 0 || showDuplicate) && (
         <div className="flex gap-2 border-t border-zinc-800 bg-zinc-950 px-5 py-4">
           <div className="flex-1">
             {terminalAction && (
@@ -149,16 +141,18 @@ export function OrderDetailPanel({ order }: { order: Order }) {
               </button>
             )}
           </div>
-          <div className="flex-1">
-            <button
-              type="button"
-              disabled={isPending}
-              onClick={() => setPendingAction('duplicate')}
-              className={`${ACTION_BUTTON} w-full ${STATUS_BUTTON_TONES.drafted}`}
-            >
-              Duplicate
-            </button>
-          </div>
+          {showDuplicate && (
+            <div className="flex-1">
+              <button
+                type="button"
+                disabled={isPending}
+                onClick={() => setPendingAction('duplicate')}
+                className={`${ACTION_BUTTON} w-full ${STATUS_BUTTON_TONES.drafted}`}
+              >
+                Duplicate
+              </button>
+            </div>
+          )}
           <div className="flex-1">
             {primaryAction && (
               <button
