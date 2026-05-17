@@ -20,6 +20,13 @@ export const ACTIVE_ORDER_STATUSES: readonly OrderStatus[] = [
   'closed',
 ]
 
+export const TERMINAL_ORDER_STATUSES: readonly OrderStatus[] = [
+  'archived',
+  'discarded',
+  'rejected',
+  'voided',
+]
+
 // Timestamps are unix epoch milliseconds (UTC). Display layer converts
 // to the user's chosen timezone at render time.
 export type Order = {
