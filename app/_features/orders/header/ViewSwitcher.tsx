@@ -1,11 +1,11 @@
 'use client'
 
-export type View = 'detail' | 'board' | 'table'
+export type View = 'detail' | 'board' | 'list'
 
 const VIEWS: { value: View; label: string }[] = [
   { value: 'detail', label: 'Detail' },
   { value: 'board', label: 'Board' },
-  { value: 'table', label: 'Table' },
+  { value: 'list', label: 'List' },
 ]
 
 export function ViewSwitcher({

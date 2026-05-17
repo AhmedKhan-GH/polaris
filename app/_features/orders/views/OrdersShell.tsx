@@ -90,7 +90,7 @@ export function OrdersShell({
             statuses={statuses}
           />
         )}
-        {view === 'table' && (
+        {view === 'list' && (
           <ListView
             orders={orders}
             totalCount={totalCount}
@@ -102,7 +102,7 @@ export function OrdersShell({
             onSelect={handleSelect}
           />
         )}
-        {view !== 'detail' && (
+        {(view === 'board' || view === 'list') && (
           <OrderDetailSidebar order={selectedOrder} onClose={handleClose} mode={isGuest ? 'draft' : 'full'} />
         )}
       </div>

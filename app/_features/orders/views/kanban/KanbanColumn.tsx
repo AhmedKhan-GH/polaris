@@ -6,7 +6,7 @@ import type { OrderStatus } from '@/lib/domain/order'
 import { useOrdersByStatus } from '../../data/useOrdersByStatus'
 import { useScrollAnchor } from '../../shared/useScrollAnchor'
 import { KanbanCard } from './KanbanCard'
-import { KanbanCardShell } from './KanbanCardShell'
+import { OrderCard } from '../../shared/OrderCard'
 import { KanbanColumnShell } from './KanbanColumnShell'
 
 // Fixed slot height: 52px tile + 8px gap = 60px. Tiles are uniform
@@ -173,7 +173,7 @@ export function KanbanColumn({
                     height: vi.size,
                   }}
                 >
-                  <KanbanCardShell loading>
+                  <OrderCard loading>
                     {/* Two stacked bars sized to match the actual
                         KanbanCard's content: a 16px row for the
                         font-mono order number (≈8 mono chars wide)
@@ -186,7 +186,7 @@ export function KanbanColumn({
                       <span className="block h-4 w-20 rounded bg-zinc-700" />
                       <span className="block h-3 w-36 rounded bg-zinc-700/70" />
                     </div>
-                  </KanbanCardShell>
+                  </OrderCard>
                 </div>
               )
             }

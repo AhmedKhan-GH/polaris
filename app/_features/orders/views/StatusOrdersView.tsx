@@ -7,7 +7,8 @@ import type { OrderStatusCounts } from '@/lib/db/orderRepository'
 import { usePreferences } from '../../preferences/PreferencesProvider'
 import { useOrdersByStatus } from '../data/useOrdersByStatus'
 import { findInCaches } from '../data/cacheHelpers'
-import { StatusBadge } from '../shared/StatusBadge'
+import { OrderCard } from '../shared/OrderCard'
+import { StatusPill } from '../shared/StatusPill'
 import { OrderDetailPanel } from './OrderDetailPanel'
 
 export interface StatusOrdersViewProps {
@@ -32,28 +33,15 @@ export function StatusOrdersView({ statuses, statusCounts, selectedId, onSelect 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       {/* Status tabs */}
-      <div className="flex items-center gap-1 border-b border-zinc-800 px-4">
+      <div className="flex items-center gap-2 px-4">
         {statuses.map((status) => (
-          <button
+          <StatusPill
             key={status}
-            type="button"
+            status={status}
+            count={statusCounts?.[status] ?? 0}
+            active={activeStatus === status}
             onClick={() => setActiveStatus(status)}
-            className={`relative px-3 py-2.5 text-sm font-medium capitalize transition-colors ${
-              activeStatus === status
-                ? 'text-zinc-100'
-                : 'text-zinc-500 hover:text-zinc-300'
-            }`}
-          >
-            {status}
-            {statusCounts && (
-              <span className={`ml-1.5 text-xs ${activeStatus === status ? 'text-zinc-400' : 'text-zinc-600'}`}>
-                {statusCounts[status] ?? 0}
-              </span>
-            )}
-            {activeStatus === status && (
-              <span className="absolute inset-x-0 bottom-0 h-0.5 bg-zinc-100 rounded-full" />
-            )}
-          </button>
+          />
         ))}
       </div>
 
@@ -92,16 +80,22 @@ function StatusPanel({
     <div className="flex min-h-0 flex-1">
       {/* Order list */}
       <div className="flex w-72 shrink-0 flex-col border-r border-zinc-800">
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto p-2 space-y-2">
           {cards.map((order) => (
-            <OrderListItem
+            <OrderCard
               key={order.id}
-              order={order}
               isSelected={selectedId === order.id}
-              onSelect={handleSelect}
-              timezone={timezone}
-              hour12={hour12}
-            />
+              onClick={() => handleSelect(order.id)}
+            >
+              <div className="flex min-w-0 flex-col leading-tight">
+                <span className="truncate font-mono text-sm font-medium text-zinc-50">
+                  #{order.orderNumber}
+                </span>
+                <span className="truncate text-[11px] text-zinc-400">
+                  {formatCreatedAt(order.createdAt, timezone, hour12)}
+                </span>
+              </div>
+            </OrderCard>
           ))}
 
           {hasNextPage && (
@@ -134,45 +128,5 @@ function StatusPanel({
         )}
       </div>
     </div>
-  )
-}
-
-function OrderListItem({
-  order,
-  isSelected,
-  onSelect,
-  timezone,
-  hour12,
-}: {
-  order: Order
-  isSelected: boolean
-  onSelect: (id: string) => void
-  timezone: string
-  hour12: boolean
-}) {
-  return (
-    <button
-      type="button"
-      onClick={() => onSelect(order.id)}
-      className={`w-full border-b border-zinc-800/50 px-4 py-3 text-left transition-colors ${
-        isSelected ? 'bg-zinc-800/80' : 'hover:bg-zinc-900'
-      }`}
-    >
-      <div className="flex items-center justify-between">
-        <span className="font-mono text-sm text-zinc-200">
-          #{order.orderNumber}
-        </span>
-        <StatusBadge status={order.status} />
-      </div>
-      <div className="mt-1 flex items-center gap-2 text-xs text-zinc-500">
-        <span>{formatCreatedAt(order.createdAt, timezone, hour12)}</span>
-        {order.createdByEmail && (
-          <>
-            <span className="text-zinc-700">·</span>
-            <span className="truncate">{order.createdByEmail}</span>
-          </>
-        )}
-      </div>
-    </button>
   )
 }

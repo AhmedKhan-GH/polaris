@@ -13,9 +13,6 @@ import {
   STATUS_FILTER_GROUPS,
 } from './constants'
 
-// Multi-select status filter rendered as a dropdown menu. The trigger
-// shows a count badge when at least one status is selected so the
-// active-filter state is visible without opening the menu.
 export function ListStatusFilter({
   selected,
   onChange,
