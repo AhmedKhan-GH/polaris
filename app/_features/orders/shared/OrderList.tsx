@@ -6,7 +6,7 @@ import { formatCreatedAt, type Order } from '@/lib/domain/order'
 import { usePreferences } from '../../preferences/PreferencesProvider'
 import { OrderCard } from './OrderCard'
 
-const SLOT_HEIGHT = 60
+const ESTIMATE_HEIGHT = 60
 
 export function OrderList({
   orders,
@@ -31,7 +31,8 @@ export function OrderList({
   const virtualizer = useVirtualizer({
     count: totalSlots,
     getScrollElement: () => scrollRef.current,
-    estimateSize: () => SLOT_HEIGHT,
+    estimateSize: () => ESTIMATE_HEIGHT,
+    measureElement: (el) => el.getBoundingClientRect().height,
     overscan: 20,
   })
 
@@ -47,34 +48,36 @@ export function OrderList({
   useEffect(() => {
     const el = scrollRef.current
     if (!el) return
+    const measuredH = virtualizer.getVirtualItems()[0]?.size ?? ESTIMATE_HEIGHT
     const onScroll = () => {
       if (orders.length === 0) return
       if (!hasNextPage || isFetchingNextPage) return
-      const loadedBottomPx = orders.length * SLOT_HEIGHT
+      const loadedBottomPx = orders.length * measuredH
       const distanceFromLoadedBottom =
         loadedBottomPx - el.scrollTop - el.clientHeight
-      if (distanceFromLoadedBottom < SLOT_HEIGHT * 3) {
+      if (distanceFromLoadedBottom < measuredH * 3) {
         fetchNextPage?.()
       }
     }
     el.addEventListener('scroll', onScroll, { passive: true })
     return () => el.removeEventListener('scroll', onScroll)
-  }, [orders.length, hasNextPage, isFetchingNextPage, fetchNextPage])
+  }, [orders.length, hasNextPage, isFetchingNextPage, fetchNextPage, virtualizer])
 
   useEffect(() => {
     if (!hasNextPage || isFetchingNextPage) return
     const el = scrollRef.current
     if (!el || orders.length === 0) return
-    const loadedBottomPx = orders.length * SLOT_HEIGHT
+    const measuredH = virtualizer.getVirtualItems()[0]?.size ?? ESTIMATE_HEIGHT
+    const loadedBottomPx = orders.length * measuredH
     const distanceFromLoadedBottom =
       loadedBottomPx - el.scrollTop - el.clientHeight
-    if (distanceFromLoadedBottom < SLOT_HEIGHT * 3) {
+    if (distanceFromLoadedBottom < measuredH * 3) {
       fetchNextPage?.()
     }
-  }, [orders.length, hasNextPage, isFetchingNextPage, fetchNextPage])
+  }, [orders.length, hasNextPage, isFetchingNextPage, fetchNextPage, virtualizer])
 
   const items = virtualizer.getVirtualItems()
-  const totalSize = totalSlots * SLOT_HEIGHT
+  const totalSize = virtualizer.getTotalSize()
 
   if (orders.length === 0 && !isFetchingNextPage) {
     return (
@@ -96,10 +99,11 @@ export function OrderList({
             return (
               <div
                 key={`shell-${vi.index}`}
-                className="absolute left-0 right-0"
+                ref={virtualizer.measureElement}
+                data-index={vi.index}
+                className="absolute left-0 right-0 pb-2"
                 style={{
                   transform: `translateY(${vi.start}px)`,
-                  height: vi.size,
                 }}
               >
                 <OrderCard loading>
@@ -114,10 +118,11 @@ export function OrderList({
           return (
             <div
               key={order.id}
-              className="absolute left-0 right-0"
+              ref={virtualizer.measureElement}
+              data-index={vi.index}
+              className="absolute left-0 right-0 pb-2"
               style={{
                 transform: `translateY(${vi.start}px)`,
-                height: vi.size,
               }}
             >
               <OrderListCard

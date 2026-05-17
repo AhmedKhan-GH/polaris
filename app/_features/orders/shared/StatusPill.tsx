@@ -9,7 +9,7 @@ interface StatusPillProps {
 
 export function StatusPill({ status, active = true, onClick }: StatusPillProps) {
   const tone = onClick ? STATUS_BUTTON_TONES[status] : STATUS_BADGE_TONES[status]
-  const className = `rounded-full border px-2.5 py-1 text-[11px] font-medium uppercase tracking-wide transition-opacity ${tone} ${
+  const className = `shrink-0 whitespace-nowrap rounded-full border px-2.5 py-1 text-[0.6875rem] leading-tight font-medium uppercase tracking-wide transition-opacity ${tone} ${
     active ? 'opacity-100' : 'opacity-40'
   }`
 
