@@ -6,113 +6,99 @@ import {
   dehydrate,
 } from '@tanstack/react-query'
 import {
-  countOrders,
-  countFilteredOrders,
   countOrdersByStatus,
-  findFilteredOrdersPage,
-  findOrdersPage,
+  countDraftsByCreator,
   findOrdersPageByStatus,
+  findDraftsByCreator,
 } from '@/lib/db/orderRepository'
-import type { OrderStatus } from '@/lib/domain/order'
-import { OrdersHeaderShell } from '../../_features/orders/header/OrdersHeaderShell'
-import { OrdersPageShell } from '../../_features/orders/OrdersPageShell'
-import { OrdersPage } from '../../_features/orders/OrdersPage'
+import { ACTIVE_ORDER_STATUSES, ORDER_STATUSES, type OrderStatus } from '@/lib/domain/order'
+import type { OrderStatusCounts } from '@/lib/db/orderRepository'
 import {
-  DEFAULT_ACTIVE_ORDER_FILTERS,
-  ORDERS_COUNT_QUERY_KEY,
   ORDERS_PAGE_SIZE,
-  ORDERS_QUERY_KEY,
   ORDERS_STATUS_COUNTS_QUERY_KEY,
-  listOrdersCountQueryKey,
-  listOrdersQueryKey,
   ordersByStatusQueryKey,
 } from '../../_features/orders/data/queryKeys'
-import { KanbanBoardShell } from '../../_features/orders/views/kanban/KanbanBoardShell'
-import { KanbanColumnShell } from '../../_features/orders/views/kanban/KanbanColumnShell'
+import { StatusOrdersView } from '../../_features/orders/views/StatusOrdersView'
 import { getProfile } from '@/lib/profile'
 import { defineAbilityFor } from '@/lib/abilities'
 
-// Statuses surfaced by the kanban (terminal states stay in the
-// list only). Each gets its own prefetch so columns paint with
-// real cards on first load instead of waiting for realtime to fill in.
-const KANBAN_STATUSES: ReadonlyArray<OrderStatus> =
-  DEFAULT_ACTIVE_ORDER_FILTERS.statuses
+const GUEST_STATUSES: readonly OrderStatus[] = ['drafted', 'submitted']
 
-const FALLBACK = (
-  <OrdersPageShell
-    loading
-    header={<OrdersHeaderShell loading />}
-  >
-    <KanbanBoardShell
-      columns={[
-        <KanbanColumnShell key="drafted"   loading name="Drafted"   status="drafted"   count="—" />,
-        <KanbanColumnShell key="submitted" loading name="Submitted" status="submitted" count="—" />,
-        <KanbanColumnShell key="invoiced"  loading name="Invoiced"  status="invoiced"  count="—" />,
-        <KanbanColumnShell key="closed"    loading name="Closed"    status="closed"    count="—" />,
-      ]}
-    />
-  </OrdersPageShell>
-)
-
-export default async function Home() {
+export default async function OrdersPage() {
   const profile = await getProfile()
   if (!profile) notFound()
 
   const ability = defineAbilityFor(profile.role)
-  if (!ability.can('read', 'Order')) notFound()
+  if (!ability.can('read', 'Order') && !ability.can('read', 'DraftOrder')) {
+    notFound()
+  }
+
+  const isGuest = profile.role === 'guest'
+  const statuses = isGuest ? GUEST_STATUSES : ACTIVE_ORDER_STATUSES
 
   return (
-    <Suspense fallback={FALLBACK}>
-      <OrdersPageData />
+    <Suspense fallback={<OrdersLoading />}>
+      <OrdersData profileId={profile.id} isGuest={isGuest} statuses={statuses} />
     </Suspense>
   )
 }
 
-async function OrdersPageData() {
-  // Prefetch every cache the client will need on first paint so
-  // useInfiniteQuery / useQuery hydrate without an extra round-trip:
-  // the list's global/default-filtered pages, the count + per-status
-  // aggregates, and the first page of each kanban column.
+function OrdersLoading() {
+  return (
+    <div className="flex min-h-0 flex-1">
+      <div className="flex flex-col border-b border-zinc-800 px-4 py-2">
+        <div className="h-8 w-48 animate-pulse rounded bg-zinc-800" />
+      </div>
+    </div>
+  )
+}
+
+async function OrdersData({
+  profileId,
+  isGuest,
+  statuses,
+}: {
+  profileId: string
+  isGuest: boolean
+  statuses: readonly OrderStatus[]
+}) {
   const queryClient = new QueryClient()
+
   await Promise.all([
-    queryClient.prefetchInfiniteQuery({
-      queryKey: ORDERS_QUERY_KEY,
-      queryFn: () => findOrdersPage(null, ORDERS_PAGE_SIZE),
-      initialPageParam: null,
-    }),
-    queryClient.prefetchQuery({
-      queryKey: ORDERS_COUNT_QUERY_KEY,
-      queryFn: () => countOrders(),
-    }),
-    queryClient.prefetchInfiniteQuery({
-      queryKey: listOrdersQueryKey(DEFAULT_ACTIVE_ORDER_FILTERS),
-      queryFn: () =>
-        findFilteredOrdersPage(
-          DEFAULT_ACTIVE_ORDER_FILTERS,
-          null,
-          ORDERS_PAGE_SIZE,
-        ),
-      initialPageParam: null,
-    }),
-    queryClient.prefetchQuery({
-      queryKey: listOrdersCountQueryKey(DEFAULT_ACTIVE_ORDER_FILTERS),
-      queryFn: () => countFilteredOrders(DEFAULT_ACTIVE_ORDER_FILTERS),
-    }),
-    queryClient.prefetchQuery({
-      queryKey: ORDERS_STATUS_COUNTS_QUERY_KEY,
-      queryFn: () => countOrdersByStatus(),
-    }),
-    ...KANBAN_STATUSES.map((status) =>
+    // Prefetch the first page of each visible status tab
+    ...statuses.map((status) =>
       queryClient.prefetchInfiniteQuery({
         queryKey: ordersByStatusQueryKey(status),
-        queryFn: () => findOrdersPageByStatus(status, null, ORDERS_PAGE_SIZE),
+        queryFn: () =>
+          isGuest && status === 'drafted'
+            ? findDraftsByCreator(profileId, null, ORDERS_PAGE_SIZE)
+            : findOrdersPageByStatus(status, null, ORDERS_PAGE_SIZE),
         initialPageParam: null,
       }),
     ),
+    // Status counts
+    queryClient.prefetchQuery({
+      queryKey: ORDERS_STATUS_COUNTS_QUERY_KEY,
+      queryFn: async () => {
+        if (isGuest) {
+          const n = await countDraftsByCreator(profileId)
+          const zeros = Object.fromEntries(
+            ORDER_STATUSES.map((s) => [s, 0]),
+          ) as OrderStatusCounts
+          zeros.drafted = n
+          return zeros
+        }
+        return countOrdersByStatus()
+      },
+    }),
   ])
+
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
-      <OrdersPage />
+      <StatusOrdersView
+        statuses={statuses}
+        canCreate={!isGuest || statuses.includes('drafted')}
+      />
     </HydrationBoundary>
   )
 }
