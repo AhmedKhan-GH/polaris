@@ -16,22 +16,16 @@ import { OrderDetailPanel } from './OrderDetailPanel'
 export interface StatusOrdersViewProps {
   statuses: readonly OrderStatus[]
   statusCounts: OrderStatusCounts | undefined
-  selectedId: string | null
-  onSelect: (id: string) => void
   role?: UserRole
 }
 
-export function StatusOrdersView({ statuses, statusCounts, selectedId, onSelect, role = 'owner' }: StatusOrdersViewProps) {
+export function StatusOrdersView({ statuses, statusCounts, role = 'owner' }: StatusOrdersViewProps) {
   const [activeStatus, setActiveStatus] = useState<OrderStatus>(statuses[0])
-  const queryClient = useQueryClient()
+  const [selectedId, setSelectedId] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (!selectedId) return
-    const order = findInCaches(queryClient, selectedId)
-    if (order && statuses.includes(order.status)) {
-      setActiveStatus(order.status)
-    }
-  }, [selectedId, queryClient, statuses])
+  const handleSelect = useCallback((id: string) => {
+    setSelectedId((prev) => (prev === id ? null : id))
+  }, [])
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3">
@@ -42,12 +36,11 @@ export function StatusOrdersView({ statuses, statusCounts, selectedId, onSelect,
         onChange={setActiveStatus}
       />
 
-      {/* Per-status content */}
       <StatusPanel
         key={activeStatus}
         status={activeStatus}
         selectedId={selectedId}
-        onSelect={onSelect}
+        onSelect={handleSelect}
         role={role}
       />
     </div>

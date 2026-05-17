@@ -26,9 +26,6 @@ export function OrdersShell({
   profileId?: string
 }) {
   const [view, setView] = useState<View>('detail')
-  const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [sidebarOpen, setSidebarOpen] = useState(false)
-  const queryClient = useQueryClient()
 
   const {
     orders,
@@ -40,20 +37,6 @@ export function OrdersShell({
     isFetchingNextPage,
     fetchNextPage,
   } = useOrders({ isGuest, profileId })
-
-  const selectedOrder = sidebarOpen && selectedId
-    ? findInCaches(queryClient, selectedId)
-    : null
-
-  const handleSelect = useCallback((id: string) => {
-    if (id === selectedId) {
-      setSidebarOpen((open) => !open)
-    } else {
-      setSelectedId(id)
-      setSidebarOpen(false)
-    }
-  }, [selectedId])
-  const handleClose = useCallback(() => setSidebarOpen(false), [])
 
   return (
     <main className="flex min-h-0 flex-1 flex-col p-6">
@@ -81,35 +64,120 @@ export function OrdersShell({
           <StatusOrdersView
             statuses={statuses}
             statusCounts={statusCounts}
-            selectedId={selectedId}
-            onSelect={handleSelect}
             role={role}
           />
         )}
         {view === 'board' && (
-          <KanbanBoard
+          <BoardWithSidebar
             statusCounts={statusCounts}
-            selectedId={selectedId}
-            onSelect={handleSelect}
             statuses={statuses}
+            role={role}
           />
         )}
         {view === 'list' && (
-          <ListView
+          <ListWithSidebar
             orders={orders}
             totalCount={totalCount}
             statusCounts={statusCounts}
             hasNextPage={hasNextPage}
             isFetchingNextPage={isFetchingNextPage}
             fetchNextPage={fetchNextPage}
-            selectedId={selectedId}
-            onSelect={handleSelect}
+            role={role}
           />
-        )}
-        {(view === 'board' || view === 'list') && (
-          <OrderDetailSidebar order={selectedOrder} onClose={handleClose} role={role} />
         )}
       </div>
     </main>
+  )
+}
+
+function BoardWithSidebar({
+  statusCounts,
+  statuses,
+  role,
+}: {
+  statusCounts: ReturnType<typeof useOrders>['statusCounts']
+  statuses: readonly OrderStatus[]
+  role: UserRole
+}) {
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const queryClient = useQueryClient()
+
+  const selectedOrder = sidebarOpen && selectedId
+    ? findInCaches(queryClient, selectedId)
+    : null
+
+  const handleSelect = useCallback((id: string) => {
+    if (id === selectedId) {
+      setSidebarOpen((open) => !open)
+    } else {
+      setSelectedId(id)
+      setSidebarOpen(false)
+    }
+  }, [selectedId])
+  const handleClose = useCallback(() => setSidebarOpen(false), [])
+
+  return (
+    <>
+      <KanbanBoard
+        statusCounts={statusCounts}
+        selectedId={selectedId}
+        onSelect={handleSelect}
+        statuses={statuses}
+      />
+      <OrderDetailSidebar order={selectedOrder} onClose={handleClose} role={role} />
+    </>
+  )
+}
+
+function ListWithSidebar({
+  orders,
+  totalCount,
+  statusCounts,
+  hasNextPage,
+  isFetchingNextPage,
+  fetchNextPage,
+  role,
+}: {
+  orders: ReturnType<typeof useOrders>['orders']
+  totalCount: number
+  statusCounts: ReturnType<typeof useOrders>['statusCounts']
+  hasNextPage: boolean
+  isFetchingNextPage: boolean
+  fetchNextPage: () => void
+  role: UserRole
+}) {
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const queryClient = useQueryClient()
+
+  const selectedOrder = sidebarOpen && selectedId
+    ? findInCaches(queryClient, selectedId)
+    : null
+
+  const handleSelect = useCallback((id: string) => {
+    if (id === selectedId) {
+      setSidebarOpen((open) => !open)
+    } else {
+      setSelectedId(id)
+      setSidebarOpen(false)
+    }
+  }, [selectedId])
+  const handleClose = useCallback(() => setSidebarOpen(false), [])
+
+  return (
+    <>
+      <ListView
+        orders={orders}
+        totalCount={totalCount}
+        statusCounts={statusCounts}
+        hasNextPage={hasNextPage}
+        isFetchingNextPage={isFetchingNextPage}
+        fetchNextPage={fetchNextPage}
+        selectedId={selectedId}
+        onSelect={handleSelect}
+      />
+      <OrderDetailSidebar order={selectedOrder} onClose={handleClose} role={role} />
+    </>
   )
 }
