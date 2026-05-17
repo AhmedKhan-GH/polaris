@@ -216,6 +216,23 @@ export function useOrders(): UseOrdersResult {
 
   const create = useMutation({
     mutationFn: () => createOrderAction(),
+    onSuccess: (order) => {
+      queryClient.setQueryData<OrdersCache>(ORDERS_QUERY_KEY, (old) =>
+        prependToCache(old, order),
+      )
+      queryClient.setQueryData<OrdersCache>(
+        ordersByStatusQueryKey('drafted'),
+        (old) => prependToCache(old, order),
+      )
+      queryClient.setQueryData<number>(ORDERS_COUNT_QUERY_KEY, (n) =>
+        (n ?? 0) + 1,
+      )
+      queryClient.setQueryData<OrderStatusCounts>(
+        ORDERS_STATUS_COUNTS_QUERY_KEY,
+        (counts) =>
+          counts ? { ...counts, drafted: (counts.drafted ?? 0) + 1 } : counts,
+      )
+    },
   })
 
   const orders = useMemo(
