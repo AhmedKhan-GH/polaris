@@ -72,7 +72,7 @@ function DateTimeInput({
     // tree sees it. The TimeField's hour cycle is still controlled
     // explicitly via the hour12 prop, independent of locale.
     <I18nProvider locale="en-CA">
-      <div className={cn('inline-flex min-w-0 items-center gap-2', className)}>
+      <div className={cn('inline-flex shrink-0 items-center gap-2', className)}>
         <DateField
           aria-label={dateAriaLabel}
           value={dateValue ?? null}
@@ -83,7 +83,7 @@ function DateTimeInput({
           maxValue={maxDate ?? undefined}
           granularity="day"
         >
-          <DateInput className={cn(fieldClass, 'w-[11ch] justify-center')}>
+          <DateInput className={cn(fieldClass, 'w-[7.5rem] justify-center')}>
             {(segment) => (
               <DateSegment
                 segment={segment}
@@ -102,7 +102,7 @@ function DateTimeInput({
           <DateInput
             className={cn(
               fieldClass,
-              hour12 ? 'w-[11.5ch] justify-start' : 'w-[9ch] justify-end',
+              hour12 ? 'w-[7.5rem] justify-start' : 'w-[5.5rem] justify-end',
             )}
           >
             {(segment) => (
