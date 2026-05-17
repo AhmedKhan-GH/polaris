@@ -95,7 +95,9 @@ export function OrdersShell({
             onSelect={handleSelect}
           />
         </div>
-        <OrderDetailSidebar order={selectedOrder} onClose={handleClose} />
+        {view !== 'detail' && (
+          <OrderDetailSidebar order={selectedOrder} onClose={handleClose} />
+        )}
       </div>
     </main>
   )
