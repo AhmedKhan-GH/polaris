@@ -66,6 +66,8 @@ export function OrderDetailPanel({ order }: { order: Order }) {
   }, [pendingAction])
 
   const transitions = VALID_TRANSITIONS[order.status] ?? []
+  const primaryAction = transitions[0] ?? null
+  const terminalAction = transitions[1] ?? null
 
   async function handleConfirm() {
     if (!pendingAction) return
@@ -134,28 +136,40 @@ export function OrderDetailPanel({ order }: { order: Order }) {
 
       {/* Actions */}
       {transitions.length > 0 && (
-        <div className="border-t border-zinc-800 px-6 py-4">
-          <div className="flex gap-3">
-            {transitions.map((toStatus) => (
+        <div className="flex gap-2 border-t border-zinc-800 bg-zinc-950 px-5 py-4">
+          <div className="flex-1">
+            {terminalAction && (
               <button
-                key={toStatus}
                 type="button"
                 disabled={isPending}
-                onClick={() => setPendingAction(toStatus)}
-                className={`${ACTION_BUTTON} ${STATUS_BUTTON_TONES[toStatus]}`}
+                onClick={() => setPendingAction(terminalAction)}
+                className={`${ACTION_BUTTON} w-full ${STATUS_BUTTON_TONES[terminalAction]}`}
               >
-                {ACTION_LABELS[toStatus]}
+                {ACTION_LABELS[terminalAction]}
               </button>
-            ))}
-            <div className="flex-1" />
+            )}
+          </div>
+          <div className="flex-1">
             <button
               type="button"
               disabled={isPending}
               onClick={() => setPendingAction('duplicate')}
-              className={`${ACTION_BUTTON} ${STATUS_BUTTON_TONES.drafted}`}
+              className={`${ACTION_BUTTON} w-full ${STATUS_BUTTON_TONES.drafted}`}
             >
               Duplicate
             </button>
+          </div>
+          <div className="flex-1">
+            {primaryAction && (
+              <button
+                type="button"
+                disabled={isPending}
+                onClick={() => setPendingAction(primaryAction)}
+                className={`${ACTION_BUTTON} w-full ${STATUS_BUTTON_TONES[primaryAction]}`}
+              >
+                {ACTION_LABELS[primaryAction]}
+              </button>
+            )}
           </div>
         </div>
       )}
