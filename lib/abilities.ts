@@ -50,6 +50,7 @@ export function defineAbilityFor(role: UserRole): AppAbility {
       can('create', 'DraftOrder')
       can('read', 'DraftOrder')
       can('discard', 'DraftOrder')
+      can('transition', 'DraftOrder')
       break
   }
 

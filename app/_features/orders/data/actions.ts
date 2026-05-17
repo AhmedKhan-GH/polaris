@@ -195,7 +195,9 @@ export async function transitionOrderAction(args: {
   reason?: string
 }): Promise<Order> {
   const { ability } = await getAbility()
-  ForbiddenError.from(ability).throwUnlessCan('transition', 'Order')
+  if (!ability.can('transition', 'Order') && !ability.can('transition', 'DraftOrder')) {
+    ForbiddenError.from(ability).throwUnlessCan('transition', 'Order')
+  }
 
   const actor = await getActorId()
   try {
