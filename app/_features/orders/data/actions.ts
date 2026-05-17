@@ -22,7 +22,7 @@ import {
 import { createOrder } from '@/lib/services/orderService'
 import { getServerSupabase } from '@/lib/supabase/server'
 import { getProfile } from '@/lib/profile'
-import { defineAbilityFor } from '@/lib/abilities'
+import { defineAbilityFor, getAllowedTransitions } from '@/lib/abilities'
 
 async function getActorId(): Promise<string | null> {
   const supabase = await getServerSupabase()
@@ -149,11 +149,12 @@ export async function transitionOrderAction(args: {
   const { ability, profile } = await getAbility()
   ForbiddenError.from(ability).throwUnlessCan('transition', 'Order')
 
-  if (profile.role === 'guest') {
-    const order = await findOrderById(args.orderId)
-    if (!order || order.status !== 'drafted') {
-      throw new Error('Guests can only submit drafted orders')
-    }
+  const order = await findOrderById(args.orderId)
+  if (!order) throw new Error('Order not found')
+
+  const allowed = getAllowedTransitions(profile.role, order.status)
+  if (!allowed.includes(args.toStatus)) {
+    throw new Error(`Transition to ${args.toStatus} is not allowed`)
   }
 
   const actor = await getActorId()
@@ -180,11 +181,12 @@ export async function discardDraftOrderAction(args: {
   const { ability, profile } = await getAbility()
   ForbiddenError.from(ability).throwUnlessCan('discard', 'Order')
 
-  if (profile.role === 'guest') {
-    const order = await findOrderById(args.orderId)
-    if (!order || order.status !== 'drafted') {
-      throw new Error('Guests can only discard drafted orders')
-    }
+  const order = await findOrderById(args.orderId)
+  if (!order) throw new Error('Order not found')
+
+  const allowed = getAllowedTransitions(profile.role, order.status)
+  if (!allowed.includes('discarded')) {
+    throw new Error('Discard is not allowed for this order')
   }
 
   const actor = await getActorId()
