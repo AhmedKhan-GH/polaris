@@ -12,12 +12,12 @@ import { OrderDetailPanel } from './OrderDetailPanel'
 
 export interface StatusOrdersViewProps {
   statuses: readonly OrderStatus[]
-  canCreate: boolean
+  canCreate?: boolean
 }
 
-export function StatusOrdersView({ statuses, canCreate }: StatusOrdersViewProps) {
+export function StatusOrdersView({ statuses }: StatusOrdersViewProps) {
   const [activeStatus, setActiveStatus] = useState<OrderStatus>(statuses[0])
-  const { statusCounts, isCreating, createOrder } = useOrders()
+  const { statusCounts } = useOrders()
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -45,17 +45,6 @@ export function StatusOrdersView({ statuses, canCreate }: StatusOrdersViewProps)
             )}
           </button>
         ))}
-        <div className="flex-1" />
-        {canCreate && activeStatus === 'drafted' && (
-          <button
-            type="button"
-            disabled={isCreating}
-            onClick={createOrder}
-            className="rounded bg-white px-2.5 py-1 text-xs font-medium text-zinc-900 hover:bg-zinc-200 disabled:opacity-60"
-          >
-            New
-          </button>
-        )}
       </div>
 
       {/* Per-status content */}

@@ -38,48 +38,55 @@ export function OrdersShell({
     : null
 
   const handleSelect = useCallback((id: string) => setSelectedId(id), [])
-  const handleCloseSidebar = useCallback(() => setSelectedId(null), [])
+  const handleClose = useCallback(() => setSelectedId(null), [])
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      {/* Header bar with view switcher and create button */}
-      <div className="flex items-center gap-3 border-b border-zinc-800 px-4 py-2.5">
-        <ViewSwitcher current={view} onChange={setView} />
-        <div className="flex-1" />
-        {canCreate && view !== 'detail' && (
-          <button
-            type="button"
-            disabled={isCreating}
-            onClick={createOrder}
-            className="rounded bg-white px-2.5 py-1 text-xs font-medium text-zinc-900 hover:bg-zinc-200 disabled:opacity-60"
-          >
-            New
-          </button>
-        )}
-      </div>
+    <main className="flex min-h-0 flex-1 flex-col p-6">
+      <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-hidden">
+        {/* Header */}
+        <header className="shrink-0 flex items-center justify-between gap-3">
+          <div className="flex shrink-0 items-center gap-4">
+            <h1 className="whitespace-nowrap text-xl font-semibold text-zinc-50">
+              Orders
+            </h1>
+            {canCreate && (
+              <button
+                type="button"
+                onClick={createOrder}
+                disabled={isCreating}
+                className="shrink-0 whitespace-nowrap rounded-md bg-white px-3 py-1.5 text-sm font-medium text-zinc-900 transition-opacity hover:bg-zinc-200 disabled:cursor-wait disabled:opacity-40"
+              >
+                Draft
+              </button>
+            )}
+          </div>
+          <div className="shrink-0">
+            <ViewSwitcher current={view} onChange={setView} />
+          </div>
+        </header>
 
-      {/* View content */}
-      {view === 'detail' && (
-        <StatusOrdersView statuses={statuses} canCreate={canCreate} />
-      )}
-
-      {view === 'board' && (
-        <div className="flex min-h-0 flex-1">
+        {/* Views — always mounted, toggled with hidden to preserve scroll state */}
+        <div
+          className={view === 'detail' ? 'flex min-h-0 flex-1 flex-col' : 'hidden'}
+          aria-hidden={view !== 'detail'}
+        >
+          <StatusOrdersView statuses={statuses} canCreate={canCreate} />
+        </div>
+        <div
+          className={view === 'board' ? 'flex min-h-0 flex-1' : 'hidden'}
+          aria-hidden={view !== 'board'}
+        >
           <KanbanBoard
             statusCounts={statusCounts}
             selectedId={selectedId}
             onSelect={handleSelect}
             statuses={statuses}
           />
-          <OrderDetailSidebar
-            order={selectedOrder}
-            onClose={handleCloseSidebar}
-          />
         </div>
-      )}
-
-      {view === 'table' && (
-        <div className="relative flex min-h-0 flex-1 p-4">
+        <div
+          className={view === 'table' ? 'flex min-h-0 flex-1' : 'hidden'}
+          aria-hidden={view !== 'table'}
+        >
           <ListView
             orders={orders}
             totalCount={totalCount}
@@ -90,12 +97,9 @@ export function OrdersShell({
             selectedId={selectedId}
             onSelect={handleSelect}
           />
-          <OrderDetailSidebar
-            order={selectedOrder}
-            onClose={handleCloseSidebar}
-          />
         </div>
-      )}
-    </div>
+        <OrderDetailSidebar order={selectedOrder} onClose={handleClose} />
+      </div>
+    </main>
   )
 }
