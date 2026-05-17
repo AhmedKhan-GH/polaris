@@ -1,6 +1,11 @@
 export default function OrdersLoading() {
   return (
     <div className="flex min-h-0 flex-1 flex-col">
+      {/* View switcher skeleton */}
+      <div className="flex items-center gap-3 border-b border-zinc-800 px-4 py-2.5">
+        <div className="h-6 w-44 animate-pulse rounded bg-zinc-800" />
+      </div>
+      {/* Tabs skeleton */}
       <div className="flex items-center gap-1 border-b border-zinc-800 px-4 py-2.5">
         <div className="h-5 w-20 animate-pulse rounded bg-zinc-800" />
         <div className="h-5 w-20 animate-pulse rounded bg-zinc-800" />

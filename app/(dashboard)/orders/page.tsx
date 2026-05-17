@@ -18,7 +18,7 @@ import {
   ORDERS_STATUS_COUNTS_QUERY_KEY,
   ordersByStatusQueryKey,
 } from '../../_features/orders/data/queryKeys'
-import { StatusOrdersView } from '../../_features/orders/views/StatusOrdersView'
+import { OrdersShell } from '../../_features/orders/views/OrdersShell'
 import { getProfile } from '@/lib/profile'
 import { defineAbilityFor } from '@/lib/abilities'
 
@@ -95,7 +95,7 @@ async function OrdersData({
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
-      <StatusOrdersView
+      <OrdersShell
         statuses={statuses}
         canCreate={!isGuest || statuses.includes('drafted')}
       />
