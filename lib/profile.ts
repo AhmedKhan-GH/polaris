@@ -25,6 +25,15 @@ export async function getProfile(): Promise<Profile | null> {
     .where(eq(profiles.id, user.id))
     .limit(1)
 
-  return row ?? null
+  if (row) return row
+
+  // Auto-create profile for authenticated users that are missing one
+  const [created] = await db
+    .insert(profiles)
+    .values({ id: user.id, email: user.email ?? null, role: 'guest' })
+    .onConflictDoNothing()
+    .returning()
+
+  return created ?? null
 }
 
