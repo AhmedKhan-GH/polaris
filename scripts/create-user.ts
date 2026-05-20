@@ -38,10 +38,7 @@ async function main() {
     process.exit(1)
   }
 
-  await db
-    .insert(profiles)
-    .values({ id: data.user.id, email, role: role as UserRole })
-    .onConflictDoUpdate({ target: profiles.id, set: { role: role as UserRole, email } })
+  await db.insert(profiles).values({ id: data.user.id, email, role: role as UserRole })
 
   log.info({ email, role, id: data.user.id }, 'user created')
   await db.$client.end()

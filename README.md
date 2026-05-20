@@ -43,16 +43,6 @@ npx tsx scripts/create-user.ts <email> <password> system
 npm run dev
 ```
 
-Alternatively, you can create the auth user via curl and let the database trigger create the profile automatically (defaults to `member` role):
-
-```bash
-curl -s -X POST 'http://localhost:54321/auth/v1/admin/users' \
-  -H 'apikey: <service_role key>' \
-  -H 'Authorization: Bearer <service_role key>' \
-  -H 'Content-Type: application/json' \
-  -d '{"email":"<email>","password":"<password>","email_confirm":true}'
-```
-
 ## Starting up again
 
 ```bash
