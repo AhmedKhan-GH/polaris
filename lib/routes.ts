@@ -43,7 +43,7 @@ export const ROLE_ROUTES: Record<UserRole, readonly string[] | '*'> = {
 
   admin: '*',
   owner: '*',
-  system: ['/apps', '/settings'],
+  system: '*',
 }
 
 export function canAccessRoute(role: UserRole, pathname: string): boolean {
