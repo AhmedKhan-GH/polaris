@@ -16,21 +16,41 @@ npm install
 #   Linux:   sudo systemctl start docker
 
 npx supabase start
+```
 
-# Add the printed DB URL to .env.local:
-# DATABASE_URL=postgresql://postgres:postgres@localhost:54322/postgres
+Copy `.env.example` to `.env.local` and fill in the values printed by `npx supabase status`:
 
+```bash
+cp .env.example .env.local
+```
+
+```
+DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres
+NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon key from supabase status>
+SUPABASE_SERVICE_ROLE_KEY=<service_role key from supabase status>
+```
+
+Then run migrations and create your first user:
+
+```bash
 npm run db:migrate
 npm run db:seed      # optional — seeds sample orders
 
-# Create the system user (use the secret key from `npx supabase status`)
-curl -s -X POST 'http://localhost:54321/auth/v1/admin/users' \
-  -H 'apikey: <secret-key>' \
-  -H 'Authorization: Bearer <secret-key>' \
-  -H 'Content-Type: application/json' \
-  -d '{"email":"<email>","password":"<password>","email_confirm":true}'
+# Create the bootstrap system user (creates auth user + profile in one step)
+npx tsx scripts/create-user.ts <email> <password> system
 
 npm run dev
+```
+
+Alternatively, you can create the auth user via curl and let the database trigger create the profile automatically (defaults to `member` role):
+
+```bash
+curl -s -X POST 'http://localhost:54321/auth/v1/admin/users' \
+  -H 'apikey: <service_role key>' \
+  -H 'Authorization: Bearer <service_role key>' \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"<email>","password":"<password>","email_confirm":true}'
 ```
 
 ## Starting up again
@@ -68,7 +88,7 @@ System          (out-of-band — platform bootstrap)
                 └── Guest   (future — submits orders, sees only their own)
 ```
 
-Each role can only create the tier directly below it. Signup is disabled — all users are invited except guests (future).
+Each role can only create the tier directly below it. Guests can self-register; all other roles are created by a higher-tier user.
 
 ## Testing
 
@@ -80,14 +100,10 @@ npm run test:e2e             # Playwright end-to-end tests
 
 ### E2E setup
 
-E2E tests need a user in local Supabase Auth. Create one with the secret key from `npx supabase status`:
+E2E tests need a user in local Supabase Auth:
 
 ```bash
-curl -s -X POST 'http://localhost:54321/auth/v1/admin/users' \
-  -H 'apikey: <secret-key>' \
-  -H 'Authorization: Bearer <secret-key>' \
-  -H 'Content-Type: application/json' \
-  -d '{"email":"<email>","password":"<password>","email_confirm":true}'
+npx tsx scripts/create-user.ts <email> <password> member
 ```
 
 Then add the credentials to `.env.local`:
