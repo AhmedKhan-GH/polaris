@@ -16,10 +16,24 @@ npm install
 #   Linux:   sudo systemctl start docker
 
 npx supabase start
+```
 
-# Add the printed DB URL to .env.local:
-# DATABASE_URL=postgresql://postgres:postgres@localhost:54322/postgres
+Copy `.env.example` to `.env.local` and fill in the values printed by `npx supabase status`:
 
+```bash
+cp .env.example .env.local
+```
+
+```
+DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres
+NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon key from supabase status>
+SUPABASE_SERVICE_ROLE_KEY=<service_role key from supabase status>
+```
+
+Then run migrations and create your first user:
+
+```bash
 npm run db:migrate
 npm run db:seed      # optional — seeds sample orders
 
