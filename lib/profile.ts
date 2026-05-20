@@ -25,6 +25,19 @@ export async function getProfile(): Promise<Profile | null> {
     .where(eq(profiles.id, user.id))
     .limit(1)
 
-  return row ?? null
+  if (row) return row
+
+  await db
+    .insert(profiles)
+    .values({ id: user.id, email: user.email ?? null, role: 'member' })
+    .onConflictDoNothing()
+
+  const [created] = await db
+    .select()
+    .from(profiles)
+    .where(eq(profiles.id, user.id))
+    .limit(1)
+
+  return created ?? null
 }
 
