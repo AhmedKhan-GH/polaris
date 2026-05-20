@@ -23,12 +23,8 @@ npx supabase start
 npm run db:migrate
 npm run db:seed      # optional — seeds sample orders
 
-# Create the system user (use the secret key from `npx supabase status`)
-curl -s -X POST 'http://localhost:54321/auth/v1/admin/users' \
-  -H 'apikey: <secret-key>' \
-  -H 'Authorization: Bearer <secret-key>' \
-  -H 'Content-Type: application/json' \
-  -d '{"email":"<email>","password":"<password>","email_confirm":true}'
+# Create the bootstrap system user (creates auth user + profile in one step)
+npx tsx scripts/create-user.ts <email> <password> system
 
 npm run dev
 ```
@@ -68,7 +64,7 @@ System          (out-of-band — platform bootstrap)
                 └── Guest   (future — submits orders, sees only their own)
 ```
 
-Each role can only create the tier directly below it. Signup is disabled — all users are invited except guests (future).
+Each role can only create the tier directly below it. Guests can self-register; all other roles are created by a higher-tier user.
 
 ## Testing
 
@@ -80,14 +76,10 @@ npm run test:e2e             # Playwright end-to-end tests
 
 ### E2E setup
 
-E2E tests need a user in local Supabase Auth. Create one with the secret key from `npx supabase status`:
+E2E tests need a user in local Supabase Auth:
 
 ```bash
-curl -s -X POST 'http://localhost:54321/auth/v1/admin/users' \
-  -H 'apikey: <secret-key>' \
-  -H 'Authorization: Bearer <secret-key>' \
-  -H 'Content-Type: application/json' \
-  -d '{"email":"<email>","password":"<password>","email_confirm":true}'
+npx tsx scripts/create-user.ts <email> <password> member
 ```
 
 Then add the credentials to `.env.local`:
