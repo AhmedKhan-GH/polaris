@@ -12,6 +12,7 @@ import {
   STATUS_BUTTON_TONES,
   STATUS_PANEL_BORDER_TONES,
 } from '../shared/statusTones'
+import { LineItemEditor } from '../line-items/LineItemEditor'
 
 const ACTION_BUTTON =
   'rounded border px-3 py-2 text-sm font-medium disabled:cursor-wait disabled:opacity-60'
@@ -121,9 +122,11 @@ export function OrderDetailPanel({ order, role = 'owner' }: { order: Order; role
             {error.message}
           </p>
         )}
-        <div className="flex items-center justify-center rounded-lg border border-dashed border-zinc-800 py-12 text-sm text-zinc-600">
-          Line items will appear here
-        </div>
+        <LineItemEditor
+          orderId={order.id}
+          orderStatus={order.status}
+          role={role}
+        />
       </div>
 
       {/* Actions */}

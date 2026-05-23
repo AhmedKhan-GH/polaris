@@ -19,6 +19,18 @@ import {
   type OrderStatusCounts,
   type OrdersCursor,
 } from '@/lib/db/orderRepository'
+import {
+  deleteOrderLineItem,
+  findActiveSkuOptions,
+  findOrderLineItems,
+  insertOrderLineItem,
+  insertSku,
+  updateOrderLineItem,
+} from '@/lib/db/orderLineItemRepository'
+import type {
+  OrderLineItem,
+  SkuOption,
+} from '@/lib/domain/orderLineItem'
 import { createOrder } from '@/lib/services/orderService'
 import { getServerSupabase } from '@/lib/supabase/server'
 import { getProfile } from '@/lib/profile'
@@ -36,6 +48,56 @@ async function getAbility() {
   const profile = await getProfile()
   if (!profile) throw new Error('Unauthenticated')
   return { ability: defineAbilityFor(profile.role), profile }
+}
+
+function requiredText(value: string, label: string): string {
+  const normalized = value.trim()
+  if (!normalized) throw new Error(`${label} is required`)
+  return normalized
+}
+
+function positiveNumber(value: number, label: string): number {
+  if (!Number.isFinite(value) || value <= 0) {
+    throw new Error(`${label} must be greater than zero`)
+  }
+  return value
+}
+
+function optionalNonNegativeNumber(
+  value: number | null | undefined,
+  label: string,
+): number | null {
+  if (value === null || value === undefined) return null
+  if (!Number.isFinite(value) || value < 0) {
+    throw new Error(`${label} must be zero or greater`)
+  }
+  return value
+}
+
+async function getScopedOrder(orderId: string) {
+  const { ability, profile } = await getAbility()
+  ForbiddenError.from(ability).throwUnlessCan('read', 'Order')
+
+  const order = await findOrderById(orderId)
+  if (!order) throw new Error('Order not found')
+  if (profile.role === 'guest' && order.createdBy !== profile.id) {
+    throw new Error('Order not found')
+  }
+
+  return { ability, profile, order }
+}
+
+async function getEditableOrder(orderId: string) {
+  const result = await getScopedOrder(orderId)
+  ForbiddenError.from(result.ability).throwUnlessCan('create', 'Order')
+  if (result.order.status !== 'drafted') {
+    throw new Error('Line items can only be edited on drafted orders')
+  }
+  return result
+}
+
+function canCreateSku(role: string): boolean {
+  return role === 'admin' || role === 'owner'
 }
 
 export async function createOrderAction(): Promise<Order> {
@@ -225,4 +287,87 @@ export async function duplicateOrderAction(args: {
     )
     throw err
   }
+}
+
+export async function findSkuOptionsAction(): Promise<SkuOption[]> {
+  const { ability } = await getAbility()
+  ForbiddenError.from(ability).throwUnlessCan('read', 'Order')
+  return findActiveSkuOptions()
+}
+
+export async function createSkuAction(args: {
+  skuNumber: string
+  name: string
+  defaultUnit?: string | null
+}): Promise<SkuOption> {
+  const { profile } = await getAbility()
+  if (!canCreateSku(profile.role)) {
+    throw new Error('Only admins and owners can create SKUs here')
+  }
+
+  return insertSku({
+    skuNumber: requiredText(args.skuNumber, 'SKU number'),
+    name: requiredText(args.name, 'SKU name'),
+    defaultUnit: args.defaultUnit?.trim() || null,
+  })
+}
+
+export async function findOrderLineItemsAction(
+  orderId: string,
+): Promise<OrderLineItem[]> {
+  await getScopedOrder(orderId)
+  return findOrderLineItems(orderId)
+}
+
+export async function createOrderLineItemAction(args: {
+  orderId: string
+  skuId: string
+  quantity: number
+  unit: string
+  unitPrice?: number | null
+}): Promise<OrderLineItem> {
+  await getEditableOrder(args.orderId)
+  return insertOrderLineItem({
+    orderId: args.orderId,
+    skuId: requiredText(args.skuId, 'SKU'),
+    quantity: positiveNumber(args.quantity, 'Quantity'),
+    unit: requiredText(args.unit, 'Unit'),
+    unitPrice: optionalNonNegativeNumber(args.unitPrice, 'Unit price'),
+  })
+}
+
+export async function updateOrderLineItemAction(args: {
+  orderId: string
+  lineItemId: string
+  quantity: number
+  unit: string
+  unitPrice?: number | null
+}): Promise<OrderLineItem> {
+  await getEditableOrder(args.orderId)
+  const updated = await updateOrderLineItem({
+    id: requiredText(args.lineItemId, 'Line item'),
+    orderId: args.orderId,
+    quantity: positiveNumber(args.quantity, 'Quantity'),
+    unit: requiredText(args.unit, 'Unit'),
+    unitPrice: optionalNonNegativeNumber(args.unitPrice, 'Unit price'),
+  })
+  if (!updated || updated.orderId !== args.orderId) {
+    throw new Error('Order line item not found')
+  }
+  return updated
+}
+
+export async function deleteOrderLineItemAction(args: {
+  orderId: string
+  lineItemId: string
+}): Promise<{ id: string; orderId: string }> {
+  await getEditableOrder(args.orderId)
+  const deleted = await deleteOrderLineItem({
+    id: requiredText(args.lineItemId, 'Line item'),
+    orderId: args.orderId,
+  })
+  if (!deleted || deleted.orderId !== args.orderId) {
+    throw new Error('Order line item not found')
+  }
+  return deleted
 }
