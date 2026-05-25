@@ -16,6 +16,7 @@ import {
   STATUS_PANEL_BORDER_TONES,
 } from '../shared/statusTones'
 import { useOrderActions } from '../data/useOrderActions'
+import { LineItemEditor } from '../line-items/LineItemEditor'
 
 interface ActionConfig {
   label: string
@@ -220,11 +221,16 @@ function SidebarBody({
           {error && (
             <p
               role="alert"
-              className="rounded border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-300"
+              className="mb-4 rounded border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-300"
             >
               {error.message}
             </p>
           )}
+          <LineItemEditor
+            orderId={order.id}
+            orderStatus={order.status}
+            role={role}
+          />
         </div>
 
         <div className="flex gap-2 border-t border-zinc-800 bg-zinc-950 px-5 py-4">

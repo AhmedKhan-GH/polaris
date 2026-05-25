@@ -38,6 +38,7 @@ export type Order = {
   createdBy: string | null
   createdByEmail: string | null
   createdAt: number
+  skuSummary?: string | null
 }
 
 export function toOrder(row: {
@@ -49,8 +50,9 @@ export function toOrder(row: {
   createdBy: string | null
   createdByEmail?: string | null
   createdAt: number
+  skuSummary?: string | null
 }): Order {
-  return {
+  const order: Order = {
     id: row.id,
     orderNumber: row.orderNumber,
     status: row.status,
@@ -60,6 +62,12 @@ export function toOrder(row: {
     createdByEmail: row.createdByEmail ?? null,
     createdAt: row.createdAt,
   }
+
+  if (row.skuSummary) {
+    order.skuSummary = row.skuSummary
+  }
+
+  return order
 }
 
 // Postgres bigint can arrive as number (when small enough) or string
@@ -85,17 +93,24 @@ export const orderRowSchema = z
     created_by: z.string().uuid().nullable().optional().default(null),
     created_by_email: z.string().nullable().optional().default(null),
     created_at: epochMs,
+    sku_summary: z.string().nullable().optional(),
   })
-  .transform((row): Order => ({
-    id: row.id,
-    orderNumber: row.order_number,
-    status: row.status,
-    statusUpdatedAt: row.status_updated_at,
-    duplicatedFromOrderId: row.duplicated_from_order_id,
-    createdBy: row.created_by,
-    createdByEmail: row.created_by_email,
-    createdAt: row.created_at,
-  }))
+  .transform((row): Order => {
+    const order: Order = {
+      id: row.id,
+      orderNumber: row.order_number,
+      status: row.status,
+      statusUpdatedAt: row.status_updated_at,
+      duplicatedFromOrderId: row.duplicated_from_order_id,
+      createdBy: row.created_by,
+      createdByEmail: row.created_by_email,
+      createdAt: row.created_at,
+    }
+    if (row.sku_summary) {
+      order.skuSummary = row.sku_summary
+    }
+    return order
+  })
 
 export function parseOrderRow(row: unknown): Order {
   return orderRowSchema.parse(row)

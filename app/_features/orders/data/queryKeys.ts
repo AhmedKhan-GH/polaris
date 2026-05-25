@@ -19,6 +19,7 @@ export const ORDERS_STATUS_COUNTS_QUERY_KEY = [
   'orders',
   'status-counts',
 ] as const
+export const SKU_OPTIONS_QUERY_KEY = ['skus', 'options'] as const
 
 // Per-status pagination key. Each kanban column owns its own infinite
 // query keyed by status so a sparse column doesn't depend on the global
@@ -40,4 +41,8 @@ export function listOrdersCountQueryKey(filters: OrderFilters) {
 
 export function listOrderStatusCountsQueryKey(filters: OrderFilters) {
   return [...LIST_ORDERS_QUERY_KEY, 'status-counts', filters] as const
+}
+
+export function orderLineItemsQueryKey(orderId: string) {
+  return ['orders', 'line-items', orderId] as const
 }

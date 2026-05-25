@@ -13,7 +13,14 @@ import {
 } from 'drizzle-orm'
 import { db } from '../db'
 import { log } from '../log'
-import { orders, orderStatusCounts, orderStatusHistory, profiles } from '../schema'
+import {
+  orderLineItems,
+  orders,
+  orderStatusCounts,
+  orderStatusHistory,
+  profiles,
+  skus,
+} from '../schema'
 import {
   ORDER_STATUSES,
   toOrder,
@@ -120,6 +127,12 @@ const orderWithCreator = {
   createdBy: orders.createdBy,
   createdByEmail: profiles.email,
   createdAt: orders.createdAt,
+  skuSummary: sql<string | null>`(
+    SELECT string_agg(${skus.skuNumber}, ', ' ORDER BY ${orderLineItems.lineNumber}, ${skus.skuNumber})
+    FROM ${orderLineItems}
+    INNER JOIN ${skus} ON ${skus.id} = ${orderLineItems.skuId}
+    WHERE ${orderLineItems.orderId} = ${orders.id}
+  )`,
 }
 
 function ordersWithJoin() {

@@ -59,6 +59,11 @@ export function ListTable({
         cell: (info) => info.getValue(),
         meta: { cellClassName: 'truncate font-mono text-zinc-50' },
       }),
+      columnHelper.accessor('skuSummary', {
+        header: 'SKUs',
+        cell: (info) => info.getValue() ?? '-',
+        meta: { cellClassName: 'truncate font-mono text-zinc-300' },
+      }),
       columnHelper.accessor('status', {
         header: 'Status',
         cell: (info) => <StatusPill status={info.getValue()} />,

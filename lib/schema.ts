@@ -1,8 +1,11 @@
 import { sql } from "drizzle-orm";
 import {
   bigint,
+  boolean,
   foreignKey,
   index,
+  integer,
+  numeric,
   pgEnum,
   pgSequence,
   pgTable,
@@ -60,6 +63,28 @@ export const orderNumberSeq = pgSequence("order_number_seq", {
   startWith: 1000000,
 });
 
+export const skus = pgTable(
+  "skus",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    skuNumber: text("sku_number").notNull().unique(),
+    quickbooksLegacySku: text("quickbooks_legacy_sku"),
+    name: text("name").notNull(),
+    description: text("description"),
+    category: text("category"),
+    storageType: text("storage_type"),
+    defaultUnit: text("default_unit"),
+    packSize: text("pack_size"),
+    isActive: boolean("is_active").notNull().default(true),
+    createdAt: epochMs("created_at"),
+    updatedAt: epochMs("updated_at"),
+  },
+  (table) => [
+    index("skus_name_idx").on(table.name),
+    index("skus_category_idx").on(table.category),
+  ],
+);
+
 export const orders = pgTable(
   "orders",
   {
@@ -97,6 +122,34 @@ export const orders = pgTable(
       foreignColumns: [table.id],
       name: "orders_duplicated_from_fk",
     }),
+  ],
+);
+
+export const orderLineItems = pgTable(
+  "order_line_items",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orderId: uuid("order_id")
+      .notNull()
+      .references(() => orders.id, { onDelete: "cascade" }),
+    skuId: uuid("sku_id")
+      .notNull()
+      .references(() => skus.id),
+    lineNumber: integer("line_number").notNull().default(1),
+    quantity: numeric("quantity", { precision: 12, scale: 3 }).notNull(),
+    unit: text("unit").notNull(),
+    unitPrice: numeric("unit_price", { precision: 12, scale: 2 }),
+    notes: text("notes"),
+    createdAt: epochMs("created_at"),
+    updatedAt: epochMs("updated_at"),
+  },
+  (table) => [
+    index("order_line_items_order_id_idx").on(table.orderId),
+    index("order_line_items_sku_id_idx").on(table.skuId),
+    index("order_line_items_order_line_idx").on(
+      table.orderId,
+      table.lineNumber,
+    ),
   ],
 );
 
