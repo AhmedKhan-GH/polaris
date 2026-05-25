@@ -5,6 +5,8 @@ import { defineAbilityFor } from '@/lib/abilities'
 import { ROLE_LABELS, ROLE_BADGE_COLORS } from '@/lib/roles'
 import { CreateAccountForm } from './CreateAccountForm'
 import { ResetPasswordButton } from './ResetPasswordButton'
+import { SkuManagement } from './SkuManagement'
+import { findSkus } from '@/lib/db/orderLineItemRepository'
 
 interface TeamMember {
   id: string
@@ -40,7 +42,9 @@ interface SettingsPageProps {
 export async function SettingsPage({ profile }: SettingsPageProps) {
   const ability = defineAbilityFor(profile.role)
   const canManageTeam = ability.can('manage', 'Settings')
+  const canManageSkus = ability.can('manage', 'Sku')
   const members = canManageTeam ? await getTeamMembers() : []
+  const skus = canManageSkus ? await findSkus() : []
 
   return (
     <main className="mx-auto w-full max-w-2xl px-6 py-12">
@@ -98,6 +102,7 @@ export async function SettingsPage({ profile }: SettingsPageProps) {
       )}
         </>
       )}
+      {canManageSkus && <SkuManagement initialSkus={skus} />}
     </main>
   )
 }

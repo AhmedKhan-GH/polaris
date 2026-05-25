@@ -20,7 +20,7 @@ export function LineItemEditor({
   role: UserRole
 }) {
   const editable = orderStatus === 'drafted'
-  const canCreateSku = role === 'admin' || role === 'owner'
+  const canCreateSku = role === 'admin' || role === 'owner' || role === 'system'
   const {
     lineItems,
     skuOptions,
@@ -35,6 +35,7 @@ export function LineItemEditor({
   } = useOrderLineItems(orderId)
 
   const [skuId, setSkuId] = useState('')
+  const [skuQuery, setSkuQuery] = useState('')
   const [quantity, setQuantity] = useState('1')
   const [unit, setUnit] = useState('')
   const [unitPrice, setUnitPrice] = useState('')
@@ -52,6 +53,8 @@ export function LineItemEditor({
     })
     setQuantity('1')
     setUnitPrice('')
+    setSkuQuery('')
+    setSkuId('')
   }
 
   async function handleCreateSku(e: FormEvent<HTMLFormElement>) {
@@ -62,15 +65,25 @@ export function LineItemEditor({
       defaultUnit: skuUnit,
     })
     setSkuId(created.id)
+    setSkuQuery(`${created.skuNumber} - ${created.name}`)
     setUnit(created.defaultUnit ?? '')
     setSkuNumber('')
     setSkuName('')
     setSkuUnit('')
   }
 
-  function selectSku(nextSkuId: string) {
-    setSkuId(nextSkuId)
-    const nextSku = skuOptions.find((sku) => sku.id === nextSkuId)
+  function selectSkuByLabel(nextLabel: string) {
+    setSkuQuery(nextLabel)
+    const normalized = nextLabel.trim().toLowerCase()
+    const nextSku = skuOptions.find((sku) => {
+      const label = `${sku.skuNumber} - ${sku.name}`.toLowerCase()
+      return (
+        label === normalized ||
+        sku.skuNumber.toLowerCase() === normalized ||
+        sku.name.toLowerCase() === normalized
+      )
+    })
+    setSkuId(nextSku?.id ?? '')
     if (nextSku?.defaultUnit) setUnit(nextSku.defaultUnit)
   }
 
@@ -130,20 +143,22 @@ export function LineItemEditor({
           onSubmit={handleCreateLineItem}
           className="grid gap-2 rounded-lg border border-zinc-800 bg-zinc-900 p-3 md:grid-cols-[minmax(12rem,1fr)_5rem_5rem_6rem_auto]"
         >
-          <select
-            value={skuId}
-            onChange={(e) => selectSku(e.target.value)}
+          <input
+            value={skuQuery}
+            onChange={(e) => selectSkuByLabel(e.target.value)}
+            list={`sku-options-${orderId}`}
             required
+            placeholder="Search SKU"
             aria-label="SKU"
             className={FIELD}
-          >
-            <option value="">SKU</option>
+          />
+          <datalist id={`sku-options-${orderId}`}>
             {skuOptions.map((sku) => (
-              <option key={sku.id} value={sku.id}>
+              <option key={sku.id} value={`${sku.skuNumber} - ${sku.name}`}>
                 {sku.skuNumber} - {sku.name}
               </option>
             ))}
-          </select>
+          </datalist>
           <input
             value={quantity}
             onChange={(e) => setQuantity(e.target.value)}

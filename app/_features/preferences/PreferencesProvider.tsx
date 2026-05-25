@@ -40,8 +40,11 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   const [hour12, setHour12State] = useState<boolean>(false)
 
   useEffect(() => {
-    setTimezoneState(localStorage.getItem(TIMEZONE_KEY) ?? browserTimezone())
-    setHour12State(localStorage.getItem(HOUR12_KEY) === 'true')
+    const id = window.setTimeout(() => {
+      setTimezoneState(localStorage.getItem(TIMEZONE_KEY) ?? browserTimezone())
+      setHour12State(localStorage.getItem(HOUR12_KEY) === 'true')
+    }, 0)
+    return () => window.clearTimeout(id)
   }, [])
 
   const setTimezone = useCallback((tz: string) => {

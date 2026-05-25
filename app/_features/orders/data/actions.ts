@@ -22,13 +22,16 @@ import {
 import {
   deleteOrderLineItem,
   findActiveSkuOptions,
+  findSkus,
   findOrderLineItems,
   insertOrderLineItem,
   insertSku,
+  updateSku,
   updateOrderLineItem,
 } from '@/lib/db/orderLineItemRepository'
 import type {
   OrderLineItem,
+  Sku,
   SkuOption,
 } from '@/lib/domain/orderLineItem'
 import { createOrder } from '@/lib/services/orderService'
@@ -94,10 +97,6 @@ async function getEditableOrder(orderId: string) {
     throw new Error('Line items can only be edited on drafted orders')
   }
   return result
-}
-
-function canCreateSku(role: string): boolean {
-  return role === 'admin' || role === 'owner'
 }
 
 export async function createOrderAction(): Promise<Order> {
@@ -291,8 +290,14 @@ export async function duplicateOrderAction(args: {
 
 export async function findSkuOptionsAction(): Promise<SkuOption[]> {
   const { ability } = await getAbility()
-  ForbiddenError.from(ability).throwUnlessCan('read', 'Order')
+  ForbiddenError.from(ability).throwUnlessCan('read', 'Sku')
   return findActiveSkuOptions()
+}
+
+export async function findSkusAction(): Promise<Sku[]> {
+  const { ability } = await getAbility()
+  ForbiddenError.from(ability).throwUnlessCan('manage', 'Sku')
+  return findSkus()
 }
 
 export async function createSkuAction(args: {
@@ -300,10 +305,8 @@ export async function createSkuAction(args: {
   name: string
   defaultUnit?: string | null
 }): Promise<SkuOption> {
-  const { profile } = await getAbility()
-  if (!canCreateSku(profile.role)) {
-    throw new Error('Only admins and owners can create SKUs here')
-  }
+  const { ability } = await getAbility()
+  ForbiddenError.from(ability).throwUnlessCan('manage', 'Sku')
 
   return insertSku({
     skuNumber: requiredText(args.skuNumber, 'SKU number'),
@@ -312,10 +315,34 @@ export async function createSkuAction(args: {
   })
 }
 
+export async function updateSkuAction(args: {
+  id: string
+  skuNumber: string
+  name: string
+  defaultUnit?: string | null
+  category?: string | null
+  isActive: boolean
+}): Promise<Sku> {
+  const { ability } = await getAbility()
+  ForbiddenError.from(ability).throwUnlessCan('manage', 'Sku')
+
+  const updated = await updateSku({
+    id: requiredText(args.id, 'SKU'),
+    skuNumber: requiredText(args.skuNumber, 'SKU number'),
+    name: requiredText(args.name, 'SKU name'),
+    defaultUnit: args.defaultUnit?.trim() || null,
+    category: args.category?.trim() || null,
+    isActive: args.isActive,
+  })
+  if (!updated) throw new Error('SKU not found')
+  return updated
+}
+
 export async function findOrderLineItemsAction(
   orderId: string,
 ): Promise<OrderLineItem[]> {
-  await getScopedOrder(orderId)
+  const { ability } = await getScopedOrder(orderId)
+  ForbiddenError.from(ability).throwUnlessCan('read', 'OrderItem')
   return findOrderLineItems(orderId)
 }
 
@@ -326,7 +353,8 @@ export async function createOrderLineItemAction(args: {
   unit: string
   unitPrice?: number | null
 }): Promise<OrderLineItem> {
-  await getEditableOrder(args.orderId)
+  const { ability } = await getEditableOrder(args.orderId)
+  ForbiddenError.from(ability).throwUnlessCan('create', 'OrderItem')
   return insertOrderLineItem({
     orderId: args.orderId,
     skuId: requiredText(args.skuId, 'SKU'),
@@ -343,7 +371,8 @@ export async function updateOrderLineItemAction(args: {
   unit: string
   unitPrice?: number | null
 }): Promise<OrderLineItem> {
-  await getEditableOrder(args.orderId)
+  const { ability } = await getEditableOrder(args.orderId)
+  ForbiddenError.from(ability).throwUnlessCan('update', 'OrderItem')
   const updated = await updateOrderLineItem({
     id: requiredText(args.lineItemId, 'Line item'),
     orderId: args.orderId,
@@ -361,7 +390,8 @@ export async function deleteOrderLineItemAction(args: {
   orderId: string
   lineItemId: string
 }): Promise<{ id: string; orderId: string }> {
-  await getEditableOrder(args.orderId)
+  const { ability } = await getEditableOrder(args.orderId)
+  ForbiddenError.from(ability).throwUnlessCan('delete', 'OrderItem')
   const deleted = await deleteOrderLineItem({
     id: requiredText(args.lineItemId, 'Line item'),
     orderId: args.orderId,

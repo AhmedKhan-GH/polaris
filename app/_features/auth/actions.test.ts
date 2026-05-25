@@ -7,6 +7,12 @@ const {
   infoMock,
   warnMock,
 } = vi.hoisted(() => ({
+  env: Object.assign(process.env, {
+    DATABASE_URL: 'postgres://user:pass@localhost:5432/polaris_test',
+    NEXT_PUBLIC_SUPABASE_URL: 'http://localhost:54321',
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: 'test-key',
+    SUPABASE_SERVICE_ROLE_KEY: 'test-service-role-key',
+  }),
   signInWithPasswordMock: vi.fn(),
   getServerSupabaseMock: vi.fn(),
   redirectMock: vi.fn(),

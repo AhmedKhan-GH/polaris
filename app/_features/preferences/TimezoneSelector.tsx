@@ -38,7 +38,10 @@ export function TimezoneSelector() {
   // mount; the placeholder keeps the auth-bar layout stable in the
   // pre-hydration paint.
   const [mounted, setMounted] = useState(false)
-  useEffect(() => setMounted(true), [])
+  useEffect(() => {
+    const id = window.setTimeout(() => setMounted(true), 0)
+    return () => window.clearTimeout(id)
+  }, [])
   const zones = useMemo(() => (mounted ? listTimezones() : []), [mounted])
 
   return (

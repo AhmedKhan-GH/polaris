@@ -1,6 +1,8 @@
 'use client'
 
+import { useCallback, useEffect } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { getSupabaseClient } from '@/lib/supabase/browser'
 import {
   createOrderLineItemAction,
   createSkuAction,
@@ -34,13 +36,47 @@ export function useOrderLineItems(orderId: string) {
     queryFn: () => findSkuOptionsAction(),
   })
 
-  function refreshLineItems() {
+  const refreshLineItems = useCallback(() => {
     void queryClient.invalidateQueries({
       queryKey: orderLineItemsQueryKey(orderId),
     })
     // Order rows carry a compact SKU summary for the list view.
     void queryClient.invalidateQueries({ queryKey: ORDERS_QUERY_KEY })
-  }
+  }, [orderId, queryClient])
+
+  useEffect(() => {
+    const supabase = getSupabaseClient()
+    let cancelled = false
+    let activeChannel: ReturnType<typeof supabase.channel> | null = null
+
+    async function subscribe() {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (cancelled || !session) return
+
+      activeChannel = supabase
+        .channel(`order-line-items:${orderId}`, { config: { private: true } })
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'order_line_items',
+            filter: `order_id=eq.${orderId}`,
+          },
+          () => {
+            refreshLineItems()
+          },
+        )
+        .subscribe()
+    }
+
+    void subscribe()
+
+    return () => {
+      cancelled = true
+      if (activeChannel) void supabase.removeChannel(activeChannel)
+    }
+  }, [orderId, queryClient, refreshLineItems])
 
   const createLineItem = useMutation({
     mutationFn: (args: {

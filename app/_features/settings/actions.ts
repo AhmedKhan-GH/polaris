@@ -1,6 +1,5 @@
 'use server'
 
-import { ForbiddenError } from '@casl/ability'
 import { db } from '@/lib/db'
 import { profiles } from '@/lib/schema'
 import { getProfile, type UserRole } from '@/lib/profile'

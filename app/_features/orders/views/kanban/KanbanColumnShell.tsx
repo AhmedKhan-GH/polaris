@@ -24,7 +24,7 @@ export function KanbanColumnShell({
     : 'flex w-full min-w-64 min-h-0 flex-1 flex-col gap-3 rounded-lg border border-zinc-800 bg-zinc-900 p-3'
 
   return (
-    <section aria-hidden={loading || undefined} className={sectionClass}>
+    <section aria-label={name} aria-hidden={loading || undefined} className={sectionClass}>
       <div className="flex items-center justify-between gap-2 px-1">
         <div className="flex items-center gap-2">
           <StatusPill status={status} />

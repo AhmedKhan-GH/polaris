@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { resetPasswordAction } from './actions'
 
-export function ResetPasswordButton({ userId, email }: { userId: string; email: string }) {
+export function ResetPasswordButton({ userId }: { userId: string; email: string }) {
   const [open, setOpen] = useState(false)
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')

@@ -2,10 +2,18 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { NextRequest } from 'next/server'
 
 const getUserMock = vi.hoisted(() => vi.fn())
+const singleMock = vi.hoisted(() => vi.fn())
 
 vi.mock('@supabase/ssr', () => ({
   createServerClient: () => ({
     auth: { getUser: getUserMock },
+    from: () => ({
+      select: () => ({
+        eq: () => ({
+          single: singleMock,
+        }),
+      }),
+    }),
   }),
 }))
 
@@ -26,6 +34,10 @@ describe('proxy middleware', () => {
   test('allows authenticated users through to any route', async () => {
     getUserMock.mockResolvedValue({
       data: { user: { id: 'u1' } },
+      error: null,
+    })
+    singleMock.mockResolvedValue({
+      data: { role: 'owner' },
       error: null,
     })
 

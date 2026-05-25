@@ -197,6 +197,13 @@
       "when": 1779494400000,
       "tag": "0027_realtime_order_line_items",
       "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1779753600000,
+      "tag": "0028_line_items_skus_rls",
+      "breakpoints": true
     }
   ]
 }

@@ -5,6 +5,17 @@ export type SkuOption = {
   defaultUnit: string | null
 }
 
+export type Sku = SkuOption & {
+  quickbooksLegacySku: string | null
+  description: string | null
+  category: string | null
+  storageType: string | null
+  packSize: string | null
+  isActive: boolean
+  createdAt: number
+  updatedAt: number
+}
+
 export type OrderLineItem = {
   id: string
   orderId: string
@@ -32,6 +43,10 @@ export function toSkuOption(row: {
   name: string
   defaultUnit: string | null
 }): SkuOption {
+  return row
+}
+
+export function toSku(row: Sku): Sku {
   return row
 }
 

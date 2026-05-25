@@ -17,6 +17,7 @@ const ACTOR_DISCARD = '33333333-3333-3333-3333-333333333333'
 const {
   getServerSupabaseMock,
   getUserMock,
+  getProfileMock,
   traceMock,
   debugMock,
   infoMock,
@@ -26,6 +27,7 @@ const {
 } = vi.hoisted(() => ({
   getServerSupabaseMock: vi.fn(),
   getUserMock: vi.fn(),
+  getProfileMock: vi.fn(),
   traceMock: vi.fn(),
   debugMock: vi.fn(),
   infoMock: vi.fn(),
@@ -36,6 +38,10 @@ const {
 
 vi.mock('@/lib/supabase/server', () => ({
   getServerSupabase: getServerSupabaseMock,
+}))
+
+vi.mock('@/lib/profile', () => ({
+  getProfile: getProfileMock,
 }))
 
 vi.mock('@/lib/log', () => ({
@@ -78,8 +84,23 @@ describe('orders/data/actions (integration)', () => {
     await container?.stop()
   })
 
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks()
+    await pool.query(
+      `INSERT INTO profiles (id, email, role)
+       VALUES
+         ($1, 'default@example.com', 'owner'),
+         ($2, 'transition@example.com', 'owner'),
+         ($3, 'discard@example.com', 'owner')
+       ON CONFLICT (id) DO UPDATE SET role = EXCLUDED.role`,
+      [ACTOR_DEFAULT, ACTOR_TRANSITION, ACTOR_DISCARD],
+    )
+    getProfileMock.mockResolvedValue({
+      id: ACTOR_DEFAULT,
+      email: 'default@example.com',
+      role: 'owner',
+      createdAt: Date.now(),
+    })
     getServerSupabaseMock.mockResolvedValue({
       auth: { getUser: getUserMock },
     })
@@ -87,7 +108,7 @@ describe('orders/data/actions (integration)', () => {
   })
 
   afterEach(async () => {
-    await pool.query('TRUNCATE TABLE orders, order_status_history CASCADE')
+    await pool.query('TRUNCATE TABLE orders, order_status_history, skus CASCADE')
     await pool.query('UPDATE order_status_counts SET count = 0')
     await pool.query('ALTER SEQUENCE order_number_seq RESTART WITH 1000000')
   })
@@ -103,10 +124,10 @@ describe('orders/data/actions (integration)', () => {
       expect(reloaded?.id).toBe(order.id)
     })
 
-    test('does not consult Supabase (no actor needed for creation)', async () => {
-      await actions.createOrderAction()
+    test('records the signed-in actor as the creator', async () => {
+      const order = await actions.createOrderAction()
 
-      expect(getServerSupabaseMock).not.toHaveBeenCalled()
+      expect(order.createdBy).toBe(ACTOR_DEFAULT)
     })
   })
 
@@ -361,6 +382,50 @@ describe('orders/data/actions (integration)', () => {
           sourceOrderId: '00000000-0000-0000-0000-000000000000',
         }),
         'duplicateOrderAction rejected',
+      )
+    })
+  })
+
+  describe('order item and SKU permissions', () => {
+    test('members cannot manage the SKU catalog', async () => {
+      getProfileMock.mockResolvedValue({
+        id: ACTOR_DEFAULT,
+        email: 'default@example.com',
+        role: 'member',
+        createdAt: Date.now(),
+      })
+
+      await expect(
+        actions.createSkuAction({
+          skuNumber: 'SKU-1',
+          name: 'Sample item',
+          defaultUnit: 'case',
+        }),
+      ).rejects.toThrow(/cannot execute "manage" on "Sku"/)
+    })
+
+    test('guests cannot read line items from another user order', async () => {
+      const order = await actions.createOrderAction()
+      const { rows } = await pool.query<{ id: string }>(
+        'INSERT INTO skus (sku_number, name, default_unit) VALUES ($1, $2, $3) RETURNING id',
+        ['SKU-2', 'Guest scoped item', 'case'],
+      )
+      await actions.createOrderLineItemAction({
+        orderId: order.id,
+        skuId: rows[0].id,
+        quantity: 1,
+        unit: 'case',
+      })
+
+      getProfileMock.mockResolvedValue({
+        id: ACTOR_DISCARD,
+        email: 'guest@example.com',
+        role: 'guest',
+        createdAt: Date.now(),
+      })
+
+      await expect(actions.findOrderLineItemsAction(order.id)).rejects.toThrow(
+        'Order not found',
       )
     })
   })

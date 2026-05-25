@@ -19,7 +19,8 @@ export function LoginForm() {
   // the SSR/CSR diff entirely; cost is a brief skeleton on first paint.
   const [mounted, setMounted] = useState(false)
   useEffect(() => {
-    setMounted(true)
+    const id = window.setTimeout(() => setMounted(true), 0)
+    return () => window.clearTimeout(id)
   }, [])
 
   if (!mounted) {

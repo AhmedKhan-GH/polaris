@@ -207,7 +207,7 @@ export function useOrders({ isGuest = false, profileId }: { isGuest?: boolean; p
       cancelled = true
       if (activeChannel) void supabase.removeChannel(activeChannel)
     }
-  }, [queryClient])
+  }, [isGuest, profileId, queryClient])
 
   const create = useMutation({
     mutationFn: () => createOrderAction(),

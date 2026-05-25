@@ -6,8 +6,16 @@ import {
 import type { UserRole } from './profile'
 import type { OrderStatus } from './domain/order'
 
-type Actions = 'create' | 'read' | 'transition' | 'discard' | 'duplicate' | 'manage'
-type Subjects = 'Order' | 'Settings' | 'all'
+type Actions =
+  | 'create'
+  | 'read'
+  | 'update'
+  | 'delete'
+  | 'transition'
+  | 'discard'
+  | 'duplicate'
+  | 'manage'
+type Subjects = 'Order' | 'OrderItem' | 'Sku' | 'Settings' | 'all'
 
 export type AppAbility = MongoAbility<[Actions, Subjects]>
 
@@ -18,6 +26,11 @@ export function defineAbilityFor(role: UserRole): AppAbility {
     case 'guest':
       can('create', 'Order')
       can('read', 'Order')
+      can('read', 'Sku')
+      can('create', 'OrderItem')
+      can('read', 'OrderItem')
+      can('update', 'OrderItem')
+      can('delete', 'OrderItem')
       can('transition', 'Order')
       can('discard', 'Order')
       can('duplicate', 'Order')
@@ -26,6 +39,11 @@ export function defineAbilityFor(role: UserRole): AppAbility {
     case 'member':
       can('create', 'Order')
       can('read', 'Order')
+      can('read', 'Sku')
+      can('create', 'OrderItem')
+      can('read', 'OrderItem')
+      can('update', 'OrderItem')
+      can('delete', 'OrderItem')
       can('discard', 'Order')
       can('duplicate', 'Order')
       break
@@ -33,6 +51,12 @@ export function defineAbilityFor(role: UserRole): AppAbility {
     case 'admin':
       can('create', 'Order')
       can('read', 'Order')
+      can('read', 'Sku')
+      can('manage', 'Sku')
+      can('create', 'OrderItem')
+      can('read', 'OrderItem')
+      can('update', 'OrderItem')
+      can('delete', 'OrderItem')
       can('transition', 'Order')
       can('discard', 'Order')
       can('duplicate', 'Order')
@@ -41,6 +65,12 @@ export function defineAbilityFor(role: UserRole): AppAbility {
     case 'owner':
       can('create', 'Order')
       can('read', 'Order')
+      can('read', 'Sku')
+      can('manage', 'Sku')
+      can('create', 'OrderItem')
+      can('read', 'OrderItem')
+      can('update', 'OrderItem')
+      can('delete', 'OrderItem')
       can('transition', 'Order')
       can('discard', 'Order')
       can('duplicate', 'Order')
@@ -48,6 +78,7 @@ export function defineAbilityFor(role: UserRole): AppAbility {
       break
 
     case 'system':
+      can('manage', 'all')
       can('manage', 'Settings')
       break
   }

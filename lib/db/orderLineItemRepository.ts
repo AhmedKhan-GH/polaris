@@ -3,8 +3,10 @@ import { db } from '../db'
 import { orderLineItems, skus } from '../schema'
 import {
   toOrderLineItem,
+  toSku,
   toSkuOption,
   type OrderLineItem,
+  type Sku,
   type SkuOption,
 } from '../domain/orderLineItem'
 
@@ -45,6 +47,28 @@ export async function findActiveSkuOptions(): Promise<SkuOption[]> {
   return rows.map(toSkuOption)
 }
 
+export async function findSkus(): Promise<Sku[]> {
+  const rows = await db
+    .select({
+      id: skus.id,
+      skuNumber: skus.skuNumber,
+      quickbooksLegacySku: skus.quickbooksLegacySku,
+      name: skus.name,
+      description: skus.description,
+      category: skus.category,
+      storageType: skus.storageType,
+      defaultUnit: skus.defaultUnit,
+      packSize: skus.packSize,
+      isActive: skus.isActive,
+      createdAt: skus.createdAt,
+      updatedAt: skus.updatedAt,
+    })
+    .from(skus)
+    .orderBy(asc(skus.skuNumber), asc(skus.name))
+
+  return rows.map(toSku)
+}
+
 export async function insertSku(args: {
   skuNumber: string
   name: string
@@ -65,6 +89,43 @@ export async function insertSku(args: {
     })
 
   return toSkuOption(created)
+}
+
+export async function updateSku(args: {
+  id: string
+  skuNumber: string
+  name: string
+  defaultUnit?: string | null
+  category?: string | null
+  isActive: boolean
+}): Promise<Sku | null> {
+  const [updated] = await db
+    .update(skus)
+    .set({
+      skuNumber: args.skuNumber,
+      name: args.name,
+      defaultUnit: args.defaultUnit || null,
+      category: args.category || null,
+      isActive: args.isActive,
+      updatedAt: Date.now(),
+    })
+    .where(eq(skus.id, args.id))
+    .returning({
+      id: skus.id,
+      skuNumber: skus.skuNumber,
+      quickbooksLegacySku: skus.quickbooksLegacySku,
+      name: skus.name,
+      description: skus.description,
+      category: skus.category,
+      storageType: skus.storageType,
+      defaultUnit: skus.defaultUnit,
+      packSize: skus.packSize,
+      isActive: skus.isActive,
+      createdAt: skus.createdAt,
+      updatedAt: skus.updatedAt,
+    })
+
+  return updated ? toSku(updated) : null
 }
 
 export async function findOrderLineItems(
