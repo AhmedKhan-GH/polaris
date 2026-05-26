@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { clientEnv } from './lib/env'
-import { canAccessRoute } from './lib/routes'
+import { canAccessRoute } from './lib/permissions/routes'
 import type { UserRole } from './lib/profile'
 
 export async function proxy(request: NextRequest) {
