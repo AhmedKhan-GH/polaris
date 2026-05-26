@@ -1,93 +1,80 @@
 'use server'
 
-import { ForbiddenError } from '@casl/ability'
 import { db } from '@/lib/db'
 import { profiles } from '@/lib/schema'
-import { getProfile, type UserRole } from '@/lib/profile'
-import { defineAbilityFor } from '@/lib/permissions/abilities'
+import { type UserRole } from '@/lib/profile'
 import { getServiceRoleSupabase } from '@/lib/supabase/server'
+import { withPermission } from '@/lib/permissions/guard'
 
 const ALLOWED_ROLES: UserRole[] = ['owner', 'admin', 'member', 'guest']
 
 export async function createAccountAction(formData: FormData): Promise<{ error?: string }> {
-  const profile = await getProfile()
-  if (!profile) return { error: 'Unauthenticated' }
+  return withPermission('manage', 'Settings', async () => {
+    const email = formData.get('email') as string | null
+    const password = formData.get('password') as string | null
+    const confirmPassword = formData.get('confirmPassword') as string | null
+    const role = formData.get('role') as UserRole | null
 
-  const ability = defineAbilityFor(profile.role)
-  if (!ability.can('manage', 'Settings')) {
-    return { error: 'Forbidden' }
-  }
+    if (!email || !password || !confirmPassword || !role) {
+      return { error: 'Email, password, and role are required' }
+    }
 
-  const email = formData.get('email') as string | null
-  const password = formData.get('password') as string | null
-  const confirmPassword = formData.get('confirmPassword') as string | null
-  const role = formData.get('role') as UserRole | null
+    if (password !== confirmPassword) {
+      return { error: 'Passwords do not match' }
+    }
 
-  if (!email || !password || !confirmPassword || !role) {
-    return { error: 'Email, password, and role are required' }
-  }
+    if (password.length < 6) {
+      return { error: 'Password must be at least 6 characters' }
+    }
 
-  if (password !== confirmPassword) {
-    return { error: 'Passwords do not match' }
-  }
+    if (!ALLOWED_ROLES.includes(role)) {
+      return { error: 'Invalid role' }
+    }
 
-  if (password.length < 6) {
-    return { error: 'Password must be at least 6 characters' }
-  }
+    const supabase = getServiceRoleSupabase()
 
-  if (!ALLOWED_ROLES.includes(role)) {
-    return { error: 'Invalid role' }
-  }
+    const { data, error } = await supabase.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+    })
 
-  const supabase = getServiceRoleSupabase()
+    if (error) {
+      return { error: error.message }
+    }
 
-  const { data, error } = await supabase.auth.admin.createUser({
-    email,
-    password,
-    email_confirm: true,
+    await db.insert(profiles).values({ id: data.user.id, role })
+
+    return {}
   })
-
-  if (error) {
-    return { error: error.message }
-  }
-
-  await db.insert(profiles).values({ id: data.user.id, role })
-
-  return {}
 }
 
 export async function resetPasswordAction(formData: FormData): Promise<{ error?: string }> {
-  const profile = await getProfile()
-  if (!profile) return { error: 'Unauthenticated' }
+  return withPermission('manage', 'Settings', async () => {
+    const userId = formData.get('userId') as string | null
+    const password = formData.get('password') as string | null
+    const confirmPassword = formData.get('confirmPassword') as string | null
 
-  const ability = defineAbilityFor(profile.role)
-  if (!ability.can('manage', 'Settings')) {
-    return { error: 'Forbidden' }
-  }
+    if (!userId || !password || !confirmPassword) {
+      return { error: 'User and password are required' }
+    }
 
-  const userId = formData.get('userId') as string | null
-  const password = formData.get('password') as string | null
-  const confirmPassword = formData.get('confirmPassword') as string | null
+    if (password !== confirmPassword) {
+      return { error: 'Passwords do not match' }
+    }
 
-  if (!userId || !password || !confirmPassword) {
-    return { error: 'User and password are required' }
-  }
+    if (password.length < 6) {
+      return { error: 'Password must be at least 6 characters' }
+    }
 
-  if (password !== confirmPassword) {
-    return { error: 'Passwords do not match' }
-  }
+    const supabase = getServiceRoleSupabase()
 
-  if (password.length < 6) {
-    return { error: 'Password must be at least 6 characters' }
-  }
+    const { error } = await supabase.auth.admin.updateUserById(userId, { password })
 
-  const supabase = getServiceRoleSupabase()
+    if (error) {
+      return { error: error.message }
+    }
 
-  const { error } = await supabase.auth.admin.updateUserById(userId, { password })
-
-  if (error) {
-    return { error: error.message }
-  }
-
-  return {}
+    return {}
+  })
 }

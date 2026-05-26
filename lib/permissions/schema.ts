@@ -16,4 +16,6 @@ export const permissions = {
 } as const satisfies PermissionSchema
 
 export type Subject = keyof typeof permissions
-export type Action = keyof (typeof permissions)[Subject]
+export type Action = {
+  [S in Subject]: keyof (typeof permissions)[S]
+}[Subject]
