@@ -1,17 +1,5 @@
 # Centralized Permissions Architecture
 
-## Problem
-
-Permissions are defined in multiple places that can silently drift:
-
-| Layer | Current Source | Risk |
-|-------|---------------|------|
-| App enforcement | CASL `AbilityBuilder` calls in `lib/abilities.ts` | Manual, imperative |
-| Route access | Separate `ROLE_ROUTES` map in `lib/routes.ts` | Parallel definition |
-| RLS policies | `TO authenticated USING (true)` in migrations | Binary gate, no role logic |
-| UI rendering | `role` prop drilling + helper functions | Duplicated checks |
-| Data filtering | Hardcoded `if (role === 'guest')` in actions | Scattered conditions |
-
 ## Two Layers
 
 The app layer and database layer answer different questions. Each owns its definitions. They share ownership conditions where they overlap.
@@ -19,7 +7,7 @@ The app layer and database layer answer different questions. Each owns its defin
 | Layer | Question | Source of truth |
 |-------|----------|-----------------|
 | App (CASL) | Can this role perform this business action? | `lib/permissions/schema.ts` |
-| Database (RLS) | Which rows can this role SELECT/INSERT/UPDATE/DELETE? | `pgPolicy()` in `lib/schema.ts` |
+| Database (RLS) | Which rows can this role SELECT/INSERT/UPDATE/DELETE? | `pgPolicy()` in migration SQL |
 
 Business actions (transition, export, duplicate) don't map 1:1 to SQL operations (SELECT, UPDATE). RLS is a coarser security floor. The app layer handles the fine-grained business logic on top.
 
@@ -59,258 +47,306 @@ These are different concepts that share the word "role."
 | `service_role` | Backend admin — bypasses all RLS |
 | `postgres` | Superuser |
 
-When a request hits Supabase, PostgREST sets the Postgres role based on whether the JWT is present. Every query runs as either `anon` or `authenticated`.
-
 **App roles** (`system`, `owner`, `admin`, `member`, `guest`) are data — a value stored in the `profiles` table and embedded in the JWT as a custom claim via the access token hook. Postgres doesn't know about them natively.
 
-In a `pgPolicy()` definition, these two concepts appear in different places:
+In a RLS policy, these two concepts appear in different places:
 
-```typescript
-pgPolicy('orders_select_guest', {
-  to: authenticatedRole,           // ← Postgres role (blocks anon)
-  using: sql`
-    (auth.jwt() ->> 'user_role')   // ← app role (reads from JWT)
+```sql
+CREATE POLICY orders_select_guest ON orders
+  FOR SELECT TO authenticated           -- ← Postgres role (blocks anon)
+  USING (
+    (auth.jwt() ->> 'user_role')         -- ← app role (reads from JWT)
     = 'guest'
-    AND created_by = auth.uid()    // ← per-user (reads user ID from JWT)
-  `,
-})
+    AND created_by = auth.uid()          -- ← per-user (reads user ID from JWT)
+  );
 ```
 
-`to: authenticatedRole` is the Postgres role gate. The `using` clause reads the app role and user ID from the JWT for fine-grained checks. CASL only knows about app roles — it never touches Postgres roles.
+`TO authenticated` is the Postgres role gate. The `USING` clause reads the app role and user ID from the JWT for fine-grained checks. CASL only knows about app roles — it never touches Postgres roles.
 
-## Files
+## File Structure
 
 ```
 lib/permissions/
-  schema.ts        Business-level permissions. Drives CASL, guards, UI, routes.
-  abilities.ts     Derives CASL MongoAbility from schema.
-  guard.ts         withPermission() wrapper for server actions.
-  hooks.ts         useAbility() React hook via context.
-  routes.ts        Route-to-subject mapping + middleware check.
+  subjects/
+    order.ts        Role gates for Order actions
+    settings.ts     Role gates for Settings actions
+  schema.ts         Merges subjects, exports types
+  abilities.ts      Derives CASL MongoAbility from schema
+  guard.ts          withPermission() wrapper for server actions
+  hooks.tsx         AbilityProvider + useAbility() React hook
+  routes.ts         Route-to-subject mapping, derives access from schema
 
-lib/schema.ts      Drizzle schema. pgPolicy() definitions live here alongside tables.
+lib/schema.ts       Drizzle schema — tables and columns
+drizzle/*.sql       Migrations — RLS policies defined here
 ```
 
 ## Enforcement Depth
 
-```
-Request
-  1. Middleware        → route access (derived from permissions schema)
-  2. Server Component  → ability check before render
-  3. Server Action     → withPermission() guard
-  4. Database (RLS)    → pgPolicy() enforced by Postgres
+```mermaid
+flowchart TD
+    REQ[Request] --> MW[1. Middleware]
+    MW -->|route access derived from schema| SC[2. Server Component]
+    SC -->|ability check before render| SA[3. Server Action]
+    SA -->|withPermission guard| DB[4. Database RLS]
+    DB -->|pgPolicy enforced by Postgres| DATA[Data returned]
+
+    style MW fill:#1e293b,stroke:#475569,color:#e2e8f0
+    style SC fill:#1e293b,stroke:#475569,color:#e2e8f0
+    style SA fill:#1e293b,stroke:#475569,color:#e2e8f0
+    style DB fill:#1e293b,stroke:#f59e0b,color:#e2e8f0
 ```
 
-Each layer catches what the one above misses. A direct Supabase REST call skips 1-3 but is still stopped by 4.
+Each layer catches what the one above misses. A direct Supabase REST call skips 1–3 but is still stopped by 4.
 
 ---
 
-## How to implement a feature
+## Adding a Feature: Complete Workflow
 
-Every feature that needs permissions touches up to 5 files. Below is a blank template showing all the variants — role-only access, per-user ownership, and combined.
+Every feature that touches permissions follows this decision tree. The schema is always the starting point — but it is not always the only file you touch.
 
-### 1. Permissions schema
+### Decision Tree
+
+```mermaid
+flowchart TD
+    START[New feature needs permissions] --> Q1{New business domain?}
+
+    Q1 -->|Yes| NEW_SUBJECT[Create subject file]
+    Q1 -->|No| Q2{New action on existing subject?}
+
+    NEW_SUBJECT --> NEW_TABLE{New database table?}
+    NEW_TABLE -->|Yes| SCHEMA_TABLE[Add table to lib/schema.ts]
+    NEW_TABLE -->|No| ROUTE
+    SCHEMA_TABLE --> MIGRATION[Write RLS migration]
+    MIGRATION --> ROUTE[Add route mapping]
+
+    ROUTE --> ADD_ACTION[Add actions to subject file]
+    ADD_ACTION --> SERVER_ACTION[Create server actions with withPermission]
+    SERVER_ACTION --> UI[Gate UI with ability checks]
+    UI --> DONE[Done]
+
+    Q2 -->|Yes| ADD_EXISTING[Add action to existing subject file]
+    Q2 -->|No| Q3{New row-level condition?}
+
+    ADD_EXISTING --> NEED_RLS{Does row access change?}
+    NEED_RLS -->|Yes| RLS_UPDATE[Write RLS migration]
+    NEED_RLS -->|No| SA2[Create server action with withPermission]
+    RLS_UPDATE --> SA2
+    SA2 --> UI2[Gate UI with ability checks]
+    UI2 --> DONE
+
+    Q3 -->|Yes| REPO_GATE[Add filter in server action callback]
+    Q3 -->|No| REUSE[Reuse existing withPermission call]
+
+    REPO_GATE --> RLS_CONDITION[Write RLS migration for condition]
+    RLS_CONDITION --> DONE
+
+    REUSE --> DONE
+
+    style START fill:#1e293b,stroke:#f59e0b,color:#e2e8f0
+    style DONE fill:#1e293b,stroke:#22c55e,color:#e2e8f0
+```
+
+### Files Touched Per Change Type
+
+| Change | Subject file | Server action | UI | RLS migration | routes.ts | lib/schema.ts |
+|--------|:-----------:|:------------:|:--:|:------------:|:---------:|:------------:|
+| New business action, existing row access | ✓ | ✓ | ✓ | — | — | — |
+| New business action, new row access | ✓ | ✓ | ✓ | ✓ | — | — |
+| New subject with new table | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| New subject using existing table | ✓ | ✓ | ✓ | Maybe | ✓ | — |
+| New row-level condition on existing action | — | ✓ | — | ✓ | — | — |
+| New page for existing subject | — | — | Maybe | — | — | — |
+| New server action reusing existing permission | — | ✓ | Maybe | — | — | — |
+
+Most changes are the first row — a new business action where the existing RLS policies already cover which rows the role can access.
+
+---
+
+## How To Implement Each Layer
+
+### 1. Permission Schema (role gates)
 
 ```typescript
-// lib/permissions/schema.ts
+// lib/permissions/subjects/thing.ts
+import type { SubjectPermissions } from '../schema'
+
+export const thingPermissions = {
+  create: { roles: ['member', 'admin', 'owner'] },
+  read:   { roles: ['guest', 'member', 'admin', 'owner'] },
+  delete: { roles: ['admin', 'owner'] },
+} as const satisfies SubjectPermissions
+```
+
+Then register in `lib/permissions/schema.ts`:
+
+```typescript
+import { thingPermissions } from './subjects/thing'
 
 export const permissions = {
-  Thing: {
-    // Role-only: any of these roles can do it, no per-user filtering
-    create:  { roles: ['member', 'admin', 'owner'] },
-
-    // Per-user condition: guests can only read their own
-    read:    { roles: ['guest', 'member', 'admin', 'owner'],
-               condition: { guest: { created_by: '$user.id' } } },
-
-    // Restricted to specific roles
-    delete:  { roles: ['admin', 'owner'] },
-  },
+  Order: orderPermissions,
+  Settings: settingsPermissions,
+  Thing: thingPermissions,  // ← add this
 } as const satisfies PermissionSchema
 ```
 
-### 2. Server action
+The schema answers one question: **does this role have this capability at all?** No conditions, no row filters, no state checks.
+
+### 2. Server Action (business logic gate)
 
 ```typescript
-// lib/actions/thing.ts
+// app/_features/things/data/actions.ts
+'use server'
 
-export const createThingAction = withPermission('create', 'Thing', async ({ profile }) => {
-  // business logic — permission already verified
-})
+import { withPermission } from '@/lib/permissions/guard'
 
-export const readThingAction = withPermission('read', 'Thing', async ({ profile }) => {
-  // CASL has already checked the role + condition
-})
+export async function createThingAction() {
+  return withPermission('create', 'Thing', async ({ profile }) => {
+    // business logic — permission already verified
+  })
+}
 
-export const deleteThingAction = withPermission('delete', 'Thing', async ({ profile }) => {
-  // only admin/owner reach here
-})
+export async function readThingsAction() {
+  return withPermission('read', 'Thing', async ({ profile }) => {
+    // per-user filtering happens HERE, not in the schema
+    if (profile.role === 'guest') {
+      return await findThings({ createdBy: profile.id })
+    }
+    return await findThings()
+  })
+}
 ```
 
-### 3. UI
+Per-user conditions (ownership, state) are gated inside the `withPermission` callback. The guard handles authentication and role-level access. The callback handles row-level logic.
+
+### 3. UI (render gate)
 
 ```tsx
-// components/thing-actions.tsx
+// In a server component:
+const ability = defineAbilityFor(profile.role)
+if (!ability.can('read', 'Thing')) notFound()
 
-const ability = useAbility()
-
+// In a client component:
+const { ability } = useAbility()
 {ability.can('create', 'Thing') && <CreateButton />}
 {ability.can('delete', 'Thing') && <DeleteButton />}
 ```
 
-### 4. RLS policies (only if row access changes)
+### 4. RLS Policies (database floor)
 
-RLS policy changes follow the same workflow as any Drizzle schema change: update the `pgPolicy()` definitions in `lib/schema.ts`, then run `drizzle-kit generate` to produce a migration, then `drizzle-kit migrate` to apply it. Same as adding a column.
+```sql
+-- drizzle/0027_things_rls.sql
 
-```typescript
-// lib/schema.ts
+-- Internal roles see all rows
+CREATE POLICY things_select_internal ON things
+  FOR SELECT TO authenticated
+  USING ((auth.jwt() ->> 'user_role') IN ('owner', 'admin', 'member'));
 
-import { sql } from 'drizzle-orm'
-import { pgPolicy, pgTable, uuid } from 'drizzle-orm/pg-core'
-import { authenticatedRole } from 'drizzle-orm/supabase/rls'
+-- Guests see only rows they created
+CREATE POLICY things_select_guest ON things
+  FOR SELECT TO authenticated
+  USING (
+    (auth.jwt() ->> 'user_role') = 'guest'
+    AND created_by = auth.uid()
+  );
 
-export const things = pgTable(
-  'things',
-  {
-    id: uuid('id').primaryKey().defaultRandom(),
-    createdBy: uuid('created_by'),
-    // ...
-  },
-  (table) => [
-    // ---- SELECT ----
+-- Insert: must set created_by to self
+CREATE POLICY things_insert ON things
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    (auth.jwt() ->> 'user_role') IN ('member', 'admin', 'owner')
+    AND created_by = auth.uid()
+  );
 
-    // Role-only: internal roles see all rows
-    pgPolicy('things_select_internal', {
-      for: 'select',
-      to: authenticatedRole,
-      using: sql`(auth.jwt() ->> 'user_role') IN ('owner', 'admin', 'member')`,
-    }),
-
-    // Per-user: guests see only rows they created
-    pgPolicy('things_select_guest', {
-      for: 'select',
-      to: authenticatedRole,
-      using: sql`
-        (auth.jwt() ->> 'user_role') = 'guest'
-        AND ${table.createdBy} = auth.uid()
-      `,
-    }),
-
-    // ---- INSERT ----
-
-    // Role-only: these roles can insert
-    pgPolicy('things_insert', {
-      for: 'insert',
-      to: authenticatedRole,
-      withCheck: sql`(auth.jwt() ->> 'user_role') IN ('member', 'admin', 'owner')`,
-    }),
-
-    // Per-user: guest can insert only if created_by is themselves
-    pgPolicy('things_insert_guest', {
-      for: 'insert',
-      to: authenticatedRole,
-      withCheck: sql`
-        (auth.jwt() ->> 'user_role') = 'guest'
-        AND ${table.createdBy} = auth.uid()
-      `,
-    }),
-
-    // ---- UPDATE ----
-
-    // Role-only: privileged roles update any row
-    pgPolicy('things_update_privileged', {
-      for: 'update',
-      to: authenticatedRole,
-      using: sql`(auth.jwt() ->> 'user_role') IN ('owner', 'admin')`,
-    }),
-
-    // Per-user: members update only rows they created
-    pgPolicy('things_update_own', {
-      for: 'update',
-      to: authenticatedRole,
-      using: sql`
-        (auth.jwt() ->> 'user_role') = 'member'
-        AND ${table.createdBy} = auth.uid()
-      `,
-    }),
-
-    // ---- DELETE ----
-
-    // Role-only: only admin/owner can delete
-    pgPolicy('things_delete', {
-      for: 'delete',
-      to: authenticatedRole,
-      using: sql`(auth.jwt() ->> 'user_role') IN ('admin', 'owner')`,
-    }),
-  ],
-)
+-- Delete: admin/owner only
+CREATE POLICY things_delete ON things
+  FOR DELETE TO authenticated
+  USING ((auth.jwt() ->> 'user_role') IN ('admin', 'owner'));
 ```
 
-### 5. Route mapping
+RLS mirrors the schema's role gates but answers a different question: not "can you do this action" but "which rows can you touch." Even if the app layer has a bug, the database blocks unauthorized access.
 
-When adding a new subject with its own pages, add one line to `routeToSubject`:
+### 5. Route Mapping
 
 ```typescript
 // lib/permissions/routes.ts
-
 const routeToSubject: Record<string, string> = {
   '/orders':   'Order',
   '/settings': 'Settings',
-  '/invoices': 'Invoice',
-  '/things':   'Thing',           // ← add this
-}
-
-export function canAccessRoute(pathname: string, role: string): boolean {
-  const subject = routeToSubject[pathname]
-  if (!subject) return true       // no subject = public page
-  return Object.values(permissions[subject]).some(r => r.roles.includes(role))
+  '/things':   'Thing',   // ← add this
 }
 ```
 
-This is the one mapping you maintain manually. The permissions themselves are derived from the schema — you never list which roles can access which routes.
+Route access is derived automatically: if a role has any action on the subject, they can access the route.
 
 ---
 
-## The three patterns
+## The Three Patterns
 
 Every policy is one of these:
 
-| Pattern | App layer (CASL) | RLS (pgPolicy) |
-|---------|-----------------|-----------------|
-| **Role-only** | `{ roles: ['admin', 'owner'] }` | `(auth.jwt() ->> 'user_role') IN ('admin', 'owner')` |
-| **Per-user** | `{ condition: { guest: { created_by: '$user.id' } } }` | `${table.createdBy} = auth.uid()` |
-| **Combined** | Role check + condition on specific roles | Role check in `IN (...)` OR role + `auth.uid()` match |
+| Pattern | App layer (withPermission) | RLS (pgPolicy) |
+|---------|---------------------------|-----------------|
+| **Role-only** | Schema gate is sufficient | `(auth.jwt() ->> 'user_role') IN ('admin', 'owner')` |
+| **Per-user** | Filter in callback: `{ createdBy: profile.id }` | `created_by = auth.uid()` |
+| **Combined** | Schema gate + callback filter for specific roles | Role check in `IN (...)` OR role + `auth.uid()` match |
 
-In CASL, `$user.id` resolves to `profile.id` at runtime. In RLS, the same concept is `auth.uid()` — read from the JWT by Postgres. `$user.role` in CASL is `profile.role`; in RLS it's `auth.jwt() ->> 'user_role'`.
-
----
-
-## When to touch each file
-
-| Change | schema.ts | server action | UI | pgPolicy | routes.ts | drizzle-kit generate |
-|--------|:---------:|:------------:|:--:|:--------:|:---------:|:-------------------:|
-| New business action, existing row access | Yes | Yes | Yes | No | No | No |
-| New business action, new row access | Yes | Yes | Yes | Yes | No | Yes |
-| New subject/table | Yes | Yes | Yes | Yes | Yes | Yes |
-| New row-level condition on existing action | Yes | Yes | No | Yes | No | Yes |
-| New page for existing subject | No | No | Maybe | No | No | No |
-| New server action reusing existing permission | No | Yes | Maybe | No | No | No |
-
-Most changes are the first row — a new business action where the existing SELECT/INSERT/UPDATE/DELETE policies already cover which rows the role can access. Only ownership condition changes or new tables require touching RLS.
+In CASL, `profile.id` is the user identity. In RLS, the same concept is `auth.uid()`. In CASL, `profile.role` is the app role. In RLS, it's `auth.jwt() ->> 'user_role'`.
 
 ---
 
-## Migration path
+## Where Each Concern Lives
 
-| Step | Change | Risk |
-|------|--------|------|
-| 1 | Create `lib/permissions/schema.ts` — transcribe current rules | None, additive |
-| 2 | Rewrite `lib/abilities.ts` to derive from schema | Low, same runtime behavior |
-| 3 | Add `guard.ts`, refactor server actions one at a time | Low, incremental |
-| 4 | Add `AbilityProvider`, replace role prop drilling | Low, incremental |
-| 5 | Add `pgPolicy()` to table definitions, `drizzle-kit generate` replaces blanket policies | Medium, requires testing |
-| 6 | Delete `lib/routes.ts`, derive route access from schema | Low, after step 1 verified |
+```mermaid
+flowchart LR
+    subgraph SCHEMA["Permission Schema"]
+        direction TB
+        S1["Can this role do this action?"]
+        S2["Role gates only"]
+        S3["No conditions"]
+    end
+
+    subgraph ACTION["Server Action Callback"]
+        direction TB
+        A1["Which rows for this user?"]
+        A2["Guest ownership filter"]
+        A3["State-based restrictions"]
+    end
+
+    subgraph DOMAIN["Domain Layer"]
+        direction TB
+        D1["Which transitions are valid?"]
+        D2["State machine rules"]
+        D3["Role-specific transitions"]
+    end
+
+    subgraph RLS["Database RLS"]
+        direction TB
+        R1["Which rows can this role touch?"]
+        R2["Safety net if app is bypassed"]
+        R3["Mirrors app-layer conditions"]
+    end
+
+    SCHEMA --> ACTION
+    ACTION --> DOMAIN
+    ACTION --> RLS
+
+    style SCHEMA fill:#1e293b,stroke:#f59e0b,color:#e2e8f0
+    style ACTION fill:#1e293b,stroke:#3b82f6,color:#e2e8f0
+    style DOMAIN fill:#1e293b,stroke:#8b5cf6,color:#e2e8f0
+    style RLS fill:#1e293b,stroke:#22c55e,color:#e2e8f0
+```
+
+| Question | Where it's answered | NOT here |
+|----------|-------------------|----------|
+| Can this role create orders? | Permission schema | Server action |
+| Can this guest see this specific order? | Server action callback + RLS | Permission schema |
+| Can this role transition from drafted to submitted? | Domain layer (`getAllowedTransitions`) | Permission schema |
+| Can a direct REST call read this row? | RLS | Anywhere else |
+| Can this role access /orders? | Route mapping (derived from schema) | Manual route map |
+| Should this button be visible? | UI ability check (`useAbility`) | Server action |
+
+---
 
 ## Invariant
 
-> The app layer and database layer enforce the same ownership boundaries. Business action granularity lives in the app; row-access boundaries live in Postgres. Neither drifts because each is defined in exactly one place.
+> The permission schema is the single source of truth for role-to-action gates. The app layer and database layer enforce the same ownership boundaries through their own mechanisms. Business action granularity lives in server action callbacks and domain logic. Row-access boundaries live in Postgres RLS. Neither drifts because each is defined in exactly one place.
