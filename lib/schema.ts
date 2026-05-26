@@ -4,18 +4,15 @@ import {
   foreignKey,
   index,
   pgEnum,
+  pgPolicy,
   pgSequence,
   pgTable,
   primaryKey,
   text,
   uuid,
 } from "drizzle-orm/pg-core";
+import { authenticatedRole } from "drizzle-orm/supabase/rls";
 
-// Timestamps are stored as bigint epoch milliseconds (UTC). This is
-// timezone-unambiguous and survives forever without DST/zone migrations
-// --- a logistics order written in 2026 means the same instant when read
-// from any process in any timezone in 2050. Display layer converts to
-// the user's chosen zone at render time.
 const epochMs = (name: string) =>
   bigint(name, { mode: "number" })
     .notNull()
@@ -29,22 +26,28 @@ export const userRole = pgEnum("user_role", [
   "guest",
 ]);
 
-export const profiles = pgTable("profiles", {
-  id: uuid("id").primaryKey(),
-  email: text("email"),
-  role: userRole("role").notNull().default("member"),
-  createdAt: epochMs("created_at"),
-});
+export const profiles = pgTable(
+  "profiles",
+  {
+    id: uuid("id").primaryKey(),
+    email: text("email"),
+    role: userRole("role").notNull().default("member"),
+    createdAt: epochMs("created_at"),
+  },
+  (table) => [
+    pgPolicy("profiles_select_own", {
+      for: "select",
+      to: authenticatedRole,
+      using: sql`${table.id} = auth.uid()`,
+    }),
+    pgPolicy("profiles_select_admin", {
+      for: "select",
+      to: authenticatedRole,
+      using: sql`(auth.jwt() ->> 'user_role') IN ('owner', 'admin', 'system')`,
+    }),
+  ],
+);
 
-// Active states are the operational pipeline; the three terminal sinks
-// (discarded, rejected, voided) are forward-only exits enforced by the
-// orders_forward_status trigger. Reverts happen by duplicating into a
-// new draft, never by walking back. 'closed' is a holding step
-// between invoiced and the terminal 'archived' --- post-fulfillment but
-// not yet filed away. 'discarded' is a draft thrown away by its
-// author (soft delete kept for audit); a true 'deleted' admin operation
-// would be a separate, harder action layered on top later. 'rejected'
-// is a submitted order that won't be fulfilled.
 export const orderStatus = pgEnum("order_status", [
   "drafted",
   "submitted",
@@ -75,18 +78,10 @@ export const orders = pgTable(
     createdAt: epochMs("created_at"),
   },
   (table) => [
-    // Cursor-paginated newest-first reads. The (created_at, id) tuple
-    // matches the WHERE clause in findOrdersPage and the matching
-    // ORDER BY direction, so Postgres serves both filtering and
-    // sorting from one index walk.
     index("orders_created_at_id_idx").on(
       table.createdAt.desc(),
       table.id.desc(),
     ),
-    // Operational view: only active rows, kept compact regardless of
-    // how big the terminal-state archive grows. 'closed' is the
-    // post-fulfillment holding step and counts as active until it
-    // graduates to the terminal 'archived'.
     index("orders_active_idx")
       .on(table.createdAt.desc(), table.id.desc())
       .where(
@@ -96,6 +91,56 @@ export const orders = pgTable(
       columns: [table.duplicatedFromOrderId],
       foreignColumns: [table.id],
       name: "orders_duplicated_from_fk",
+    }),
+
+    // SELECT: internal roles see all rows
+    pgPolicy("orders_select_internal", {
+      for: "select",
+      to: authenticatedRole,
+      using: sql`(auth.jwt() ->> 'user_role') IN ('owner', 'admin', 'member', 'system')`,
+    }),
+    // SELECT: guests see only rows they created
+    pgPolicy("orders_select_guest", {
+      for: "select",
+      to: authenticatedRole,
+      using: sql`
+        (auth.jwt() ->> 'user_role') = 'guest'
+        AND ${table.createdBy} = auth.uid()
+      `,
+    }),
+    // INSERT: must set created_by to self
+    pgPolicy("orders_insert", {
+      for: "insert",
+      to: authenticatedRole,
+      withCheck: sql`
+        (auth.jwt() ->> 'user_role') IN ('guest', 'member', 'admin', 'owner')
+        AND ${table.createdBy} = auth.uid()
+      `,
+    }),
+    // UPDATE: owner/admin can update any order
+    pgPolicy("orders_update_privileged", {
+      for: "update",
+      to: authenticatedRole,
+      using: sql`(auth.jwt() ->> 'user_role') IN ('owner', 'admin')`,
+    }),
+    // UPDATE: member can update only their own orders
+    pgPolicy("orders_update_member", {
+      for: "update",
+      to: authenticatedRole,
+      using: sql`
+        (auth.jwt() ->> 'user_role') = 'member'
+        AND ${table.createdBy} = auth.uid()
+      `,
+    }),
+    // UPDATE: guest can update only their own drafted orders
+    pgPolicy("orders_update_guest", {
+      for: "update",
+      to: authenticatedRole,
+      using: sql`
+        (auth.jwt() ->> 'user_role') = 'guest'
+        AND ${table.createdBy} = auth.uid()
+        AND ${table.status} = 'drafted'
+      `,
     }),
   ],
 );
@@ -118,20 +163,49 @@ export const orderStatusHistory = pgTable(
       table.orderId,
       table.changedAt,
     ),
+
+    // SELECT: internal roles see all history
+    pgPolicy("osh_select_internal", {
+      for: "select",
+      to: authenticatedRole,
+      using: sql`(auth.jwt() ->> 'user_role') IN ('owner', 'admin', 'member', 'system')`,
+    }),
+    // SELECT: guests see history for their own orders only
+    pgPolicy("osh_select_guest", {
+      for: "select",
+      to: authenticatedRole,
+      using: sql`
+        (auth.jwt() ->> 'user_role') = 'guest'
+        AND ${table.orderId} IN (
+          SELECT id FROM orders WHERE created_by = auth.uid()
+        )
+      `,
+    }),
+    // INSERT: roles that can transition or discard
+    pgPolicy("osh_insert", {
+      for: "insert",
+      to: authenticatedRole,
+      withCheck: sql`
+        (auth.jwt() ->> 'user_role') IN ('guest', 'member', 'admin', 'owner')
+      `,
+    }),
   ],
 );
 
-// Trigger-maintained counter table: one row per status, holding the
-// live count. Reads are O(1) lookups against eight rows; writes happen
-// inside an AFTER trigger on `orders` so the kanban column counts stay
-// honest without anyone running a GROUP BY scan on every refresh. The
-// table is also part of the supabase_realtime publication so deltas
-// stream straight into the browser instead of being polled.
 export const orderStatusCounts = pgTable(
   "order_status_counts",
   {
     status: orderStatus("status").notNull(),
     count: bigint("count", { mode: "number" }).notNull().default(0),
   },
-  (table) => [primaryKey({ columns: [table.status] })],
+  (table) => [
+    primaryKey({ columns: [table.status] }),
+
+    // Aggregate data, safe for all authenticated users
+    pgPolicy("osc_select", {
+      for: "select",
+      to: authenticatedRole,
+      using: sql`true`,
+    }),
+  ],
 );

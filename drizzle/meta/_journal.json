@@ -183,6 +183,13 @@
       "when": 1747267200000,
       "tag": "0025_add_email_to_profiles",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1779764485184,
+      "tag": "0026_needy_hairball",
+      "breakpoints": true
     }
   ]
 }
