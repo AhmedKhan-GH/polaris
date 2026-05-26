@@ -48,6 +48,7 @@ export function defineAbilityFor(role: UserRole): AppAbility {
       break
 
     case 'system':
+      can('read', 'Order')
       can('manage', 'Settings')
       break
   }
