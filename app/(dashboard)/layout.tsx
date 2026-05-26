@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { getProfile } from '@/lib/profile'
 import { AppTopBar } from '@/app/_features/shell/AppTopBar'
+import { AbilityProvider } from '@/lib/permissions/hooks'
 
 export default async function DashboardLayout({
   children,
@@ -13,7 +14,9 @@ export default async function DashboardLayout({
   return (
     <div className="flex h-full flex-col">
       <AppTopBar />
-      <main className="flex min-h-0 flex-1 flex-col">{children}</main>
+      <AbilityProvider role={profile.role}>
+        <main className="flex min-h-0 flex-1 flex-col">{children}</main>
+      </AbilityProvider>
     </div>
   )
 }
