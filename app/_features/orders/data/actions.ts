@@ -1,7 +1,8 @@
 'use server'
 
+import { z } from 'zod'
 import { log } from '@/lib/log'
-import { type Order, type OrderStatus } from '@/lib/domain/order'
+import { type Order, ORDER_STATUSES } from '@/lib/domain/order'
 import {
   countFilteredOrders,
   countFilteredOrdersByStatus,
@@ -14,14 +15,52 @@ import {
   findOrdersPage,
   findOrdersPageByStatus,
   transitionOrderStatus,
-  type OrderFilters,
   type OrderStatusCounts,
-  type OrdersCursor,
 } from '@/lib/db/orderRepository'
 import { createOrder } from '@/lib/services/orderService'
 import { getServerSupabase } from '@/lib/supabase/server'
 import { getAllowedTransitions } from '@/lib/permissions/abilities'
 import { withPermission } from '@/lib/permissions/guard'
+
+const orderStatusSchema = z.enum(ORDER_STATUSES)
+
+const cursorSchema = z
+  .object({
+    createdAt: z.number().int(),
+    id: z.string().uuid(),
+  })
+  .nullable()
+
+const limitSchema = z.number().int().min(1).max(100)
+
+const filtersSchema = z.object({
+  statuses: z.array(orderStatusSchema).optional(),
+  createdBy: z.string().uuid().optional(),
+  createdFrom: z.number().int().optional(),
+  createdTo: z.number().int().optional(),
+})
+
+const dateFiltersSchema = z
+  .object({
+    createdFrom: z.number().int().optional(),
+    createdTo: z.number().int().optional(),
+  })
+  .optional()
+
+const transitionInput = z.object({
+  orderId: z.string().uuid(),
+  toStatus: orderStatusSchema,
+  reason: z.string().max(1000).optional(),
+})
+
+const discardInput = z.object({
+  orderId: z.string().uuid(),
+  reason: z.string().max(1000).optional(),
+})
+
+const duplicateInput = z.object({
+  sourceOrderId: z.string().uuid(),
+})
 
 async function getActorId(): Promise<string | null> {
   const supabase = await getServerSupabase()
@@ -44,9 +83,12 @@ export async function createOrderAction(): Promise<Order> {
 }
 
 export async function findOrdersPageAction(
-  cursor: OrdersCursor | null,
-  limit: number,
+  rawCursor: unknown,
+  rawLimit: unknown,
 ): Promise<Order[]> {
+  const cursor = cursorSchema.parse(rawCursor)
+  const limit = limitSchema.parse(rawLimit)
+
   return withPermission('read', 'Order', async ({ profile }) => {
     if (profile.role === 'guest') {
       return await findFilteredOrdersPage({ createdBy: profile.id }, cursor, limit)
@@ -56,14 +98,19 @@ export async function findOrdersPageAction(
 }
 
 export async function findOrdersPageByStatusAction(
-  status: OrderStatus,
-  cursor: OrdersCursor | null,
-  limit: number,
-  dateFilters?: { createdFrom?: number; createdTo?: number },
+  rawStatus: unknown,
+  rawCursor: unknown,
+  rawLimit: unknown,
+  rawDateFilters?: unknown,
 ): Promise<Order[]> {
+  const status = orderStatusSchema.parse(rawStatus)
+  const cursor = cursorSchema.parse(rawCursor)
+  const limit = limitSchema.parse(rawLimit)
+  const dateFilters = dateFiltersSchema.parse(rawDateFilters)
+
   return withPermission('read', 'Order', async ({ profile }) => {
-    const filters: OrderFilters = { statuses: [status], ...dateFilters }
-    if (profile.role === 'guest') filters.createdBy = profile.id
+    const filters = { statuses: [status] as const, ...dateFilters }
+    if (profile.role === 'guest') (filters as any).createdBy = profile.id
 
     if (!dateFilters?.createdFrom && !dateFilters?.createdTo && profile.role !== 'guest') {
       return await findOrdersPageByStatus(status, cursor, limit)
@@ -74,10 +121,14 @@ export async function findOrdersPageByStatusAction(
 }
 
 export async function findFilteredOrdersPageAction(
-  filters: OrderFilters,
-  cursor: OrdersCursor | null,
-  limit: number,
+  rawFilters: unknown,
+  rawCursor: unknown,
+  rawLimit: unknown,
 ): Promise<Order[]> {
+  const filters = filtersSchema.parse(rawFilters)
+  const cursor = cursorSchema.parse(rawCursor)
+  const limit = limitSchema.parse(rawLimit)
+
   return withPermission('read', 'Order', async ({ profile }) => {
     if (profile.role === 'guest') {
       return await findFilteredOrdersPage({ ...filters, createdBy: profile.id }, cursor, limit)
@@ -96,8 +147,10 @@ export async function countOrdersAction(): Promise<number> {
 }
 
 export async function countFilteredOrdersAction(
-  filters: OrderFilters,
+  rawFilters: unknown,
 ): Promise<number> {
+  const filters = filtersSchema.parse(rawFilters)
+
   return withPermission('read', 'Order', async ({ profile }) => {
     if (profile.role === 'guest') {
       return await countFilteredOrders({ ...filters, createdBy: profile.id })
@@ -107,8 +160,10 @@ export async function countFilteredOrdersAction(
 }
 
 export async function countFilteredOrdersByStatusAction(
-  filters: OrderFilters,
+  rawFilters: unknown,
 ): Promise<OrderStatusCounts> {
+  const filters = filtersSchema.parse(rawFilters)
+
   return withPermission('read', 'Order', async ({ profile }) => {
     if (profile.role === 'guest') {
       return await countFilteredOrdersByStatus({ ...filters, createdBy: profile.id })
@@ -126,11 +181,9 @@ export async function countOrdersByStatusAction(): Promise<OrderStatusCounts> {
   })
 }
 
-export async function transitionOrderAction(args: {
-  orderId: string
-  toStatus: OrderStatus
-  reason?: string
-}): Promise<Order> {
+export async function transitionOrderAction(rawArgs: unknown): Promise<Order> {
+  const args = transitionInput.parse(rawArgs)
+
   return withPermission('transition', 'Order', async ({ profile }) => {
     const order = await findOrderById(args.orderId)
     if (!order) throw new Error('Order not found')
@@ -158,10 +211,9 @@ export async function transitionOrderAction(args: {
   })
 }
 
-export async function discardDraftOrderAction(args: {
-  orderId: string
-  reason?: string
-}): Promise<Order> {
+export async function discardDraftOrderAction(rawArgs: unknown): Promise<Order> {
+  const args = discardInput.parse(rawArgs)
+
   return withPermission('discard', 'Order', async ({ profile }) => {
     const order = await findOrderById(args.orderId)
     if (!order) throw new Error('Order not found')
@@ -185,9 +237,9 @@ export async function discardDraftOrderAction(args: {
   })
 }
 
-export async function duplicateOrderAction(args: {
-  sourceOrderId: string
-}): Promise<Order> {
+export async function duplicateOrderAction(rawArgs: unknown): Promise<Order> {
+  const args = duplicateInput.parse(rawArgs)
+
   return withPermission('duplicate', 'Order', async () => {
     const actor = await getActorId()
     try {

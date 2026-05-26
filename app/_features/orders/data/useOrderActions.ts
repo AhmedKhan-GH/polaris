@@ -191,7 +191,8 @@ export function useOrderActions(): UseOrderActionsResult {
   const queryClient = useQueryClient()
 
   const transition = useMutation({
-    mutationFn: transitionOrderAction,
+    mutationFn: (args: { orderId: string; toStatus: OrderStatus; reason?: string }) =>
+      transitionOrderAction(args),
     onMutate: (args) =>
       applyOptimisticTransition(queryClient, args.orderId, args.toStatus),
     onError: (_err, _args, ctx) => {
@@ -200,7 +201,8 @@ export function useOrderActions(): UseOrderActionsResult {
   })
 
   const discardDraft = useMutation({
-    mutationFn: discardDraftOrderAction,
+    mutationFn: (args: { orderId: string; reason?: string }) =>
+      discardDraftOrderAction(args),
     onMutate: (args) =>
       applyOptimisticTransition(queryClient, args.orderId, 'discarded'),
     onError: (_err, _args, ctx) => {

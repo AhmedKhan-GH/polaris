@@ -1,35 +1,46 @@
 'use server'
 
+import { z } from 'zod'
 import { db } from '@/lib/db'
 import { profiles } from '@/lib/schema'
-import { type UserRole } from '@/lib/profile'
 import { getServiceRoleSupabase } from '@/lib/supabase/server'
 import { withPermission } from '@/lib/permissions/guard'
 
-const ALLOWED_ROLES: UserRole[] = ['owner', 'admin', 'member', 'guest']
+const createAccountSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(6),
+  confirmPassword: z.string().min(6),
+  role: z.enum(['owner', 'admin', 'member', 'guest']),
+}).refine((d) => d.password === d.confirmPassword, {
+  message: 'Passwords do not match',
+  path: ['confirmPassword'],
+})
+
+const resetPasswordSchema = z.object({
+  userId: z.string().uuid(),
+  password: z.string().min(6),
+  confirmPassword: z.string().min(6),
+}).refine((d) => d.password === d.confirmPassword, {
+  message: 'Passwords do not match',
+  path: ['confirmPassword'],
+})
+
+function formDataToObject(formData: FormData): Record<string, string> {
+  const obj: Record<string, string> = {}
+  formData.forEach((value, key) => {
+    obj[key] = String(value)
+  })
+  return obj
+}
 
 export async function createAccountAction(formData: FormData): Promise<{ error?: string }> {
+  const parsed = createAccountSchema.safeParse(formDataToObject(formData))
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0].message }
+  }
+
   return withPermission('manage', 'Settings', async () => {
-    const email = formData.get('email') as string | null
-    const password = formData.get('password') as string | null
-    const confirmPassword = formData.get('confirmPassword') as string | null
-    const role = formData.get('role') as UserRole | null
-
-    if (!email || !password || !confirmPassword || !role) {
-      return { error: 'Email, password, and role are required' }
-    }
-
-    if (password !== confirmPassword) {
-      return { error: 'Passwords do not match' }
-    }
-
-    if (password.length < 6) {
-      return { error: 'Password must be at least 6 characters' }
-    }
-
-    if (!ALLOWED_ROLES.includes(role)) {
-      return { error: 'Invalid role' }
-    }
+    const { email, password, role } = parsed.data
 
     const supabase = getServiceRoleSupabase()
 
@@ -50,22 +61,13 @@ export async function createAccountAction(formData: FormData): Promise<{ error?:
 }
 
 export async function resetPasswordAction(formData: FormData): Promise<{ error?: string }> {
+  const parsed = resetPasswordSchema.safeParse(formDataToObject(formData))
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0].message }
+  }
+
   return withPermission('manage', 'Settings', async () => {
-    const userId = formData.get('userId') as string | null
-    const password = formData.get('password') as string | null
-    const confirmPassword = formData.get('confirmPassword') as string | null
-
-    if (!userId || !password || !confirmPassword) {
-      return { error: 'User and password are required' }
-    }
-
-    if (password !== confirmPassword) {
-      return { error: 'Passwords do not match' }
-    }
-
-    if (password.length < 6) {
-      return { error: 'Password must be at least 6 characters' }
-    }
+    const { userId, password } = parsed.data
 
     const supabase = getServiceRoleSupabase()
 
