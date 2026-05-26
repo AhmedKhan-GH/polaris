@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { getProfile } from '@/lib/profile'
-import { defineAbilityFor } from '@/lib/abilities'
+import { defineAbilityFor } from '@/lib/permissions/abilities'
 
 interface AppTile {
   label: string

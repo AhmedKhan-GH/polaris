@@ -1,7 +1,7 @@
 import { sql } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { type UserRole } from '@/lib/profile'
-import { defineAbilityFor } from '@/lib/abilities'
+import { defineAbilityFor } from '@/lib/permissions/abilities'
 import { ROLE_LABELS, ROLE_BADGE_COLORS } from '@/lib/roles'
 import { CreateAccountForm } from './CreateAccountForm'
 import { ResetPasswordButton } from './ResetPasswordButton'

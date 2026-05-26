@@ -20,7 +20,7 @@ import {
 } from '../../../_features/orders/data/queryKeys'
 import { OrdersShell } from '../../../_features/orders/views/OrdersShell'
 import { getProfile } from '@/lib/profile'
-import { defineAbilityFor } from '@/lib/abilities'
+import { defineAbilityFor } from '@/lib/permissions/abilities'
 
 export default async function OrdersPage() {
   const profile = await getProfile()

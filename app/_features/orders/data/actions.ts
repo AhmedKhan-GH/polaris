@@ -22,7 +22,7 @@ import {
 import { createOrder } from '@/lib/services/orderService'
 import { getServerSupabase } from '@/lib/supabase/server'
 import { getProfile } from '@/lib/profile'
-import { defineAbilityFor, getAllowedTransitions } from '@/lib/abilities'
+import { defineAbilityFor, getAllowedTransitions } from '@/lib/permissions/abilities'
 
 async function getActorId(): Promise<string | null> {
   const supabase = await getServerSupabase()

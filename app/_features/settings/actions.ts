@@ -4,7 +4,7 @@ import { ForbiddenError } from '@casl/ability'
 import { db } from '@/lib/db'
 import { profiles } from '@/lib/schema'
 import { getProfile, type UserRole } from '@/lib/profile'
-import { defineAbilityFor } from '@/lib/abilities'
+import { defineAbilityFor } from '@/lib/permissions/abilities'
 import { getServiceRoleSupabase } from '@/lib/supabase/server'
 
 const ALLOWED_ROLES: UserRole[] = ['owner', 'admin', 'member', 'guest']

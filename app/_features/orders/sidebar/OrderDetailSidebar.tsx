@@ -8,7 +8,7 @@ import {
   type OrderStatus,
 } from '@/lib/domain/order'
 import type { UserRole } from '@/lib/profile'
-import { getAllowedTransitions, canDuplicate } from '@/lib/abilities'
+import { getAllowedTransitions, canDuplicate } from '@/lib/permissions/abilities'
 import { usePreferences } from '../../preferences/PreferencesProvider'
 import { StatusPill } from '../shared/StatusPill'
 import {
