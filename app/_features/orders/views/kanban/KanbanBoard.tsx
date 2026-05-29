@@ -7,10 +7,10 @@ import { KanbanBoardShell } from './KanbanBoardShell'
 import { KanbanColumn } from './KanbanColumn'
 
 const ALL_COLUMNS: ReadonlyArray<{ name: string; status: OrderStatus }> = [
-  { name: 'Drafted',   status: 'drafted' },
-  { name: 'Submitted', status: 'submitted' },
-  { name: 'Invoiced',  status: 'invoiced' },
-  { name: 'Closed',    status: 'closed' },
+  { name: 'Draft',      status: 'draft' },
+  { name: 'Confirmed',  status: 'confirmed' },
+  { name: 'Processing', status: 'processing' },
+  { name: 'Fulfilled',  status: 'fulfilled' },
 ]
 
 export function KanbanBoard({

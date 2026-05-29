@@ -20,30 +20,26 @@ const CONFIRM_BUTTON_BASE =
   'rounded border px-3 py-1.5 text-xs font-medium disabled:cursor-wait disabled:opacity-60'
 
 const ACTION_LABELS: Record<OrderStatus, string> = {
-  drafted: 'Draft',
-  submitted: 'Submit',
-  invoiced: 'Invoice',
+  draft: 'Draft',
+  confirmed: 'Confirm',
+  processing: 'Process',
+  fulfilled: 'Fulfill',
   closed: 'Close',
-  archived: 'Archive',
-  discarded: 'Discard',
-  rejected: 'Reject',
-  voided: 'Void',
+  cancelled: 'Cancel',
 }
 
 const ACTION_DESCRIPTIONS: Record<OrderStatus, string> = {
-  drafted: '',
-  submitted: 'This submits the order to administrators for final review and approval before invoicing.',
-  invoiced: 'This invoices the order to accounting and operational staff for billing and fulfillment.',
-  closed: 'This marks the order as closed, files it with administrators for records processing, and queues it for archiving.',
-  archived: 'This archives the closed order and removes it from the active pipeline.',
-  discarded: 'Discarding is for users to abandon the drafting of an order.',
-  rejected: 'Rejection is for admins to disregard the submission of an order.',
-  voided: 'Voiding is for the accountable cancellation of an active invoice.',
+  draft: '',
+  confirmed: 'This confirms the order and locks it for processing.',
+  processing: 'This moves the order into active processing and fulfillment.',
+  fulfilled: 'This marks all items as delivered.',
+  closed: 'This closes the order. Payment is settled and all items are delivered.',
+  cancelled: 'This cancels the order. A reason will be recorded in the audit history.',
 }
 
 export function OrderDetailPanel({ order, role = 'owner' }: { order: Order; role?: UserRole }) {
   const { timezone, hour12 } = usePreferences()
-  const { transition, discardDraft, duplicate, isPending, error } =
+  const { transition, cancel, duplicate, isPending, error } =
     useOrderActions()
   const [pendingAction, setPendingAction] = useState<OrderStatus | 'duplicate' | null>(null)
 
@@ -57,8 +53,8 @@ export function OrderDetailPanel({ order, role = 'owner' }: { order: Order; role
   }, [pendingAction])
 
   const transitions = getAllowedTransitions(role, order.status)
-  const primaryAction = transitions.find((s) => s !== 'discarded' && s !== 'rejected' && s !== 'voided' && s !== 'archived') ?? null
-  const terminalAction = transitions.find((s) => s === 'discarded' || s === 'rejected' || s === 'voided' || s === 'archived') ?? null
+  const primaryAction = transitions.find((s) => s !== 'cancelled' && s !== 'draft') ?? null
+  const terminalAction = transitions.find((s) => s === 'cancelled') ?? null
   const showDuplicate = canDuplicate(role)
 
   async function handleConfirm() {
@@ -66,8 +62,8 @@ export function OrderDetailPanel({ order, role = 'owner' }: { order: Order; role
     setPendingAction(null)
     if (pendingAction === 'duplicate') {
       await duplicate({ sourceOrderId: order.id }).catch(() => {})
-    } else if (pendingAction === 'discarded') {
-      await discardDraft({ orderId: order.id }).catch(() => {})
+    } else if (pendingAction === 'cancelled') {
+      await cancel({ orderId: order.id }).catch(() => {})
     } else {
       await transition({ orderId: order.id, toStatus: pendingAction }).catch(() => {})
     }
@@ -147,7 +143,7 @@ export function OrderDetailPanel({ order, role = 'owner' }: { order: Order; role
                 type="button"
                 disabled={isPending}
                 onClick={() => setPendingAction('duplicate')}
-                className={`${ACTION_BUTTON} w-full ${STATUS_BUTTON_TONES.drafted}`}
+                className={`${ACTION_BUTTON} w-full ${STATUS_BUTTON_TONES.draft}`}
               >
                 Duplicate
               </button>
@@ -180,7 +176,7 @@ export function OrderDetailPanel({ order, role = 'owner' }: { order: Order; role
           <div
             onClick={(e) => e.stopPropagation()}
             className={`w-full max-w-sm rounded-lg border ${
-              STATUS_PANEL_BORDER_TONES[pendingAction === 'duplicate' ? 'drafted' : pendingAction]
+              STATUS_PANEL_BORDER_TONES[pendingAction === 'duplicate' ? 'draft' : pendingAction]
             } bg-zinc-900 p-4 shadow-2xl`}
           >
             <h3
@@ -200,9 +196,9 @@ export function OrderDetailPanel({ order, role = 'owner' }: { order: Order; role
             )}
             <p className="mt-2 text-xs text-zinc-400">
               {pendingAction === 'duplicate'
-                ? 'This creates a new order in drafted status, linked back to this one. The original order is unchanged.'
+                ? 'This creates a new order in draft status, linked back to this one. The original order is unchanged.'
                 : ACTION_DESCRIPTIONS[pendingAction]}{' '}
-              {pendingAction !== 'duplicate' && (
+              {pendingAction !== 'duplicate' && pendingAction !== 'confirmed' && pendingAction !== 'draft' && (
                 <span className="font-medium text-zinc-200">
                   This action is final and cannot be reversed.
                 </span>
@@ -215,7 +211,7 @@ export function OrderDetailPanel({ order, role = 'owner' }: { order: Order; role
                 onClick={() => setPendingAction(null)}
                 className="rounded border border-zinc-700 bg-transparent px-3 py-1.5 text-xs font-medium text-zinc-200 hover:bg-zinc-800 disabled:cursor-wait disabled:opacity-60"
               >
-                Cancel
+                Go Back
               </button>
               <button
                 type="button"
@@ -223,7 +219,7 @@ export function OrderDetailPanel({ order, role = 'owner' }: { order: Order; role
                 onClick={handleConfirm}
                 autoFocus
                 className={`${CONFIRM_BUTTON_BASE} ${
-                  STATUS_BUTTON_TONES[pendingAction === 'duplicate' ? 'drafted' : pendingAction]
+                  STATUS_BUTTON_TONES[pendingAction === 'duplicate' ? 'draft' : pendingAction]
                 }`}
               >
                 {pendingAction === 'duplicate' ? 'Duplicate' : ACTION_LABELS[pendingAction]}

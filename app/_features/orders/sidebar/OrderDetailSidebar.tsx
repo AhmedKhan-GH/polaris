@@ -24,14 +24,12 @@ interface ActionConfig {
 }
 
 const ACTION_DESCRIPTIONS: Record<OrderStatus, string> = {
-  drafted:   '',
-  submitted: 'This submits the order to administrators for final review and approval before invoicing.',
-  invoiced:  'This invoices the order to accounting and operational staff for billing and fulfillment.',
-  closed:    'This marks the order as closed, files it with administrators for records processing, and queues it for archiving.',
-  archived:  'This archives the closed order and removes it from the active pipeline.',
-  discarded: 'Discarding is for users to abandon the drafting of an order.',
-  rejected:  'Rejection is for admins to disregard the submission of an order.',
-  voided:    'Voiding is for the accountable cancellation of an active invoice.',
+  draft:      '',
+  confirmed:  'This confirms the order and locks it for processing.',
+  processing: 'This moves the order into active processing and fulfillment.',
+  fulfilled:  'This marks all items as delivered.',
+  closed:     'This closes the order. Payment is settled and all items are delivered.',
+  cancelled:  'This cancels the order. A reason will be recorded in the audit history.',
 }
 
 const ACTION_BUTTON_BASE =
@@ -44,25 +42,25 @@ const CONFIRM_BUTTON_BASE =
 // come from the destination status so the action, confirmation, and
 // resulting badge stay visually aligned.
 const ACTIONS_BY_STATUS: Record<OrderStatus, ActionConfig[]> = {
-  drafted: [
-    { label: 'Submit',   toStatus: 'submitted', tone: 'primary' },
-    { label: 'Discard',  toStatus: 'discarded', tone: 'terminal' },
+  draft: [
+    { label: 'Confirm',  toStatus: 'confirmed', tone: 'primary' },
+    { label: 'Cancel',   toStatus: 'cancelled', tone: 'terminal' },
   ],
-  submitted: [
-    { label: 'Invoice',  toStatus: 'invoiced',  tone: 'primary' },
-    { label: 'Reject',   toStatus: 'rejected',  tone: 'terminal' },
+  confirmed: [
+    { label: 'Revert to Draft', toStatus: 'draft', tone: 'terminal' },
+    { label: 'Process', toStatus: 'processing', tone: 'primary' },
+    { label: 'Cancel',  toStatus: 'cancelled',  tone: 'terminal' },
   ],
-  invoiced: [
-    { label: 'Close',    toStatus: 'closed',   tone: 'primary' },
-    { label: 'Void',     toStatus: 'voided',   tone: 'terminal' },
+  processing: [
+    { label: 'Fulfill', toStatus: 'fulfilled', tone: 'primary' },
+    { label: 'Cancel',  toStatus: 'cancelled', tone: 'terminal' },
   ],
-  closed: [
-    { label: 'Archive',  toStatus: 'archived', tone: 'terminal' },
+  fulfilled: [
+    { label: 'Close', toStatus: 'closed', tone: 'primary' },
+    { label: 'Cancel', toStatus: 'cancelled', tone: 'terminal' },
   ],
-  archived:  [],
-  discarded: [],
-  rejected:  [],
-  voided:    [],
+  closed:    [],
+  cancelled: [],
 }
 
 export function OrderDetailSidebar({
@@ -104,7 +102,7 @@ function SidebarBody({
   onClose: () => void
   role: UserRole
 }) {
-  const { transition, discardDraft, duplicate, isPending, error } =
+  const { transition, cancel, duplicate, isPending, error } =
     useOrderActions()
   const { timezone, hour12 } = usePreferences()
 
@@ -136,8 +134,8 @@ function SidebarBody({
 
   async function runTransition(action: ActionConfig): Promise<boolean> {
     try {
-      if (action.toStatus === 'discarded') {
-        await discardDraft({ orderId: order.id })
+      if (action.toStatus === 'cancelled') {
+        await cancel({ orderId: order.id })
       } else {
         await transition({
           orderId: order.id,
@@ -246,7 +244,7 @@ function SidebarBody({
                 type="button"
                 disabled={isPending}
                 onClick={() => setDuplicatePending(true)}
-                className={`${ACTION_BUTTON_BASE} ${STATUS_BUTTON_TONES.drafted}`}
+                className={`${ACTION_BUTTON_BASE} ${STATUS_BUTTON_TONES.draft}`}
               >
                 Duplicate
               </button>
@@ -311,7 +309,7 @@ function ConfirmDuplicateModal({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className={`w-full rounded-lg border ${STATUS_PANEL_BORDER_TONES.drafted} bg-zinc-900 p-4 shadow-2xl`}
+        className={`w-full rounded-lg border ${STATUS_PANEL_BORDER_TONES.draft} bg-zinc-900 p-4 shadow-2xl`}
       >
         <h3
           id="confirm-duplicate-title"
@@ -320,7 +318,7 @@ function ConfirmDuplicateModal({
           Duplicate order #{orderNumber}?
         </h3>
         <p className="mt-2 text-xs text-zinc-400">
-          This creates a new order in <span className="font-medium text-zinc-200">drafted</span> status, linked back to this one. The original order is unchanged.
+          This creates a new order in <span className="font-medium text-zinc-200">draft</span> status, linked back to this one. The original order is unchanged.
         </p>
         <div className="mt-4 flex justify-between gap-2">
           <button
@@ -329,14 +327,14 @@ function ConfirmDuplicateModal({
             onClick={onCancel}
             className="rounded border border-zinc-700 bg-transparent px-3 py-1.5 text-xs font-medium text-zinc-200 hover:bg-zinc-800 disabled:cursor-wait disabled:opacity-60"
           >
-            Cancel
+            Go Back
           </button>
           <button
             type="button"
             disabled={isPending}
             onClick={onConfirm}
             autoFocus
-            className={`${CONFIRM_BUTTON_BASE} ${STATUS_BUTTON_TONES.drafted}`}
+            className={`${CONFIRM_BUTTON_BASE} ${STATUS_BUTTON_TONES.draft}`}
           >
             Duplicate
           </button>
@@ -399,9 +397,11 @@ function ConfirmActionModal({
         </div>
         <p className="mt-2 text-xs text-zinc-400">
           {bodyCopy}{' '}
-          <span className="font-medium text-zinc-200">
-            This action is final and cannot be reversed.
-          </span>
+          {action.toStatus !== 'confirmed' && action.toStatus !== 'draft' && (
+            <span className="font-medium text-zinc-200">
+              This action is final and cannot be reversed.
+            </span>
+          )}
         </p>
         <div className="mt-4 flex justify-between gap-2">
           <button
@@ -410,7 +410,7 @@ function ConfirmActionModal({
             onClick={onCancel}
             className="rounded border border-zinc-700 bg-transparent px-3 py-1.5 text-xs font-medium text-zinc-200 hover:bg-zinc-800 disabled:cursor-wait disabled:opacity-60"
           >
-            Cancel
+            Go Back
           </button>
           <button
             type="button"
