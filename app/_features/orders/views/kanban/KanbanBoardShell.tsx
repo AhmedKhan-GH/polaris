@@ -3,10 +3,8 @@ import { ArrowRightIcon } from '@heroicons/react/24/outline'
 
 // Transition labels sit at the top of each column, naming the action
 // that moves cards out of that column into the next one. Index N = label
-// above column N. The Closed column's outbound move archives the order
-// into the terminal 'archived' state, which is hidden from the kanban
-// (visible in the list only); the trailing cabinet icon stands in
-// for that destination column since it isn't drawn here.
+// above column N. Terminal states (closed, cancelled) are not shown as
+// columns — they are visible in the list and detail views only.
 const ArchiveCabinetIcon = () => (
   <svg
     aria-hidden

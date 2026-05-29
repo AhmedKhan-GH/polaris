@@ -12,7 +12,7 @@ const MIGRATIONS_FOLDER = path.resolve(__dirname, '..', '..', '..', '..', 'drizz
 
 const ACTOR_DEFAULT = '11111111-1111-1111-1111-111111111111'
 const ACTOR_TRANSITION = '22222222-2222-2222-2222-222222222222'
-const ACTOR_DISCARD = '33333333-3333-3333-3333-333333333333'
+const ACTOR_CANCEL = '33333333-3333-3333-3333-333333333333'
 
 const {
   getServerSupabaseMock,
@@ -96,7 +96,7 @@ describe('orders/data/actions (integration)', () => {
     test('persists a fresh draft and returns the new order', async () => {
       const order = await actions.createOrderAction()
 
-      expect(order.status).toBe('drafted')
+      expect(order.status).toBe('draft')
       expect(order.orderNumber).toBe(1_000_000)
 
       const reloaded = await repo.findOrderById(order.id)
@@ -145,11 +145,11 @@ describe('orders/data/actions (integration)', () => {
       const submitted = await actions.createOrderAction()
       await actions.transitionOrderAction({
         orderId: submitted.id,
-        toStatus: 'submitted',
+        toStatus: 'confirmed',
       })
 
-      const drafts = await actions.findOrdersPageByStatusAction('drafted', null, 50)
-      const submitteds = await actions.findOrdersPageByStatusAction('submitted', null, 50)
+      const drafts = await actions.findOrdersPageByStatusAction('draft', null, 50)
+      const submitteds = await actions.findOrdersPageByStatusAction('confirmed', null, 50)
 
       expect(drafts.map((o) => o.id)).toEqual([draft.id])
       expect(submitteds.map((o) => o.id)).toEqual([submitted.id])
@@ -163,11 +163,11 @@ describe('orders/data/actions (integration)', () => {
       const submittedB = await actions.createOrderAction()
       await actions.transitionOrderAction({
         orderId: submittedA.id,
-        toStatus: 'submitted',
+        toStatus: 'confirmed',
       })
       await actions.transitionOrderAction({
         orderId: submittedB.id,
-        toStatus: 'submitted',
+        toStatus: 'confirmed',
       })
       await pool.query('UPDATE orders SET created_at = $1 WHERE id = $2', [
         Date.parse('2026-04-19T09:00:00Z'),
@@ -183,7 +183,7 @@ describe('orders/data/actions (integration)', () => {
       ])
 
       const filters = {
-        statuses: ['submitted'] as const,
+        statuses: ['confirmed'] as const,
         createdFrom: Date.parse('2026-04-19T00:00:00Z'),
         createdTo: Date.parse('2026-04-19T23:59:59.999Z'),
       }
@@ -195,8 +195,8 @@ describe('orders/data/actions (integration)', () => {
 
       expect(page.map((o) => o.id)).toEqual([submittedB.id])
       expect(count).toBe(2)
-      expect(countsByStatus.submitted).toBe(2)
-      expect(countsByStatus.drafted).toBe(0)
+      expect(countsByStatus.confirmed).toBe(2)
+      expect(countsByStatus.draft).toBe(0)
     })
   })
 
@@ -210,7 +210,7 @@ describe('orders/data/actions (integration)', () => {
       const second = await actions.createOrderAction()
       await actions.transitionOrderAction({
         orderId: second.id,
-        toStatus: 'submitted',
+        toStatus: 'confirmed',
       })
 
       await expect(actions.countOrdersAction()).resolves.toBe(2)
@@ -222,14 +222,14 @@ describe('orders/data/actions (integration)', () => {
       const a = await actions.createOrderAction()
       const b = await actions.createOrderAction()
       await actions.createOrderAction()
-      await actions.transitionOrderAction({ orderId: a.id, toStatus: 'submitted' })
-      await actions.discardDraftOrderAction({ orderId: b.id })
+      await actions.transitionOrderAction({ orderId: a.id, toStatus: 'confirmed' })
+      await actions.cancelOrderAction({ orderId: b.id })
 
       const counts = await actions.countOrdersByStatusAction()
 
-      expect(counts.drafted).toBe(1)
-      expect(counts.submitted).toBe(1)
-      expect(counts.discarded).toBe(1)
+      expect(counts.draft).toBe(1)
+      expect(counts.confirmed).toBe(1)
+      expect(counts.cancelled).toBe(1)
     })
   })
 
@@ -240,7 +240,7 @@ describe('orders/data/actions (integration)', () => {
 
       await actions.transitionOrderAction({
         orderId: order.id,
-        toStatus: 'submitted',
+        toStatus: 'confirmed',
         reason: 'ready',
       })
 
@@ -257,7 +257,7 @@ describe('orders/data/actions (integration)', () => {
 
       await actions.transitionOrderAction({
         orderId: order.id,
-        toStatus: 'submitted',
+        toStatus: 'confirmed',
       })
 
       const { rows } = await pool.query(
@@ -273,7 +273,7 @@ describe('orders/data/actions (integration)', () => {
       await expect(
         actions.transitionOrderAction({
           orderId: order.id,
-          toStatus: 'invoiced',
+          toStatus: 'processing',
         }),
       ).rejects.toBeInstanceOf(repo.InvalidTransitionError)
 
@@ -281,7 +281,7 @@ describe('orders/data/actions (integration)', () => {
         expect.objectContaining({
           err: expect.any(repo.InvalidTransitionError),
           orderId: order.id,
-          toStatus: 'invoiced',
+          toStatus: 'processing',
         }),
         'transitionOrderAction rejected',
       )
@@ -291,44 +291,44 @@ describe('orders/data/actions (integration)', () => {
       await expect(
         actions.transitionOrderAction({
           orderId: '00000000-0000-0000-0000-000000000000',
-          toStatus: 'submitted',
+          toStatus: 'confirmed',
         }),
       ).rejects.toBeInstanceOf(repo.OrderNotFoundError)
     })
   })
 
-  describe('discardDraftOrderAction', () => {
-    test('marks the draft as discarded and records the actor', async () => {
-      getUserMock.mockResolvedValue({ data: { user: { id: ACTOR_DISCARD } } })
+  describe('cancelOrderAction', () => {
+    test('marks the order as cancelled and records the actor', async () => {
+      getUserMock.mockResolvedValue({ data: { user: { id: ACTOR_CANCEL } } })
       const order = await actions.createOrderAction()
 
-      const discarded = await actions.discardDraftOrderAction({
+      const cancelled = await actions.cancelOrderAction({
         orderId: order.id,
         reason: 'duplicate',
       })
 
-      expect(discarded.status).toBe('discarded')
+      expect(cancelled.status).toBe('cancelled')
       const { rows } = await pool.query(
         'SELECT changed_by, reason FROM order_status_history WHERE order_id = $1',
         [order.id],
       )
-      expect(rows).toEqual([{ changed_by: ACTOR_DISCARD, reason: 'duplicate' }])
+      expect(rows).toEqual([{ changed_by: ACTOR_CANCEL, reason: 'duplicate' }])
     })
 
-    test('logs a warning and rethrows when discarding a non-draft order', async () => {
+    test('logs a warning and rethrows when cancelling a closed order', async () => {
       const order = await actions.createOrderAction()
-      await actions.transitionOrderAction({
-        orderId: order.id,
-        toStatus: 'submitted',
-      })
+      await actions.transitionOrderAction({ orderId: order.id, toStatus: 'confirmed' })
+      await actions.transitionOrderAction({ orderId: order.id, toStatus: 'processing' })
+      await actions.transitionOrderAction({ orderId: order.id, toStatus: 'fulfilled' })
+      await actions.transitionOrderAction({ orderId: order.id, toStatus: 'closed' })
 
       await expect(
-        actions.discardDraftOrderAction({ orderId: order.id }),
-      ).rejects.toBeInstanceOf(repo.InvalidTransitionError)
+        actions.cancelOrderAction({ orderId: order.id }),
+      ).rejects.toThrow()
 
       expect(warnMock).toHaveBeenCalledWith(
         expect.objectContaining({ orderId: order.id }),
-        'discardDraftOrderAction rejected',
+        'cancelOrderAction rejected',
       )
     })
   })
@@ -338,13 +338,13 @@ describe('orders/data/actions (integration)', () => {
       const source = await actions.createOrderAction()
       await actions.transitionOrderAction({
         orderId: source.id,
-        toStatus: 'submitted',
+        toStatus: 'confirmed',
       })
 
       const copy = await actions.duplicateOrderAction({ sourceOrderId: source.id })
 
       expect(copy.id).not.toBe(source.id)
-      expect(copy.status).toBe('drafted')
+      expect(copy.status).toBe('draft')
       expect(copy.duplicatedFromOrderId).toBe(source.id)
     })
 

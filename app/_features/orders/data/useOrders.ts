@@ -118,7 +118,7 @@ export function useOrders({ isGuest = false, profileId }: { isGuest?: boolean; p
               prependToCache(old, row),
             )
             queryClient.setQueryData<OrdersCache>(
-              ordersByStatusQueryKey('drafted'),
+              ordersByStatusQueryKey('draft'),
               (old) => prependToCache(old, row),
             )
             queryClient.setQueryData<number>(ORDERS_COUNT_QUERY_KEY, (n) =>
@@ -216,7 +216,7 @@ export function useOrders({ isGuest = false, profileId }: { isGuest?: boolean; p
         prependToCache(old, order),
       )
       queryClient.setQueryData<OrdersCache>(
-        ordersByStatusQueryKey('drafted'),
+        ordersByStatusQueryKey('draft'),
         (old) => prependToCache(old, order),
       )
       queryClient.setQueryData<number>(ORDERS_COUNT_QUERY_KEY, (n) =>
@@ -225,7 +225,7 @@ export function useOrders({ isGuest = false, profileId }: { isGuest?: boolean; p
       queryClient.setQueryData<OrderStatusCounts>(
         ORDERS_STATUS_COUNTS_QUERY_KEY,
         (counts) =>
-          counts ? { ...counts, drafted: (counts.drafted ?? 0) + 1 } : counts,
+          counts ? { ...counts, drafted: (counts.draft ?? 0) + 1 } : counts,
       )
     },
   })
