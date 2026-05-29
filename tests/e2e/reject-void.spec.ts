@@ -28,10 +28,10 @@ async function confirmAction(page: Page, label: string) {
 async function createAndOpenDraft(page: Page) {
   await page.getByRole("button", { name: "Draft", exact: true }).click();
 
-  const draftedColumn = page
-    .getByRole("heading", { name: "Drafted", level: 2 })
+  const draftColumn = page
+    .getByRole("heading", { name: "Draft", level: 2 })
     .locator("xpath=ancestor::section[1]");
-  const firstCard = draftedColumn.locator(".overflow-y-auto button").first();
+  const firstCard = draftColumn.locator(".overflow-y-auto button").first();
   await expect(firstCard).toBeVisible({ timeout: 10_000 });
   await firstCard.click();
 
@@ -41,58 +41,58 @@ async function createAndOpenDraft(page: Page) {
   });
 }
 
-test.describe("reject and void paths", () => {
+test.describe("cancellation paths", () => {
   test.skip(
     !TEST_EMAIL || !TEST_PASSWORD,
     "Set E2E_TEST_EMAIL + E2E_TEST_PASSWORD to run this suite.",
   );
 
-  test("rejecting a submitted order closes the sidebar", async ({ page }) => {
+  test("cancelling a confirmed order closes the sidebar", async ({ page }) => {
     await login(page);
     await expect(
-      page.getByRole("heading", { name: "Drafted", level: 2 }),
+      page.getByRole("heading", { name: "Draft", level: 2 }),
     ).toBeVisible();
 
     await createAndOpenDraft(page);
-    await confirmAction(page, "Submit");
+    await confirmAction(page, "Confirm");
 
-    // Sidebar stays open with submitted-state buttons
+    // Sidebar stays open with confirmed-state buttons
     const sidebar = page.locator("aside");
     await expect(
-      sidebar.getByRole("button", { name: "Reject", exact: true }),
+      sidebar.getByRole("button", { name: "Cancel", exact: true }),
     ).toBeVisible({ timeout: 10_000 });
 
-    await confirmAction(page, "Reject");
+    await confirmAction(page, "Cancel");
 
-    // Rejected is terminal — sidebar closes
+    // Cancelled is terminal — sidebar closes
     await expect(sidebar).toHaveAttribute("aria-hidden", "true", {
       timeout: 10_000,
     });
   });
 
-  test("voiding an invoiced order closes the sidebar", async ({ page }) => {
+  test("cancelling a processing order closes the sidebar", async ({ page }) => {
     await login(page);
     await expect(
-      page.getByRole("heading", { name: "Drafted", level: 2 }),
+      page.getByRole("heading", { name: "Draft", level: 2 }),
     ).toBeVisible();
 
     await createAndOpenDraft(page);
-    await confirmAction(page, "Submit");
+    await confirmAction(page, "Confirm");
 
     const sidebar = page.locator("aside");
     await expect(
-      sidebar.getByRole("button", { name: "Invoice", exact: true }),
+      sidebar.getByRole("button", { name: "Process", exact: true }),
     ).toBeVisible({ timeout: 10_000 });
 
-    await confirmAction(page, "Invoice");
+    await confirmAction(page, "Process");
 
     await expect(
-      sidebar.getByRole("button", { name: "Void", exact: true }),
+      sidebar.getByRole("button", { name: "Cancel", exact: true }),
     ).toBeVisible({ timeout: 10_000 });
 
-    await confirmAction(page, "Void");
+    await confirmAction(page, "Cancel");
 
-    // Voided is terminal — sidebar closes
+    // Cancelled is terminal — sidebar closes
     await expect(sidebar).toHaveAttribute("aria-hidden", "true", {
       timeout: 10_000,
     });

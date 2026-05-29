@@ -13,9 +13,9 @@ async function login(page: Page) {
   ]);
 }
 
-function draftedCount(page: Page) {
+function draftCount(page: Page) {
   return page
-    .getByRole("heading", { name: "Drafted", level: 2 })
+    .getByRole("heading", { name: "Draft", level: 2 })
     .locator("xpath=following-sibling::span[1]");
 }
 
@@ -25,24 +25,24 @@ test.describe("duplicate order", () => {
     "Set E2E_TEST_EMAIL + E2E_TEST_PASSWORD to run this suite.",
   );
 
-  test("duplicating a submitted order creates a new draft", async ({
+  test("duplicating a confirmed order creates a new draft", async ({
     page,
   }) => {
     await login(page);
 
-    const draftedHeading = page.getByRole("heading", {
-      name: "Drafted",
+    const draftHeading = page.getByRole("heading", {
+      name: "Draft",
       level: 2,
     });
-    await expect(draftedHeading).toBeVisible();
+    await expect(draftHeading).toBeVisible();
 
-    // Create and submit an order so we have a non-draft to duplicate
+    // Create and confirm an order so we have a non-draft to duplicate
     await page.getByRole("button", { name: "Draft", exact: true }).click();
 
-    const draftedColumn = draftedHeading.locator(
+    const draftColumn = draftHeading.locator(
       "xpath=ancestor::section[1]",
     );
-    const firstCard = draftedColumn.locator(".overflow-y-auto button").first();
+    const firstCard = draftColumn.locator(".overflow-y-auto button").first();
     await expect(firstCard).toBeVisible({ timeout: 10_000 });
     await firstCard.click();
 
@@ -51,26 +51,26 @@ test.describe("duplicate order", () => {
       timeout: 5_000,
     });
 
-    // Submit the draft
-    const submitBtn = sidebar.getByRole("button", {
-      name: "Submit",
+    // Confirm the draft
+    const confirmBtn = sidebar.getByRole("button", {
+      name: "Confirm",
       exact: true,
     });
-    await expect(submitBtn).toBeEnabled({ timeout: 10_000 });
-    await submitBtn.click();
+    await expect(confirmBtn).toBeEnabled({ timeout: 10_000 });
+    await confirmBtn.click();
 
     const dialog = page.getByRole("dialog");
     await expect(dialog).toBeVisible();
-    await dialog.getByRole("button", { name: "Submit", exact: true }).click();
+    await dialog.getByRole("button", { name: "Confirm", exact: true }).click();
     await expect(dialog).not.toBeVisible({ timeout: 10_000 });
 
-    // Wait for sidebar to show the submitted-state buttons
+    // Wait for sidebar to show the confirmed-state buttons
     await expect(
-      sidebar.getByRole("button", { name: "Invoice", exact: true }),
+      sidebar.getByRole("button", { name: "Process", exact: true }),
     ).toBeVisible({ timeout: 10_000 });
 
-    // Record drafted count before duplicating
-    const beforeText = await draftedCount(page).textContent();
+    // Record draft count before duplicating
+    const beforeText = await draftCount(page).textContent();
     const before = Number(beforeText ?? "0");
 
     // Click Duplicate
@@ -89,7 +89,7 @@ test.describe("duplicate order", () => {
     await expect(dupDialog).not.toBeVisible({ timeout: 10_000 });
 
     // The duplicate creates a new draft — count should increment
-    await expect(draftedCount(page)).toHaveText(String(before + 1), {
+    await expect(draftCount(page)).toHaveText(String(before + 1), {
       timeout: 10_000,
     });
   });

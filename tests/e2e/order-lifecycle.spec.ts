@@ -31,21 +31,21 @@ test.describe("order lifecycle", () => {
     "Set E2E_TEST_EMAIL + E2E_TEST_PASSWORD to run this suite.",
   );
 
-  test("draft -> submit -> invoice -> close -> archive", async ({ page }) => {
+  test("draft -> confirm -> process -> fulfill -> close", async ({ page }) => {
     await login(page);
 
-    const draftedHeading = page.getByRole("heading", {
-      name: "Drafted",
+    const draftHeading = page.getByRole("heading", {
+      name: "Draft",
       level: 2,
     });
-    await expect(draftedHeading).toBeVisible();
+    await expect(draftHeading).toBeVisible();
 
     await page.getByRole("button", { name: "Draft", exact: true }).click();
 
-    const draftedColumn = draftedHeading.locator(
+    const draftColumn = draftHeading.locator(
       "xpath=ancestor::section[1]",
     );
-    const firstCard = draftedColumn.locator(".overflow-y-auto button").first();
+    const firstCard = draftColumn.locator(".overflow-y-auto button").first();
     await expect(firstCard).toBeVisible({ timeout: 10_000 });
     await firstCard.click();
 
@@ -54,10 +54,10 @@ test.describe("order lifecycle", () => {
       timeout: 5_000,
     });
 
-    await confirmAction(page, "Submit");
-    await confirmAction(page, "Invoice");
+    await confirmAction(page, "Confirm");
+    await confirmAction(page, "Process");
+    await confirmAction(page, "Fulfill");
     await confirmAction(page, "Close");
-    await confirmAction(page, "Archive");
 
     await expect(sidebar).toHaveAttribute("aria-hidden", "true", {
       timeout: 10_000,

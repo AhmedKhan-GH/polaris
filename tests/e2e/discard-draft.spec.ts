@@ -13,67 +13,67 @@ async function login(page: Page) {
   ]);
 }
 
-function draftedCount(page: Page) {
+function draftCount(page: Page) {
   return page
-    .getByRole("heading", { name: "Drafted", level: 2 })
+    .getByRole("heading", { name: "Draft", level: 2 })
     .locator("xpath=following-sibling::span[1]");
 }
 
-test.describe("discard draft", () => {
+test.describe("cancel draft", () => {
   test.skip(
     !TEST_EMAIL || !TEST_PASSWORD,
     "Set E2E_TEST_EMAIL + E2E_TEST_PASSWORD to run this suite.",
   );
 
-  test("discarding a draft removes it from the kanban", async ({ page }) => {
+  test("cancelling a draft removes it from the kanban", async ({ page }) => {
     await login(page);
 
-    const draftedHeading = page.getByRole("heading", {
-      name: "Drafted",
+    const draftHeading = page.getByRole("heading", {
+      name: "Draft",
       level: 2,
     });
-    await expect(draftedHeading).toBeVisible();
+    await expect(draftHeading).toBeVisible();
 
-    const beforeText = await draftedCount(page).textContent();
+    const beforeText = await draftCount(page).textContent();
     const before = Number(beforeText ?? "0");
 
     await page.getByRole("button", { name: "Draft", exact: true }).click();
 
-    await expect(draftedCount(page)).toHaveText(String(before + 1), {
+    await expect(draftCount(page)).toHaveText(String(before + 1), {
       timeout: 10_000,
     });
 
-    const draftedColumn = draftedHeading.locator(
+    const draftColumn = draftHeading.locator(
       "xpath=ancestor::section[1]",
     );
-    await draftedColumn.locator(".overflow-y-auto button").first().click();
+    await draftColumn.locator(".overflow-y-auto button").first().click();
 
     const sidebar = page.locator("aside");
     await expect(sidebar).toHaveAttribute("aria-hidden", "false", {
       timeout: 5_000,
     });
 
-    const discardBtn = sidebar.getByRole("button", {
-      name: "Discard",
+    const cancelBtn = sidebar.getByRole("button", {
+      name: "Cancel",
       exact: true,
     });
-    await expect(discardBtn).toBeEnabled({ timeout: 10_000 });
-    await discardBtn.click();
+    await expect(cancelBtn).toBeEnabled({ timeout: 10_000 });
+    await cancelBtn.click();
 
     const dialog = page.getByRole("dialog");
     await expect(dialog).toBeVisible();
     await dialog
-      .getByRole("button", { name: "Discard", exact: true })
+      .getByRole("button", { name: "Cancel", exact: true })
       .click();
     await expect(dialog).not.toBeVisible({ timeout: 10_000 });
 
-    // Discard is terminal — sidebar should close
+    // Cancel is terminal — sidebar should close
     await expect(sidebar).toHaveAttribute("aria-hidden", "true", {
       timeout: 10_000,
     });
 
-    // Drafted count should decrement back
-    await expect(draftedCount(page)).toHaveText(String(before), {
+    // Draft count should decrement back
+    await expect(draftCount(page)).toHaveText(String(before), {
       timeout: 10_000,
     });
   });

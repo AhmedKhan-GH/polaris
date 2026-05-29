@@ -46,19 +46,19 @@ test.describe("list view filtering", () => {
     // Uncheck all active statuses by clicking "Reset filters" first
     // to get to default, then uncheck each default one.
     // Instead, let's check that the checkboxes exist for key statuses.
-    const draftedCheckbox = menu.getByRole("checkbox", {
-      name: /drafted/i,
+    const draftCheckbox = menu.getByRole("checkbox", {
+      name: /draft/i,
     });
-    const submittedCheckbox = menu.getByRole("checkbox", {
-      name: /submitted/i,
+    const confirmedCheckbox = menu.getByRole("checkbox", {
+      name: /confirmed/i,
     });
 
-    await expect(draftedCheckbox).toBeVisible();
-    await expect(submittedCheckbox).toBeVisible();
+    await expect(draftCheckbox).toBeVisible();
+    await expect(confirmedCheckbox).toBeVisible();
 
-    // Uncheck drafted (it's checked by default as an active status)
-    if (await draftedCheckbox.isChecked()) {
-      await draftedCheckbox.click();
+    // Uncheck draft (it's checked by default as an active status)
+    if (await draftCheckbox.isChecked()) {
+      await draftCheckbox.click();
     }
 
     // Close the dropdown by clicking the status button again
@@ -66,18 +66,18 @@ test.describe("list view filtering", () => {
     await expect(menu).not.toBeVisible();
 
     // The filter badge should reflect the change
-    // Re-open and verify drafted is unchecked
+    // Re-open and verify draft is unchecked
     await statusButton.click();
     const reopenedMenu = page.getByRole("menu");
     await expect(reopenedMenu).toBeVisible();
 
-    const draftedAfter = reopenedMenu.getByRole("checkbox", {
-      name: /drafted/i,
+    const draftAfter = reopenedMenu.getByRole("checkbox", {
+      name: /draft/i,
     });
-    await expect(draftedAfter).not.toBeChecked();
+    await expect(draftAfter).not.toBeChecked();
 
     // Reset filters back to default
     await reopenedMenu.getByRole("button", { name: /Reset/i }).click();
-    await expect(draftedAfter).toBeChecked();
+    await expect(draftAfter).toBeChecked();
   });
 });
