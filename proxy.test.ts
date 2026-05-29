@@ -6,6 +6,13 @@ const getUserMock = vi.hoisted(() => vi.fn())
 vi.mock('@supabase/ssr', () => ({
   createServerClient: () => ({
     auth: { getUser: getUserMock },
+    from: () => ({
+      select: () => ({
+        eq: () => ({
+          single: () => Promise.resolve({ data: { role: 'owner' }, error: null }),
+        }),
+      }),
+    }),
   }),
 }))
 
