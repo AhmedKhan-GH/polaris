@@ -34,9 +34,9 @@ export type OrderFilters = {
 // --- if you change the graph, change both.
 export const VALID_TRANSITIONS: Record<OrderStatus, readonly OrderStatus[]> = {
   draft:      ['confirmed', 'cancelled'],
-  confirmed:  ['processing', 'cancelled'],
-  processing: ['fulfilled',  'cancelled'],
-  fulfilled:  ['closed'],
+  confirmed:  ['draft', 'processing', 'cancelled'],
+  processing: ['fulfilled', 'cancelled'],
+  fulfilled:  ['closed', 'cancelled'],
   closed:     [],
   cancelled:  [],
 }
@@ -350,7 +350,7 @@ export async function transitionOrderStatus(args: {
   })
 }
 
-export async function cancelDraftOrder(args: {
+export async function cancelOrder(args: {
   orderId: string
   changedBy: string | null
   reason?: string
