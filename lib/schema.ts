@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import {
   bigint,
+  boolean,
   foreignKey,
   index,
   pgEnum,
@@ -49,14 +50,12 @@ export const profiles = pgTable(
 );
 
 export const orderStatus = pgEnum("order_status", [
-  "drafted",
-  "submitted",
-  "invoiced",
+  "draft",
+  "confirmed",
+  "processing",
+  "fulfilled",
   "closed",
-  "archived",
-  "discarded",
-  "rejected",
-  "voided",
+  "cancelled",
 ]);
 
 export const orderNumberSeq = pgSequence("order_number_seq", {
@@ -71,9 +70,10 @@ export const orders = pgTable(
       .notNull()
       .unique()
       .default(sql`nextval('order_number_seq')`),
-    status: orderStatus("status").notNull().default("drafted"),
+    status: orderStatus("status").notNull().default("draft"),
     statusUpdatedAt: epochMs("status_updated_at"),
     duplicatedFromOrderId: uuid("duplicated_from_order_id"),
+    isArchived: boolean("is_archived").notNull().default(false),
     createdBy: uuid("created_by").references(() => profiles.id),
     createdAt: epochMs("created_at"),
   },
@@ -85,7 +85,7 @@ export const orders = pgTable(
     index("orders_active_idx")
       .on(table.createdAt.desc(), table.id.desc())
       .where(
-        sql`status IN ('drafted', 'submitted', 'invoiced', 'closed')`,
+        sql`status IN ('draft', 'confirmed', 'processing', 'fulfilled')`,
       ),
     foreignKey({
       columns: [table.duplicatedFromOrderId],
@@ -139,7 +139,7 @@ export const orders = pgTable(
       using: sql`
         (auth.jwt() ->> 'user_role') = 'guest'
         AND ${table.createdBy} = auth.uid()
-        AND ${table.status} = 'drafted'
+        AND ${table.status} = 'draft'
       `,
     }),
   ],

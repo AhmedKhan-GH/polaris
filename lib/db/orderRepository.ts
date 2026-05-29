@@ -33,14 +33,12 @@ export type OrderFilters = {
 // drizzle/0016_rename_completed_to_closed.sql. Keep the two in lockstep
 // --- if you change the graph, change both.
 export const VALID_TRANSITIONS: Record<OrderStatus, readonly OrderStatus[]> = {
-  drafted:  ['submitted', 'discarded'],
-  submitted: ['invoiced',  'rejected'],
-  invoiced:  ['closed',    'voided'],
-  closed:    ['archived'],
-  archived:  [],
-  discarded: [],
-  rejected:  [],
-  voided:    [],
+  draft:      ['confirmed', 'cancelled'],
+  confirmed:  ['processing', 'cancelled'],
+  processing: ['fulfilled',  'cancelled'],
+  fulfilled:  ['closed'],
+  closed:     [],
+  cancelled:  [],
 }
 
 export function isValidTransition(from: OrderStatus, to: OrderStatus): boolean {
@@ -117,6 +115,7 @@ const orderWithCreator = {
   status: orders.status,
   statusUpdatedAt: orders.statusUpdatedAt,
   duplicatedFromOrderId: orders.duplicatedFromOrderId,
+  isArchived: orders.isArchived,
   createdBy: orders.createdBy,
   createdByEmail: profiles.email,
   createdAt: orders.createdAt,
@@ -203,7 +202,7 @@ export async function findDraftsByCreator(
   limit: number,
 ): Promise<Order[]> {
   const conditions = [
-    eq(orders.status, 'drafted' as OrderStatus),
+    eq(orders.status, 'draft' as OrderStatus),
     eq(orders.createdBy, creatorId),
   ]
   if (cursor) {
@@ -231,7 +230,7 @@ export async function countDraftsByCreator(creatorId: string): Promise<number> {
     .from(orders)
     .where(
       and(
-        eq(orders.status, 'drafted' as OrderStatus),
+        eq(orders.status, 'draft' as OrderStatus),
         eq(orders.createdBy, creatorId),
       ),
     )
@@ -351,14 +350,14 @@ export async function transitionOrderStatus(args: {
   })
 }
 
-export async function discardDraftOrder(args: {
+export async function cancelDraftOrder(args: {
   orderId: string
   changedBy: string | null
   reason?: string
 }): Promise<Order> {
   return transitionOrderStatus({
     ...args,
-    toStatus: 'discarded',
+    toStatus: 'cancelled',
   })
 }
 
@@ -383,7 +382,7 @@ export async function duplicateOrder(args: {
     await tx.insert(orderStatusHistory).values({
       orderId: created.id,
       fromStatus: null,
-      toStatus: 'drafted',
+      toStatus: 'draft',
       changedBy,
       reason: `Duplicated from order #${source.orderNumber}`,
     })

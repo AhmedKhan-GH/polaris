@@ -1,30 +1,26 @@
 import { z } from 'zod'
 
 export const ORDER_STATUSES = [
-  'drafted',
-  'submitted',
-  'invoiced',
+  'draft',
+  'confirmed',
+  'processing',
+  'fulfilled',
   'closed',
-  'archived',
-  'discarded',
-  'rejected',
-  'voided',
+  'cancelled',
 ] as const
 
 export type OrderStatus = (typeof ORDER_STATUSES)[number]
 
 export const ACTIVE_ORDER_STATUSES: readonly OrderStatus[] = [
-  'drafted',
-  'submitted',
-  'invoiced',
-  'closed',
+  'draft',
+  'confirmed',
+  'processing',
+  'fulfilled',
 ]
 
 export const TERMINAL_ORDER_STATUSES: readonly OrderStatus[] = [
-  'archived',
-  'discarded',
-  'rejected',
-  'voided',
+  'closed',
+  'cancelled',
 ]
 
 // Timestamps are unix epoch milliseconds (UTC). Display layer converts
@@ -35,6 +31,7 @@ export type Order = {
   status: OrderStatus
   statusUpdatedAt: number
   duplicatedFromOrderId: string | null
+  isArchived: boolean
   createdBy: string | null
   createdByEmail: string | null
   createdAt: number
@@ -46,6 +43,7 @@ export function toOrder(row: {
   status: OrderStatus
   statusUpdatedAt: number
   duplicatedFromOrderId: string | null
+  isArchived?: boolean
   createdBy: string | null
   createdByEmail?: string | null
   createdAt: number
@@ -56,6 +54,7 @@ export function toOrder(row: {
     status: row.status,
     statusUpdatedAt: row.statusUpdatedAt,
     duplicatedFromOrderId: row.duplicatedFromOrderId,
+    isArchived: row.isArchived ?? false,
     createdBy: row.createdBy,
     createdByEmail: row.createdByEmail ?? null,
     createdAt: row.createdAt,
@@ -82,6 +81,7 @@ export const orderRowSchema = z
     status: z.enum(ORDER_STATUSES),
     status_updated_at: epochMs,
     duplicated_from_order_id: z.string().uuid().nullable(),
+    is_archived: z.boolean().optional().default(false),
     created_by: z.string().uuid().nullable().optional().default(null),
     created_by_email: z.string().nullable().optional().default(null),
     created_at: epochMs,
@@ -92,6 +92,7 @@ export const orderRowSchema = z
     status: row.status,
     statusUpdatedAt: row.status_updated_at,
     duplicatedFromOrderId: row.duplicated_from_order_id,
+    isArchived: row.is_archived,
     createdBy: row.created_by,
     createdByEmail: row.created_by_email,
     createdAt: row.created_at,
