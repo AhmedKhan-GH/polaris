@@ -6,7 +6,7 @@ import {
   type QueryClient,
 } from '@tanstack/react-query'
 import {
-  discardDraftOrderAction,
+  cancelOrderAction,
   duplicateOrderAction,
   transitionOrderAction,
 } from './actions'
@@ -174,7 +174,7 @@ export interface UseOrderActionsResult {
     toStatus: OrderStatus
     reason?: string
   }) => Promise<Order>
-  discardDraft: (args: { orderId: string; reason?: string }) => Promise<Order>
+  cancel: (args: { orderId: string; reason?: string }) => Promise<Order>
   duplicate: (args: { sourceOrderId: string }) => Promise<Order>
   isPending: boolean
   error: Error | null
@@ -200,11 +200,11 @@ export function useOrderActions(): UseOrderActionsResult {
     },
   })
 
-  const discardDraft = useMutation({
+  const cancel = useMutation({
     mutationFn: (args: { orderId: string; reason?: string }) =>
-      discardDraftOrderAction(args),
+      cancelOrderAction(args),
     onMutate: (args) =>
-      applyOptimisticTransition(queryClient, args.orderId, 'discarded'),
+      applyOptimisticTransition(queryClient, args.orderId, 'cancelled'),
     onError: (_err, _args, ctx) => {
       if (ctx) rollbackTransition(queryClient, ctx)
     },
@@ -215,13 +215,13 @@ export function useOrderActions(): UseOrderActionsResult {
   })
 
   const isPending =
-    transition.isPending || discardDraft.isPending || duplicate.isPending
+    transition.isPending || cancel.isPending || duplicate.isPending
   const error =
-    transition.error ?? discardDraft.error ?? duplicate.error ?? null
+    transition.error ?? cancel.error ?? duplicate.error ?? null
 
   return {
     transition: (args) => transition.mutateAsync(args),
-    discardDraft: (args) => discardDraft.mutateAsync(args),
+    cancel: (args) => cancel.mutateAsync(args),
     duplicate: (args) => duplicate.mutateAsync(args),
     isPending,
     error,
