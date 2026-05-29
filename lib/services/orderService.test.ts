@@ -27,9 +27,10 @@ describe('createOrder', () => {
     const order: Order = {
       id: '7c16d5b1-6f83-45a2-9a9d-1f0dc1f1a2e4',
       orderNumber: 1_000_000,
-      status: 'drafted',
+      status: 'draft',
       statusUpdatedAt: Date.UTC(2026, 3, 19, 12, 0, 0),
       duplicatedFromOrderId: null,
+      isArchived: false,
       createdBy: null,
       createdByEmail: null,
       createdAt: Date.UTC(2026, 3, 19, 12, 0, 0),
