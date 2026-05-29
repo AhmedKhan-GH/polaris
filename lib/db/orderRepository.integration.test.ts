@@ -54,7 +54,7 @@ describe('orderRepository (integration)', () => {
   ) {
     await pool.query(
       'INSERT INTO orders (id, order_number, status, created_at) VALUES ($1, $2, $3, $4)',
-      [order.id, order.orderNumber, order.status ?? 'drafted', order.createdAt],
+      [order.id, order.orderNumber, order.status ?? 'draft', order.createdAt],
     )
   }
 
@@ -113,6 +113,7 @@ describe('orderRepository (integration)', () => {
         'createdAt',
         'duplicatedFromOrderId',
         'id',
+        'isArchived',
         'orderNumber',
         'status',
         'statusUpdatedAt',
@@ -120,12 +121,12 @@ describe('orderRepository (integration)', () => {
     }
   })
 
-  test('insertOrder defaults status to drafted with a fresh statusUpdatedAt', async () => {
+  test('insertOrder defaults status to draft with a fresh statusUpdatedAt', async () => {
     const before = Date.now()
     const order = await repo.insertOrder()
     const after = Date.now()
 
-    expect(order.status).toBe('drafted')
+    expect(order.status).toBe('draft')
     expect(order.duplicatedFromOrderId).toBeNull()
     expect(typeof order.statusUpdatedAt).toBe('number')
     expect(order.statusUpdatedAt).toBeGreaterThanOrEqual(before - 1_000)
@@ -196,25 +197,25 @@ describe('orderRepository (integration)', () => {
     await seedOrder({
       id: '00000000-0000-0000-0000-000000000001',
       orderNumber: 1_000_001,
-      status: 'drafted',
+      status: 'draft',
       createdAt: Date.parse('2026-04-19T09:00:00Z'),
     })
     await seedOrder({
       id: '00000000-0000-0000-0000-000000000002',
       orderNumber: 1_000_002,
-      status: 'submitted',
+      status: 'confirmed',
       createdAt: Date.parse('2026-04-19T10:00:00Z'),
     })
     await seedOrder({
       id: '00000000-0000-0000-0000-000000000003',
       orderNumber: 1_000_003,
-      status: 'submitted',
+      status: 'confirmed',
       createdAt: Date.parse('2026-04-19T11:00:00Z'),
     })
     await seedOrder({
       id: '00000000-0000-0000-0000-000000000004',
       orderNumber: 1_000_004,
-      status: 'submitted',
+      status: 'confirmed',
       createdAt: Date.parse('2026-04-19T12:00:00Z'),
     })
     await seedOrder({
@@ -225,7 +226,7 @@ describe('orderRepository (integration)', () => {
     })
 
     const filters = {
-      statuses: ['submitted'] as const,
+      statuses: ['confirmed'] as const,
       createdFrom: Date.parse('2026-04-18T00:00:00Z'),
       createdTo: Date.parse('2026-04-20T23:59:59.999Z'),
     }
@@ -249,25 +250,25 @@ describe('orderRepository (integration)', () => {
     await seedOrder({
       id: '00000000-0000-0000-0000-000000000001',
       orderNumber: 1_000_001,
-      status: 'submitted',
+      status: 'confirmed',
       createdAt: Date.parse('2026-04-19T10:00:00Z'),
     })
     await seedOrder({
       id: '00000000-0000-0000-0000-000000000002',
       orderNumber: 1_000_002,
-      status: 'submitted',
+      status: 'confirmed',
       createdAt: Date.parse('2026-04-19T11:00:00Z'),
     })
     await seedOrder({
       id: '00000000-0000-0000-0000-000000000003',
       orderNumber: 1_000_003,
-      status: 'drafted',
+      status: 'draft',
       createdAt: Date.parse('2026-04-19T12:00:00Z'),
     })
 
     await expect(
       repo.countFilteredOrders({
-        statuses: ['submitted'],
+        statuses: ['confirmed'],
         createdFrom: Date.parse('2026-04-19T00:00:00Z'),
         createdTo: Date.parse('2026-04-19T23:59:59.999Z'),
       }),
@@ -278,25 +279,25 @@ describe('orderRepository (integration)', () => {
     await seedOrder({
       id: '00000000-0000-0000-0000-000000000001',
       orderNumber: 1_000_001,
-      status: 'submitted',
+      status: 'confirmed',
       createdAt: Date.parse('2026-04-19T10:00:00Z'),
     })
     await seedOrder({
       id: '00000000-0000-0000-0000-000000000002',
       orderNumber: 1_000_002,
-      status: 'submitted',
+      status: 'confirmed',
       createdAt: Date.parse('2026-04-19T11:00:00Z'),
     })
     await seedOrder({
       id: '00000000-0000-0000-0000-000000000003',
       orderNumber: 1_000_003,
-      status: 'drafted',
+      status: 'draft',
       createdAt: Date.parse('2026-04-19T12:00:00Z'),
     })
     await seedOrder({
       id: '00000000-0000-0000-0000-000000000004',
       orderNumber: 1_000_004,
-      status: 'voided',
+      status: 'cancelled',
       createdAt: Date.parse('2026-04-21T12:00:00Z'),
     })
 
@@ -305,9 +306,9 @@ describe('orderRepository (integration)', () => {
       createdTo: Date.parse('2026-04-20T23:59:59.999Z'),
     })
 
-    expect(counts.submitted).toBe(2)
-    expect(counts.drafted).toBe(1)
-    expect(counts.voided).toBe(0)
+    expect(counts.confirmed).toBe(2)
+    expect(counts.draft).toBe(1)
+    expect(counts.cancelled).toBe(0)
   })
 
   test('countOrders returns the number of rows in the table', async () => {
@@ -332,15 +333,15 @@ describe('orderRepository (integration)', () => {
     await repo.insertOrder()
     await repo.transitionOrderStatus({
       orderId: a.id,
-      toStatus: 'submitted',
+      toStatus: 'confirmed',
       changedBy: '11111111-1111-1111-1111-111111111111',
     })
 
     const counts = await repo.countOrdersByStatus()
 
-    expect(counts.drafted).toBe(1)
-    expect(counts.submitted).toBe(1)
-    expect(counts.invoiced).toBe(0)
+    expect(counts.draft).toBe(1)
+    expect(counts.confirmed).toBe(1)
+    expect(counts.processing).toBe(0)
   })
 
   test('findOrdersPage returns an empty array when no orders exist', async () => {
@@ -364,26 +365,26 @@ describe('orderRepository (integration)', () => {
     await seedOrder({
       id: '00000000-0000-0000-0000-000000000001',
       orderNumber: 1_000_001,
-      status: 'drafted',
+      status: 'draft',
       createdAt: Date.parse('2026-04-19T10:00:00Z'),
     })
     await seedOrder({
       id: '00000000-0000-0000-0000-000000000002',
       orderNumber: 1_000_002,
-      status: 'submitted',
+      status: 'confirmed',
       createdAt: Date.parse('2026-04-19T11:00:00Z'),
     })
     await seedOrder({
       id: '00000000-0000-0000-0000-000000000003',
       orderNumber: 1_000_003,
-      status: 'drafted',
+      status: 'draft',
       createdAt: Date.parse('2026-04-19T12:00:00Z'),
     })
 
-    const page = await repo.findOrdersPageByStatus('drafted', null, 10)
+    const page = await repo.findOrdersPageByStatus('draft', null, 10)
 
     expect(page).toHaveLength(2)
-    expect(page.every((o) => o.status === 'drafted')).toBe(true)
+    expect(page.every((o) => o.status === 'draft')).toBe(true)
     expect(page[0].id).toBe('00000000-0000-0000-0000-000000000003')
   })
 
@@ -391,12 +392,12 @@ describe('orderRepository (integration)', () => {
     await seedOrder({
       id: '00000000-0000-0000-0000-000000000001',
       orderNumber: 1_000_001,
-      status: 'drafted',
+      status: 'draft',
       createdAt: Date.parse('2026-04-19T10:00:00Z'),
     })
 
     const page = await repo.findFilteredOrdersPage(
-      { statuses: ['submitted'] },
+      { statuses: ['confirmed'] },
       null,
       10,
     )
@@ -409,12 +410,12 @@ describe('orderRepository (integration)', () => {
     const results = await Promise.allSettled([
       repo.transitionOrderStatus({
         orderId: order.id,
-        toStatus: 'submitted',
+        toStatus: 'confirmed',
         changedBy: '11111111-1111-1111-1111-111111111111',
       }),
       repo.transitionOrderStatus({
         orderId: order.id,
-        toStatus: 'submitted',
+        toStatus: 'confirmed',
         changedBy: '22222222-2222-2222-2222-222222222222',
       }),
     ])
@@ -426,7 +427,7 @@ describe('orderRepository (integration)', () => {
     expect(rejected).toHaveLength(1)
 
     const final = await repo.findOrderById(order.id)
-    expect(final?.status).toBe('submitted')
+    expect(final?.status).toBe('confirmed')
 
     const { rows } = await pool.query(
       'SELECT COUNT(*) as c FROM order_status_history WHERE order_id = $1',
@@ -438,17 +439,17 @@ describe('orderRepository (integration)', () => {
   describe('transitionOrderStatus', () => {
     const ACTOR = '11111111-1111-1111-1111-111111111111'
 
-    test('moves drafted -> submitted, updates statusUpdatedAt, writes history', async () => {
+    test('moves draft -> confirmed, updates statusUpdatedAt, writes history', async () => {
       const order = await repo.insertOrder()
       const before = Date.now()
       const updated = await repo.transitionOrderStatus({
         orderId: order.id,
-        toStatus: 'submitted',
+        toStatus: 'confirmed',
         changedBy: ACTOR,
         reason: 'ready for fulfillment',
       })
 
-      expect(updated.status).toBe('submitted')
+      expect(updated.status).toBe('confirmed')
       expect(updated.statusUpdatedAt).toBeGreaterThanOrEqual(before - 1_000)
 
       const { rows } = await pool.query(
@@ -457,37 +458,42 @@ describe('orderRepository (integration)', () => {
       )
       expect(rows).toEqual([
         {
-          from_status: 'drafted',
-          to_status: 'submitted',
+          from_status: 'draft',
+          to_status: 'confirmed',
           changed_by: ACTOR,
           reason: 'ready for fulfillment',
         },
       ])
     })
 
-    test('rejects a backward transition at the app layer', async () => {
+    test('rejects a non-adjacent backward transition', async () => {
       const order = await repo.insertOrder()
       await repo.transitionOrderStatus({
         orderId: order.id,
-        toStatus: 'submitted',
+        toStatus: 'confirmed',
+        changedBy: ACTOR,
+      })
+      await repo.transitionOrderStatus({
+        orderId: order.id,
+        toStatus: 'processing',
         changedBy: ACTOR,
       })
 
       await expect(
         repo.transitionOrderStatus({
           orderId: order.id,
-          toStatus: 'drafted',
+          toStatus: 'confirmed',
           changedBy: ACTOR,
         }),
       ).rejects.toBeInstanceOf(repo.InvalidTransitionError)
     })
 
-    test('rejects a cross-branch transition (drafted -> invoiced)', async () => {
+    test('rejects a cross-branch transition (draft -> processing)', async () => {
       const order = await repo.insertOrder()
       await expect(
         repo.transitionOrderStatus({
           orderId: order.id,
-          toStatus: 'invoiced',
+          toStatus: 'processing',
           changedBy: ACTOR,
         }),
       ).rejects.toBeInstanceOf(repo.InvalidTransitionError)
@@ -497,14 +503,14 @@ describe('orderRepository (integration)', () => {
       const order = await repo.insertOrder()
       await repo.transitionOrderStatus({
         orderId: order.id,
-        toStatus: 'discarded',
+        toStatus: 'cancelled',
         changedBy: ACTOR,
       })
 
       await expect(
         repo.transitionOrderStatus({
           orderId: order.id,
-          toStatus: 'submitted',
+          toStatus: 'confirmed',
           changedBy: ACTOR,
         }),
       ).rejects.toBeInstanceOf(repo.InvalidTransitionError)
@@ -514,7 +520,7 @@ describe('orderRepository (integration)', () => {
       await expect(
         repo.transitionOrderStatus({
           orderId: '00000000-0000-0000-0000-000000000000',
-          toStatus: 'submitted',
+          toStatus: 'confirmed',
           changedBy: ACTOR,
         }),
       ).rejects.toBeInstanceOf(repo.OrderNotFoundError)
@@ -528,7 +534,7 @@ describe('orderRepository (integration)', () => {
 
       await expect(
         pool.query(
-          "UPDATE orders SET status = 'archived' WHERE id = $1",
+          "UPDATE orders SET status = 'closed' WHERE id = $1",
           [order.id],
         ),
       ).rejects.toThrow(/Invalid order status transition/)
@@ -538,22 +544,22 @@ describe('orderRepository (integration)', () => {
       const order = await repo.insertOrder()
       await repo.transitionOrderStatus({
         orderId: order.id,
-        toStatus: 'submitted',
+        toStatus: 'confirmed',
         changedBy: ACTOR,
       })
       await repo.transitionOrderStatus({
         orderId: order.id,
-        toStatus: 'invoiced',
+        toStatus: 'processing',
+        changedBy: ACTOR,
+      })
+      await repo.transitionOrderStatus({
+        orderId: order.id,
+        toStatus: 'fulfilled',
         changedBy: ACTOR,
       })
       await repo.transitionOrderStatus({
         orderId: order.id,
         toStatus: 'closed',
-        changedBy: ACTOR,
-      })
-      await repo.transitionOrderStatus({
-        orderId: order.id,
-        toStatus: 'archived',
         changedBy: ACTOR,
       })
 
@@ -562,62 +568,86 @@ describe('orderRepository (integration)', () => {
         [order.id],
       )
       expect(rows).toEqual([
-        { from_status: 'drafted', to_status: 'submitted' },
-        { from_status: 'submitted', to_status: 'invoiced' },
-        { from_status: 'invoiced', to_status: 'closed' },
-        { from_status: 'closed', to_status: 'archived' },
+        { from_status: 'draft', to_status: 'confirmed' },
+        { from_status: 'confirmed', to_status: 'processing' },
+        { from_status: 'processing', to_status: 'fulfilled' },
+        { from_status: 'fulfilled', to_status: 'closed' },
       ])
     })
 
-    test('rejects skipping the closed holding step (invoiced -> archived)', async () => {
+    test('rejects skipping the fulfilled step (processing -> closed)', async () => {
       const order = await repo.insertOrder()
       await repo.transitionOrderStatus({
         orderId: order.id,
-        toStatus: 'submitted',
+        toStatus: 'confirmed',
         changedBy: ACTOR,
       })
       await repo.transitionOrderStatus({
         orderId: order.id,
-        toStatus: 'invoiced',
+        toStatus: 'processing',
         changedBy: ACTOR,
       })
 
       await expect(
         repo.transitionOrderStatus({
           orderId: order.id,
-          toStatus: 'archived',
+          toStatus: 'closed',
           changedBy: ACTOR,
         }),
       ).rejects.toBeInstanceOf(repo.InvalidTransitionError)
     })
-  })
 
-  describe('discardDraftOrder', () => {
-    const ACTOR = '22222222-2222-2222-2222-222222222222'
-
-    test('discards a draft, leaving the row in place for audit', async () => {
-      const order = await repo.insertOrder()
-      const discarded = await repo.discardDraftOrder({
-        orderId: order.id,
-        changedBy: ACTOR,
-      })
-
-      expect(discarded.status).toBe('discarded')
-
-      const stillThere = await repo.findOrderById(order.id)
-      expect(stillThere?.status).toBe('discarded')
-    })
-
-    test('refuses to discard a submitted order', async () => {
+    test('allows confirmed -> draft (reversible transition)', async () => {
       const order = await repo.insertOrder()
       await repo.transitionOrderStatus({
         orderId: order.id,
-        toStatus: 'submitted',
+        toStatus: 'confirmed',
+        changedBy: ACTOR,
+      })
+      const reverted = await repo.transitionOrderStatus({
+        orderId: order.id,
+        toStatus: 'draft',
+        changedBy: ACTOR,
+        reason: 'needs revision',
+      })
+
+      expect(reverted.status).toBe('draft')
+    })
+  })
+
+  describe('cancelOrder', () => {
+    const ACTOR = '22222222-2222-2222-2222-222222222222'
+
+    test('cancels a draft, leaving the row in place for audit', async () => {
+      const order = await repo.insertOrder()
+      const cancelled = await repo.cancelOrder({
+        orderId: order.id,
         changedBy: ACTOR,
       })
 
+      expect(cancelled.status).toBe('cancelled')
+
+      const stillThere = await repo.findOrderById(order.id)
+      expect(stillThere?.status).toBe('cancelled')
+    })
+
+    test('refuses to cancel a closed order', async () => {
+      const order = await repo.insertOrder()
+      await repo.transitionOrderStatus({
+        orderId: order.id, toStatus: 'confirmed', changedBy: ACTOR,
+      })
+      await repo.transitionOrderStatus({
+        orderId: order.id, toStatus: 'processing', changedBy: ACTOR,
+      })
+      await repo.transitionOrderStatus({
+        orderId: order.id, toStatus: 'fulfilled', changedBy: ACTOR,
+      })
+      await repo.transitionOrderStatus({
+        orderId: order.id, toStatus: 'closed', changedBy: ACTOR,
+      })
+
       await expect(
-        repo.discardDraftOrder({ orderId: order.id, changedBy: ACTOR }),
+        repo.cancelOrder({ orderId: order.id, changedBy: ACTOR }),
       ).rejects.toBeInstanceOf(repo.InvalidTransitionError)
     })
   })
@@ -629,7 +659,7 @@ describe('orderRepository (integration)', () => {
       const source = await repo.insertOrder()
       await repo.transitionOrderStatus({
         orderId: source.id,
-        toStatus: 'submitted',
+        toStatus: 'confirmed',
         changedBy: ACTOR,
       })
 
@@ -640,7 +670,7 @@ describe('orderRepository (integration)', () => {
 
       expect(copy.id).not.toBe(source.id)
       expect(copy.orderNumber).toBe(source.orderNumber + 1)
-      expect(copy.status).toBe('drafted')
+      expect(copy.status).toBe('draft')
       expect(copy.duplicatedFromOrderId).toBe(source.id)
     })
 
@@ -648,12 +678,12 @@ describe('orderRepository (integration)', () => {
       const source = await repo.insertOrder()
       await repo.transitionOrderStatus({
         orderId: source.id,
-        toStatus: 'submitted',
+        toStatus: 'confirmed',
         changedBy: ACTOR,
       })
       await repo.transitionOrderStatus({
         orderId: source.id,
-        toStatus: 'rejected',
+        toStatus: 'cancelled',
         changedBy: ACTOR,
       })
 
@@ -663,45 +693,28 @@ describe('orderRepository (integration)', () => {
       })
 
       const reloaded = await repo.findOrderById(source.id)
-      expect(reloaded?.status).toBe('rejected')
+      expect(reloaded?.status).toBe('cancelled')
     })
 
     test('works from any source state, including terminal ones', async () => {
-      for (const terminal of ['discarded', 'rejected', 'voided', 'archived'] as const) {
+      for (const terminal of ['cancelled', 'closed'] as const) {
         const source = await repo.insertOrder()
-        if (terminal === 'discarded') {
+        if (terminal === 'cancelled') {
           await repo.transitionOrderStatus({
-            orderId: source.id, toStatus: 'discarded', changedBy: ACTOR,
+            orderId: source.id, toStatus: 'cancelled', changedBy: ACTOR,
           })
-        } else if (terminal === 'rejected') {
+        } else {
           await repo.transitionOrderStatus({
-            orderId: source.id, toStatus: 'submitted', changedBy: ACTOR,
-          })
-          await repo.transitionOrderStatus({
-            orderId: source.id, toStatus: 'rejected', changedBy: ACTOR,
-          })
-        } else if (terminal === 'voided') {
-          await repo.transitionOrderStatus({
-            orderId: source.id, toStatus: 'submitted', changedBy: ACTOR,
+            orderId: source.id, toStatus: 'confirmed', changedBy: ACTOR,
           })
           await repo.transitionOrderStatus({
-            orderId: source.id, toStatus: 'invoiced', changedBy: ACTOR,
+            orderId: source.id, toStatus: 'processing', changedBy: ACTOR,
           })
           await repo.transitionOrderStatus({
-            orderId: source.id, toStatus: 'voided', changedBy: ACTOR,
-          })
-        } else if (terminal === 'archived') {
-          await repo.transitionOrderStatus({
-            orderId: source.id, toStatus: 'submitted', changedBy: ACTOR,
-          })
-          await repo.transitionOrderStatus({
-            orderId: source.id, toStatus: 'invoiced', changedBy: ACTOR,
+            orderId: source.id, toStatus: 'fulfilled', changedBy: ACTOR,
           })
           await repo.transitionOrderStatus({
             orderId: source.id, toStatus: 'closed', changedBy: ACTOR,
-          })
-          await repo.transitionOrderStatus({
-            orderId: source.id, toStatus: 'archived', changedBy: ACTOR,
           })
         }
 
@@ -709,7 +722,7 @@ describe('orderRepository (integration)', () => {
           sourceOrderId: source.id,
           changedBy: ACTOR,
         })
-        expect(copy.status).toBe('drafted')
+        expect(copy.status).toBe('draft')
         expect(copy.duplicatedFromOrderId).toBe(source.id)
       }
     })
@@ -728,7 +741,7 @@ describe('orderRepository (integration)', () => {
       expect(rows).toEqual([
         {
           from_status: null,
-          to_status: 'drafted',
+          to_status: 'draft',
           reason: `Duplicated from order #${source.orderNumber}`,
         },
       ])
