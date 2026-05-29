@@ -8,7 +8,7 @@ import {
   countFilteredOrdersByStatus,
   countOrders,
   countOrdersByStatus,
-  discardDraftOrder,
+  cancelOrder,
   duplicateOrder,
   findFilteredOrdersPage,
   findOrderById,
@@ -211,27 +211,27 @@ export async function transitionOrderAction(rawArgs: unknown): Promise<Order> {
   })
 }
 
-export async function discardDraftOrderAction(rawArgs: unknown): Promise<Order> {
+export async function cancelOrderAction(rawArgs: unknown): Promise<Order> {
   const args = discardInput.parse(rawArgs)
 
-  return withPermission('discard', 'Order', async ({ profile }) => {
+  return withPermission('cancel', 'Order', async ({ profile }) => {
     const order = await findOrderById(args.orderId)
     if (!order) throw new Error('Order not found')
 
     const allowed = getAllowedTransitions(profile.role, order.status)
-    if (!allowed.includes('discarded')) {
-      throw new Error('Discard is not allowed for this order')
+    if (!allowed.includes('cancelled')) {
+      throw new Error('Cancellation is not allowed for this order')
     }
 
     const actor = await getActorId()
     try {
-      return await discardDraftOrder({
+      return await cancelOrder({
         orderId: args.orderId,
         changedBy: actor,
         reason: args.reason,
       })
     } catch (err) {
-      log.warn({ err, orderId: args.orderId }, 'discardDraftOrderAction rejected')
+      log.warn({ err, orderId: args.orderId }, 'cancelOrderAction rejected')
       throw err
     }
   })
