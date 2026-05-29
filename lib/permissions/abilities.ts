@@ -7,7 +7,7 @@ import type { UserRole } from '../profile'
 import type { OrderStatus } from '../domain/order'
 import { permissions } from './schema'
 
-type Actions = 'create' | 'read' | 'transition' | 'discard' | 'duplicate' | 'manage'
+type Actions = 'create' | 'read' | 'transition' | 'cancel' | 'duplicate' | 'manage'
 type Subjects = 'Order' | 'Settings' | 'all'
 
 export type AppAbility = MongoAbility<[Actions, Subjects]>
@@ -27,14 +27,12 @@ export function defineAbilityFor(role: UserRole): AppAbility {
 }
 
 const VALID_TRANSITIONS: Record<OrderStatus, readonly OrderStatus[]> = {
-  drafted:   ['submitted', 'discarded'],
-  submitted: ['invoiced',  'rejected'],
-  invoiced:  ['closed',    'voided'],
-  closed:    ['archived'],
-  archived:  [],
-  discarded: [],
-  rejected:  [],
-  voided:    [],
+  draft:      ['confirmed', 'cancelled'],
+  confirmed:  ['draft', 'processing', 'cancelled'],
+  processing: ['fulfilled', 'cancelled'],
+  fulfilled:  ['closed', 'cancelled'],
+  closed:     [],
+  cancelled:  [],
 }
 
 export function getAllowedTransitions(role: UserRole, status: OrderStatus): readonly OrderStatus[] {
@@ -42,9 +40,9 @@ export function getAllowedTransitions(role: UserRole, status: OrderStatus): read
   const ability = defineAbilityFor(role)
 
   return all.filter((toStatus) => {
-    if (toStatus === 'discarded') return ability.can('discard', 'Order')
+    if (toStatus === 'cancelled') return ability.can('cancel', 'Order')
     if (!ability.can('transition', 'Order')) return false
-    if (role === 'guest' && status !== 'drafted') return false
+    if (role === 'guest' && status !== 'draft') return false
     return true
   })
 }
