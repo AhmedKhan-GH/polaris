@@ -42,3 +42,9 @@ export async function signInAction(
 
   redirect('/')
 }
+
+export async function signOutAction() {
+  const supabase = await createClient()
+  await supabase.auth.signOut()
+  redirect('/login')
+}

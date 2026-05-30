@@ -1,12 +1,13 @@
 import { describe, expect, test, vi } from 'vitest'
-import { signInAction } from './actions'
+import { signInAction, signOutAction } from './actions'
 import { redirect } from 'next/navigation'
 
 const signInWithPassword = vi.fn()
+const signOut = vi.fn()
 
 vi.mock('@/lib/supabase/server', () => ({
   createClient: () => ({
-    auth: { signInWithPassword },
+    auth: { signInWithPassword, signOut },
   }),
 }))
 
@@ -59,5 +60,23 @@ describe('signInAction', () => {
     await signInAction({ errors: {} }, formData)
 
     expect(redirect).toHaveBeenCalledWith('/')
+  })
+})
+
+describe('signOutAction', () => {
+  test('calls supabase signOut', async () => {
+    signOut.mockResolvedValueOnce({})
+
+    await signOutAction()
+
+    expect(signOut).toHaveBeenCalled()
+  })
+
+  test('redirects to /login after sign out', async () => {
+    signOut.mockResolvedValueOnce({})
+
+    await signOutAction()
+
+    expect(redirect).toHaveBeenCalledWith('/login')
   })
 })
