@@ -47,4 +47,13 @@ describe('proxy', () => {
 
     expect(getRedirectUrl(response!)).toBe('http://localhost:3000/login')
   })
+
+  test('allows unauthenticated request to landing page', async () => {
+    getUser.mockResolvedValueOnce({ data: { user: null } })
+
+    const request = new NextRequest('http://localhost:3000/')
+    const response = await proxy(request)
+
+    expect(getRedirectUrl(response!)).toBeNull()
+  })
 })

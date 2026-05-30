@@ -13,7 +13,9 @@ export async function proxy(request: NextRequest) {
     // Invalid or expired refresh token — treat as unauthenticated
   }
 
-  if (!user && !request.nextUrl.pathname.startsWith('/login')) {
+  const isPublic = request.nextUrl.pathname === '/' || request.nextUrl.pathname.startsWith('/login')
+
+  if (!user && !isPublic) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
@@ -22,6 +24,6 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt).*)',
+    '/((?!_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|.*\\.svg$|.*\\.png$|.*\\.jpg$|.*\\.ico$).*)',
   ],
 }
