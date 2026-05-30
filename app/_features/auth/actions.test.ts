@@ -59,7 +59,7 @@ describe('signInAction', () => {
 
     await signInAction({ errors: {} }, formData)
 
-    expect(redirect).toHaveBeenCalledWith('/')
+    expect(redirect).toHaveBeenCalledWith('/dashboard')
   })
 })
 

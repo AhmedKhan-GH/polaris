@@ -40,7 +40,7 @@ export async function signInAction(
     return { errors: { form: [error.message] } }
   }
 
-  redirect('/')
+  redirect('/dashboard')
 }
 
 export async function signOutAction() {
