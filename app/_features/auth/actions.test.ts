@@ -72,11 +72,11 @@ describe('signOutAction', () => {
     expect(signOut).toHaveBeenCalled()
   })
 
-  test('redirects to /login after sign out', async () => {
+  test('redirects to landing page after sign out', async () => {
     signOut.mockResolvedValueOnce({})
 
     await signOutAction()
 
-    expect(redirect).toHaveBeenCalledWith('/login')
+    expect(redirect).toHaveBeenCalledWith('/')
   })
 })
