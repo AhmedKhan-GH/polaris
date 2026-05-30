@@ -24,6 +24,10 @@
 .DS_Store
 *.pem
 
+# IDE / tooling
+.idea/
+.ai/
+
 # debug
 npm-debug.log*
 yarn-debug.log*
