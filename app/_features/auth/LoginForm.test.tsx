@@ -16,7 +16,7 @@ describe('LoginForm', () => {
 
     expect(screen.getByLabelText(/email/i)).toBeInTheDocument()
     expect(screen.getByLabelText(/password/i)).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /sign in/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /log in/i })).toBeInTheDocument()
   })
 
   test('displays validation errors returned by signInAction', async () => {
@@ -30,10 +30,16 @@ describe('LoginForm', () => {
     const user = userEvent.setup()
     render(<LoginForm />)
 
-    await user.click(screen.getByRole('button', { name: /sign in/i }))
+    await user.click(screen.getByRole('button', { name: /log in/i }))
 
     expect(await screen.findByText('Valid email is required')).toBeInTheDocument()
     expect(screen.getByText('Password is required')).toBeInTheDocument()
+  })
+
+  test('renders back link to landing page', () => {
+    render(<LoginForm />)
+
+    expect(screen.getByRole('link', { name: /back/i })).toHaveAttribute('href', '/')
   })
 
   test('displays form-level error on invalid credentials', async () => {
@@ -44,7 +50,7 @@ describe('LoginForm', () => {
     const user = userEvent.setup()
     render(<LoginForm />)
 
-    await user.click(screen.getByRole('button', { name: /sign in/i }))
+    await user.click(screen.getByRole('button', { name: /log in/i }))
 
     expect(await screen.findByText('Invalid login credentials')).toBeInTheDocument()
   })
