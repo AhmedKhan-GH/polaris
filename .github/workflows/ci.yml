@@ -65,13 +65,11 @@ jobs:
 
       - name: Create .env.test
         run: |
-          cat <<EOF > .env.test
-          NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
-          NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH
-          SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          TEST_USER_EMAIL=test@example.com
-          TEST_USER_PASSWORD=${{ secrets.TEST_USER_PASSWORD }}
-          EOF
+          echo "NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321" >> .env.test
+          echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH" >> .env.test
+          echo "SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" >> .env.test
+          echo "TEST_USER_EMAIL=test@example.com" >> .env.test
+          echo "TEST_USER_PASSWORD=${{ secrets.TEST_USER_PASSWORD }}" >> .env.test
 
       - name: Run E2E tests
         run: npm run test:e2e
