@@ -17,14 +17,14 @@ describe('LandingPage', () => {
   })
 
   test('shows log out button in header when authenticated', () => {
-    render(<LandingPage user={{ id: '123' } as any} />)
+    render(<LandingPage user={{ id: '123' } as unknown as import('@supabase/supabase-js').User} />)
 
     const header = screen.getByRole('banner')
     expect(within(header).getByRole('button', { name: /log out/i })).toBeInTheDocument()
   })
 
   test('shows dashboard link in main content when authenticated', () => {
-    render(<LandingPage user={{ id: '123' } as any} />)
+    render(<LandingPage user={{ id: '123' } as unknown as import('@supabase/supabase-js').User} />)
 
     const main = screen.getByRole('main')
     expect(within(main).getByRole('link', { name: /dashboard/i })).toHaveAttribute('href', '/dashboard')

@@ -1,4 +1,4 @@
-import { describe, expect, test, vi, beforeEach } from 'vitest'
+import { describe, expect, test, vi } from 'vitest'
 import { NextRequest } from 'next/server'
 import { getRedirectUrl } from 'next/experimental/testing/server'
 import { proxy } from './proxy'
