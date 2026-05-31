@@ -7,8 +7,12 @@ export function LandingPage({ user }: { user: User | null }) {
     <div className="flex flex-col flex-1 bg-zinc-50 font-sans dark:bg-black">
       <PageHeader user={user} />
       <main className="flex flex-1 w-full max-w-3xl mx-auto flex-col items-center justify-between py-32 px-16">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/zeefoods-logo.svg" alt="Zee Foods logo" width={300} height={387} />
+        <div className="flex items-center gap-4">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/zeefoods_logo.svg" alt="Zee Foods logo" width={80} height={80} />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/zeefoods_letters.svg" alt="Zee Foods" width={200} height={97} />
+        </div>
         <div className="flex flex-col items-center gap-6 text-center">
           <h1 className="text-5xl font-semibold tracking-tight text-black dark:text-zinc-50">
             Polaris
