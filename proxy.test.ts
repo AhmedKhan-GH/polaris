@@ -56,4 +56,13 @@ describe('proxy', () => {
 
     expect(getRedirectUrl(response!)).toBeNull()
   })
+
+  test('redirects authenticated request on /login to /dashboard', async () => {
+    getUser.mockResolvedValueOnce({ data: { user: { id: '123' } } })
+
+    const request = new NextRequest('http://localhost:3000/login')
+    const response = await proxy(request)
+
+    expect(getRedirectUrl(response!)).toBe('http://localhost:3000/dashboard')
+  })
 })
