@@ -17,3 +17,10 @@ test('login with invalid credentials shows error', async ({ page }) => {
   await expect(page.getByText('Invalid login credentials')).toBeVisible()
   await expect(page).toHaveURL('/login')
 })
+
+test('login with empty fields shows validation errors', async ({ page }) => {
+  await page.goto('/login')
+  await page.getByRole('button', { name: 'Log in' }).click()
+  await expect(page.getByText('Valid email is required')).toBeVisible()
+  await expect(page.getByText('Password is required')).toBeVisible()
+})
