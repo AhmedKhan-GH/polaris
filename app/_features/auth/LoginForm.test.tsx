@@ -36,12 +36,6 @@ describe('LoginForm', () => {
     expect(screen.getByText('Password is required')).toBeInTheDocument()
   })
 
-  test('renders back link to landing page', () => {
-    render(<LoginForm />)
-
-    expect(screen.getByRole('link', { name: /back/i })).toHaveAttribute('href', '/')
-  })
-
   test('displays form-level error on invalid credentials', async () => {
     vi.mocked(signInAction).mockResolvedValueOnce({
       errors: { form: ['Invalid login credentials'] },

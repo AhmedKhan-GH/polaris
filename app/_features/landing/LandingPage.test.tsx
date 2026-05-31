@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test, vi } from 'vitest'
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, render, screen, within } from '@testing-library/react'
 import { LandingPage } from './LandingPage'
 
 vi.mock('../auth/actions', () => ({
@@ -9,22 +9,30 @@ vi.mock('../auth/actions', () => ({
 afterEach(cleanup)
 
 describe('LandingPage', () => {
-  test('shows log in button when unauthenticated', () => {
+  test('shows log in link in header when unauthenticated', () => {
     render(<LandingPage user={null} />)
 
-    expect(screen.getByRole('link', { name: /log in/i })).toHaveAttribute('href', '/login')
+    const header = screen.getByRole('banner')
+    expect(within(header).getByRole('link', { name: /log in/i })).toHaveAttribute('href', '/login')
   })
 
-  test('shows dashboard link and log out button when authenticated', () => {
+  test('shows log out button in header when authenticated', () => {
     render(<LandingPage user={{ id: '123' } as any} />)
 
-    expect(screen.getByRole('link', { name: /dashboard/i })).toHaveAttribute('href', '/dashboard')
-    expect(screen.getByRole('button', { name: /log out/i })).toBeInTheDocument()
+    const header = screen.getByRole('banner')
+    expect(within(header).getByRole('button', { name: /log out/i })).toBeInTheDocument()
   })
 
-  test('does not show log in button when authenticated', () => {
+  test('shows dashboard link in main content when authenticated', () => {
     render(<LandingPage user={{ id: '123' } as any} />)
 
-    expect(screen.queryByRole('link', { name: /log in/i })).not.toBeInTheDocument()
+    const main = screen.getByRole('main')
+    expect(within(main).getByRole('link', { name: /dashboard/i })).toHaveAttribute('href', '/dashboard')
+  })
+
+  test('does not show dashboard link when unauthenticated', () => {
+    render(<LandingPage user={null} />)
+
+    expect(screen.queryByRole('link', { name: /dashboard/i })).not.toBeInTheDocument()
   })
 })

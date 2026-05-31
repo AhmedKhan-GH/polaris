@@ -1,11 +1,12 @@
 import Link from 'next/link'
 import type { User } from '@supabase/supabase-js'
-import { signOutAction } from '@/app/_features/auth/actions'
+import { PageHeader } from '@/app/_features/shell/PageHeader'
 
 export function LandingPage({ user }: { user: User | null }) {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black">
+    <div className="flex flex-col flex-1 bg-zinc-50 font-sans dark:bg-black">
+      <PageHeader user={user} />
+      <main className="flex flex-1 w-full max-w-3xl mx-auto flex-col items-center justify-between py-32 px-16">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/zeefoods-logo.svg" alt="Zee Foods logo" width={300} height={387} />
         <div className="flex flex-col items-center gap-6 text-center">
@@ -16,33 +17,16 @@ export function LandingPage({ user }: { user: User | null }) {
             Cold chain logistics platform.
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          {user ? (
-            <>
-              <Link
-                href="/dashboard"
-                className="flex h-12 items-center justify-center rounded-lg bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc]"
-              >
-                Dashboard
-              </Link>
-              <form action={signOutAction}>
-                <button
-                  type="submit"
-                  className="flex h-12 items-center justify-center rounded-lg border border-black/[.08] px-5 transition-colors hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a]"
-                >
-                  Log out
-                </button>
-              </form>
-            </>
-          ) : (
+        {user && (
+          <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
             <Link
-              href="/login"
+              href="/dashboard"
               className="flex h-12 items-center justify-center rounded-lg bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc]"
             >
-              Log in
+              Dashboard
             </Link>
-          )}
-        </div>
+          </div>
+        )}
       </main>
     </div>
   )
