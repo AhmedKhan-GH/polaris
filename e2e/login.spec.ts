@@ -25,6 +25,11 @@ test('login with empty fields shows validation errors', async ({ page }) => {
   await expect(page.getByText('Password is required')).toBeVisible()
 })
 
+test('unauthenticated visit to /dashboard redirects to /login', async ({ page }) => {
+  await page.goto('/dashboard')
+  await expect(page).toHaveURL('/login')
+})
+
 test('authenticated user visiting /login is redirected to /dashboard', async ({ page }) => {
   await page.goto('/login')
   await page.getByLabel('Email').fill(process.env.TEST_USER_EMAIL!)
