@@ -12,6 +12,9 @@
 
 # testing
 /coverage
+/test-results/
+/playwright-report/
+/blob-report/
 
 # next.js
 /.next/
@@ -24,6 +27,10 @@
 .DS_Store
 *.pem
 
+# IDE / tooling
+.idea/
+.ai/
+
 # debug
 npm-debug.log*
 yarn-debug.log*
@@ -32,6 +39,7 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.test.example
 
 # vercel
 .vercel

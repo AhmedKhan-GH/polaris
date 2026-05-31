@@ -1,0 +1,34 @@
+import Link from 'next/link'
+import type { User } from '@supabase/supabase-js'
+import { signOutAction } from '@/app/_features/auth/actions'
+
+export function PageHeader({ user, hideAuth }: { user: User | null; hideAuth?: boolean }) {
+  return (
+    <header className="w-full border-b border-black/[.08] dark:border-white/[.145]">
+      <div className="mx-auto flex w-full max-w-3xl items-center justify-between px-16 py-4">
+        <Link href="/" className="text-lg font-semibold tracking-tight text-black dark:text-zinc-50">
+          Polaris
+        </Link>
+        {!hideAuth && (
+          user ? (
+            <form action={signOutAction}>
+              <button
+                type="submit"
+                className="flex h-12 items-center justify-center rounded-lg border border-black/[.08] px-5 transition-colors hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a]"
+              >
+                Log out
+              </button>
+            </form>
+          ) : (
+            <Link
+              href="/login"
+              className="flex h-12 items-center justify-center rounded-lg bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc]"
+            >
+              Log in
+            </Link>
+          )
+        )}
+      </div>
+    </header>
+  )
+}
