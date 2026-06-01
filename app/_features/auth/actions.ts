@@ -39,6 +39,16 @@ export async function signInAction(
   })
 
   if (error) {
+    try {
+      await db.insert(signInLog).values({
+        userId: null,
+        email: parsed.data.email,
+        success: false,
+        createdAt: Math.floor(Date.now() / 1000),
+      })
+    } catch {
+      // Login flow continues even if logging fails
+    }
     return { errors: { form: [error.message] } }
   }
 
@@ -47,10 +57,12 @@ export async function signInAction(
   try {
     await db.insert(signInLog).values({
       userId: user!.id,
+      email: parsed.data.email,
+      success: true,
       createdAt: Math.floor(Date.now() / 1000),
     })
   } catch {
-    // Sign-in succeeds even if logging fails
+    // Login flow continues even if logging fails
   }
 
   redirect('/dashboard')

@@ -1,4 +1,4 @@
-import { describe, expect, test, vi } from 'vitest'
+import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { signInAction, signOutAction } from './actions'
 import { redirect } from 'next/navigation'
 
@@ -20,6 +20,10 @@ const insertValues = vi.fn().mockReturnValue({ values: vi.fn() })
 vi.mock('@/lib/db/client', () => ({
   db: { insert: () => ({ values: insertValues }) },
 }))
+
+beforeEach(() => {
+  vi.clearAllMocks()
+})
 
 describe('signInAction', () => {
   test('returns validation error for empty email', async () => {
@@ -82,6 +86,29 @@ describe('signInAction', () => {
     expect(insertValues).toHaveBeenCalledWith(
       expect.objectContaining({
         userId: 'user-456',
+        email: 'test@example.com',
+        success: true,
+        createdAt: expect.any(Number),
+      }),
+    )
+  })
+
+  test('logs failed sign-in attempt on invalid credentials', async () => {
+    signInWithPassword.mockResolvedValueOnce({
+      error: { message: 'Invalid login credentials' },
+    })
+
+    const formData = new FormData()
+    formData.set('email', 'attacker@example.com')
+    formData.set('password', 'wrongpassword')
+
+    await signInAction({ errors: {} }, formData)
+
+    expect(insertValues).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: null,
+        email: 'attacker@example.com',
+        success: false,
         createdAt: expect.any(Number),
       }),
     )
