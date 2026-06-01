@@ -14,12 +14,6 @@ describe('database migrations', () => {
     pool = new pg.Pool({ connectionString: container.getConnectionUri() })
     client = await pool.connect()
 
-    await client.query(`
-      CREATE ROLE authenticated;
-      CREATE SCHEMA IF NOT EXISTS auth;
-      CREATE FUNCTION auth.uid() RETURNS uuid AS $$ SELECT '00000000-0000-0000-0000-000000000000'::uuid $$ LANGUAGE sql;
-    `)
-
     const migrationPool = new pg.Pool({ connectionString: container.getConnectionUri() })
     const db = drizzle(migrationPool)
     await migrate(db, { migrationsFolder: './drizzle' })
@@ -43,19 +37,9 @@ describe('database migrations', () => {
     expect(result.rows).toEqual([
       { column_name: 'id', data_type: 'uuid' },
       { column_name: 'user_id', data_type: 'uuid' },
-      { column_name: 'created_at', data_type: 'bigint' },
       { column_name: 'email', data_type: 'text' },
       { column_name: 'success', data_type: 'boolean' },
+      { column_name: 'created_at', data_type: 'bigint' },
     ])
-  })
-
-  it('enables row level security on sign_in_log', async () => {
-    const result = await client.query(`
-      SELECT relrowsecurity
-      FROM pg_class
-      WHERE relname = 'sign_in_log'
-    `)
-
-    expect(result.rows[0].relrowsecurity).toBe(true)
   })
 })

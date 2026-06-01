@@ -16,7 +16,7 @@ vi.mock('next/navigation', () => ({
   redirect: vi.fn(),
 }))
 
-const insertValues = vi.fn().mockReturnValue({ values: vi.fn() })
+const insertValues = vi.fn().mockResolvedValue(undefined)
 vi.mock('@/lib/db/client', () => ({
   db: { insert: () => ({ values: insertValues }) },
 }))

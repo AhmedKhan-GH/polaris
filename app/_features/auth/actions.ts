@@ -47,7 +47,7 @@ export async function signInAction(
         createdAt: Math.floor(Date.now() / 1000),
       })
     } catch {
-      // Login flow continues even if logging fails
+      // Sign-in flow continues even if logging fails
     }
     return { errors: { form: [error.message] } }
   }
@@ -62,7 +62,7 @@ export async function signInAction(
       createdAt: Math.floor(Date.now() / 1000),
     })
   } catch {
-    // Login flow continues even if logging fails
+    // Sign-in flow continues even if logging fails
   }
 
   redirect('/dashboard')
