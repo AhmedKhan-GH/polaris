@@ -4,15 +4,21 @@ import { redirect } from 'next/navigation'
 
 const signInWithPassword = vi.fn()
 const signOut = vi.fn()
+const getUser = vi.fn()
 
 vi.mock('@/lib/supabase/server', () => ({
   createClient: () => ({
-    auth: { signInWithPassword, signOut },
+    auth: { signInWithPassword, signOut, getUser },
   }),
 }))
 
 vi.mock('next/navigation', () => ({
   redirect: vi.fn(),
+}))
+
+const insertValues = vi.fn().mockReturnValue({ values: vi.fn() })
+vi.mock('@/lib/db/client', () => ({
+  db: { insert: () => ({ values: insertValues }) },
 }))
 
 describe('signInAction', () => {
@@ -50,8 +56,9 @@ describe('signInAction', () => {
     expect(result.errors?.form).toBeDefined()
   })
 
-  test('redirects to / on successful login', async () => {
+  test('redirects to /dashboard on successful login', async () => {
     signInWithPassword.mockResolvedValueOnce({ error: null })
+    getUser.mockResolvedValueOnce({ data: { user: { id: 'user-123' } } })
 
     const formData = new FormData()
     formData.set('email', 'test@example.com')
@@ -60,6 +67,24 @@ describe('signInAction', () => {
     await signInAction({ errors: {} }, formData)
 
     expect(redirect).toHaveBeenCalledWith('/dashboard')
+  })
+
+  test('inserts sign-in log after successful login', async () => {
+    signInWithPassword.mockResolvedValueOnce({ error: null })
+    getUser.mockResolvedValueOnce({ data: { user: { id: 'user-456' } } })
+
+    const formData = new FormData()
+    formData.set('email', 'test@example.com')
+    formData.set('password', 'correctpassword')
+
+    await signInAction({ errors: {} }, formData)
+
+    expect(insertValues).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: 'user-456',
+        createdAt: expect.any(Number),
+      }),
+    )
   })
 })
 

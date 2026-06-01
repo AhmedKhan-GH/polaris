@@ -3,6 +3,8 @@
 import { z } from 'zod'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { db } from '@/lib/db/client'
+import { signInLog } from '@/lib/db/schema'
 
 const SignInSchema = z.object({
   email: z.email({ error: 'Valid email is required' }),
@@ -38,6 +40,17 @@ export async function signInAction(
 
   if (error) {
     return { errors: { form: [error.message] } }
+  }
+
+  const { data: { user } } = await supabase.auth.getUser()
+
+  try {
+    await db.insert(signInLog).values({
+      userId: user!.id,
+      createdAt: Math.floor(Date.now() / 1000),
+    })
+  } catch {
+    // Sign-in succeeds even if logging fails
   }
 
   redirect('/dashboard')

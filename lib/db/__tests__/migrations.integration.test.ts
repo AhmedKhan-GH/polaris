@@ -6,7 +6,7 @@ import pg from 'pg'
 
 describe('database migrations', () => {
   let container: StartedPostgreSqlContainer
-  let client: pg.Client
+  let client: pg.PoolClient
   let pool: pg.Pool
 
   beforeAll(async () => {
