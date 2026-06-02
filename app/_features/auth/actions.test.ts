@@ -1,19 +1,29 @@
-import { describe, expect, test, vi } from 'vitest'
+import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { signInAction, signOutAction } from './actions'
 import { redirect } from 'next/navigation'
 
 const signInWithPassword = vi.fn()
 const signOut = vi.fn()
+const getUser = vi.fn()
 
 vi.mock('@/lib/supabase/server', () => ({
   createClient: () => ({
-    auth: { signInWithPassword, signOut },
+    auth: { signInWithPassword, signOut, getUser },
   }),
 }))
 
 vi.mock('next/navigation', () => ({
   redirect: vi.fn(),
 }))
+
+const insertValues = vi.fn().mockResolvedValue(undefined)
+vi.mock('@/lib/db/client', () => ({
+  db: { insert: () => ({ values: insertValues }) },
+}))
+
+beforeEach(() => {
+  vi.clearAllMocks()
+})
 
 describe('signInAction', () => {
   test('returns validation error for empty email', async () => {
@@ -50,8 +60,9 @@ describe('signInAction', () => {
     expect(result.errors?.form).toBeDefined()
   })
 
-  test('redirects to / on successful login', async () => {
+  test('redirects to /dashboard on successful login', async () => {
     signInWithPassword.mockResolvedValueOnce({ error: null })
+    getUser.mockResolvedValueOnce({ data: { user: { id: 'user-123' } } })
 
     const formData = new FormData()
     formData.set('email', 'test@example.com')
@@ -60,6 +71,47 @@ describe('signInAction', () => {
     await signInAction({ errors: {} }, formData)
 
     expect(redirect).toHaveBeenCalledWith('/dashboard')
+  })
+
+  test('inserts sign-in log after successful login', async () => {
+    signInWithPassword.mockResolvedValueOnce({ error: null })
+    getUser.mockResolvedValueOnce({ data: { user: { id: 'user-456' } } })
+
+    const formData = new FormData()
+    formData.set('email', 'test@example.com')
+    formData.set('password', 'correctpassword')
+
+    await signInAction({ errors: {} }, formData)
+
+    expect(insertValues).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: 'user-456',
+        email: 'test@example.com',
+        success: true,
+        createdAt: expect.any(Number),
+      }),
+    )
+  })
+
+  test('logs failed sign-in attempt on invalid credentials', async () => {
+    signInWithPassword.mockResolvedValueOnce({
+      error: { message: 'Invalid login credentials' },
+    })
+
+    const formData = new FormData()
+    formData.set('email', 'attacker@example.com')
+    formData.set('password', 'wrongpassword')
+
+    await signInAction({ errors: {} }, formData)
+
+    expect(insertValues).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: null,
+        email: 'attacker@example.com',
+        success: false,
+        createdAt: expect.any(Number),
+      }),
+    )
   })
 })
 
