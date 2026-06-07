@@ -21,7 +21,10 @@
       ],
       "webOrigins": [
         "http://localhost:3000"
-      ]
+      ],
+      "attributes": {
+        "post.logout.redirect.uris": "http://localhost:3000/*"
+      }
     }
   ],
   "users": [

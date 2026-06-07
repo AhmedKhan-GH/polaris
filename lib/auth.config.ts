@@ -13,4 +13,20 @@ export const authConfig: NextAuthConfig = {
     }),
   ],
   session: { strategy: 'jwt' },
+  callbacks: {
+    // Persist the Keycloak id_token so sign-out can perform RP-initiated
+    // logout (id_token_hint) against Keycloak's end-session endpoint.
+    async jwt({ token, account }) {
+      if (account?.id_token) {
+        ;(token as Record<string, unknown>).idToken = account.id_token
+      }
+      return token
+    },
+    async session({ session, token }) {
+      ;(session as { idToken?: string }).idToken = (
+        token as Record<string, unknown>
+      ).idToken as string | undefined
+      return session
+    },
+  },
 }
