@@ -1,75 +1,31 @@
 'use server'
 
-import { z } from 'zod'
+import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
-import { db } from '@/lib/db/client'
-import { signInLog } from '@/lib/db/schema'
+import { auth, signIn, signOut } from '@/lib/auth'
 
-const SignInSchema = z.object({
-  email: z.email({ error: 'Valid email is required' }),
-  password: z.string().min(1, { error: 'Password is required' }),
-})
-
-export type AuthState = {
-  errors?: {
-    email?: string[]
-    password?: string[]
-    form?: string[]
-  }
-}
-
-export async function signInAction(
-  _prevState: AuthState,
-  formData: FormData,
-): Promise<AuthState> {
-  const parsed = SignInSchema.safeParse({
-    email: formData.get('email'),
-    password: formData.get('password'),
-  })
-
-  if (!parsed.success) {
-    return { errors: parsed.error.flatten().fieldErrors }
-  }
-
-  const supabase = await createClient()
-  const { error } = await supabase.auth.signInWithPassword({
-    email: parsed.data.email,
-    password: parsed.data.password,
-  })
-
-  if (error) {
-    try {
-      await db.insert(signInLog).values({
-        userId: null,
-        email: parsed.data.email,
-        success: false,
-        createdAt: Math.floor(Date.now() / 1000),
-      })
-    } catch {
-      // Sign-in flow continues even if logging fails
-    }
-    return { errors: { form: [error.message] } }
-  }
-
-  const { data: { user } } = await supabase.auth.getUser()
-
-  try {
-    await db.insert(signInLog).values({
-      userId: user!.id,
-      email: parsed.data.email,
-      success: true,
-      createdAt: Math.floor(Date.now() / 1000),
-    })
-  } catch {
-    // Sign-in flow continues even if logging fails
-  }
-
-  redirect('/dashboard')
+export async function signInAction() {
+  await signIn('keycloak', { redirectTo: '/dashboard' })
 }
 
 export async function signOutAction() {
-  const supabase = await createClient()
-  await supabase.auth.signOut()
-  redirect('/')
+  const session = await auth()
+  const idToken = (session as { idToken?: string } | null)?.idToken
+
+  const headerList = await headers()
+  const proto = headerList.get('x-forwarded-proto') ?? 'http'
+  const host = headerList.get('host') ?? 'localhost:3000'
+  const origin = `${proto}://${host}`
+
+  // Clear the app session, then end the Keycloak SSO session so a later
+  // login requires credentials again (signOut alone leaves Keycloak logged in).
+  await signOut({ redirect: false })
+
+  const endSession = new URL(
+    `${process.env.AUTH_KEYCLOAK_ISSUER}/protocol/openid-connect/logout`,
+  )
+  if (idToken) endSession.searchParams.set('id_token_hint', idToken)
+  endSession.searchParams.set('post_logout_redirect_uri', `${origin}/`)
+
+  redirect(endSession.toString())
 }

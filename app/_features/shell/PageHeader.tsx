@@ -1,8 +1,8 @@
 import Link from 'next/link'
-import type { User } from '@supabase/supabase-js'
-import { signOutAction } from '@/app/_features/auth/actions'
+import type { AuthUser } from '@/lib/auth-user'
+import { signInAction, signOutAction } from '@/app/_features/auth/actions'
 
-export function PageHeader({ user, hideAuth }: { user: User | null; hideAuth?: boolean }) {
+export function PageHeader({ user, hideAuth }: { user: AuthUser | null; hideAuth?: boolean }) {
   return (
     <header className="w-full border-b border-black/[.08] dark:border-white/[.145]">
       <div className="mx-auto flex w-full max-w-3xl items-center justify-between px-16 py-4">
@@ -20,12 +20,14 @@ export function PageHeader({ user, hideAuth }: { user: User | null; hideAuth?: b
               </button>
             </form>
           ) : (
-            <Link
-              href="/login"
-              className="flex h-12 items-center justify-center rounded-lg bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc]"
-            >
-              Log in
-            </Link>
+            <form action={signInAction}>
+              <button
+                type="submit"
+                className="flex h-12 items-center justify-center rounded-lg bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc]"
+              >
+                Log in
+              </button>
+            </form>
           )
         )}
       </div>
