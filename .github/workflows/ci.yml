@@ -93,7 +93,7 @@ jobs:
             echo "AUTH_KEYCLOAK_ISSUER=http://localhost:8080/realms/polaris"
             echo "AUTH_SECRET=ci-test-secret-not-for-production"
             echo "AUTH_TRUST_HOST=true"
-            echo "TEST_USER_EMAIL=test@example.com"
+            echo "TEST_USER_EMAIL=owner@example.com"
             echo "TEST_USER_PASSWORD=test-password-123"
             echo "DATABASE_URL=postgresql://postgres:postgres@localhost:5432/postgres"
           } >> .env.test

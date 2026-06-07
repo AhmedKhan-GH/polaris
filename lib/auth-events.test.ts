@@ -1,16 +1,21 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 const insertValues = vi.fn()
+const warn = vi.fn()
 
 vi.mock('@/lib/db/client', () => ({
   db: { insert: () => ({ values: insertValues }) },
 }))
 vi.mock('@/lib/db/schema', () => ({ signInLog: {} }))
+vi.mock('@/lib/logger', () => ({
+  logger: { warn: (...args: unknown[]) => warn(...args) },
+}))
 
 import { recordSignIn } from './auth-events'
 
 beforeEach(() => {
   insertValues.mockReset().mockResolvedValue(undefined)
+  warn.mockReset()
 })
 
 describe('recordSignIn', () => {
@@ -50,5 +55,16 @@ describe('recordSignIn', () => {
         account: { providerAccountId: 'x' },
       }),
     ).resolves.toBeUndefined()
+  })
+
+  test('logs a warning when the sign_in_log write fails', async () => {
+    insertValues.mockRejectedValueOnce(new Error('db down'))
+
+    await recordSignIn({
+      user: { email: 'y@z.com' },
+      account: { providerAccountId: 'x' },
+    })
+
+    expect(warn).toHaveBeenCalled()
   })
 })

@@ -26,3 +26,21 @@ test('registers a keycloak provider using the issuer from env', async () => {
   expect(keycloak).toBeDefined()
   expect(keycloak?.options?.issuer).toBe(ENV.AUTH_KEYCLOAK_ISSUER)
 })
+
+test('maps the Keycloak roles claim into the session', async () => {
+  const { authConfig } = await import('./auth.config')
+  const callbacks = authConfig.callbacks!
+
+  const token = await callbacks.jwt!({
+    token: {},
+    account: null,
+    profile: { roles: ['owner'] },
+  } as unknown as Parameters<NonNullable<typeof callbacks.jwt>>[0])
+
+  const session = await callbacks.session!({
+    session: { user: {}, expires: '' },
+    token,
+  } as unknown as Parameters<NonNullable<typeof callbacks.session>>[0])
+
+  expect((session as { roles?: string[] }).roles).toEqual(['owner'])
+})

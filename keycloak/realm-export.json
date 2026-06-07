@@ -5,6 +5,12 @@
   "duplicateEmailsAllowed": false,
   "registrationAllowed": false,
   "resetPasswordAllowed": true,
+  "roles": {
+    "realm": [
+      { "name": "owner", "description": "Highest platform-level role" },
+      { "name": "member", "description": "Authenticated non-owner (no log access)" }
+    ]
+  },
   "clients": [
     {
       "clientId": "polaris-web",
@@ -24,17 +30,49 @@
       ],
       "attributes": {
         "post.logout.redirect.uris": "http://localhost:3000/*"
-      }
+      },
+      "protocolMappers": [
+        {
+          "name": "realm roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "config": {
+            "claim.name": "roles",
+            "jsonType.label": "String",
+            "multivalued": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        }
+      ]
     }
   ],
   "users": [
     {
-      "username": "test@example.com",
-      "email": "test@example.com",
+      "username": "owner@example.com",
+      "email": "owner@example.com",
       "emailVerified": true,
       "enabled": true,
-      "firstName": "Test",
+      "firstName": "Owner",
       "lastName": "User",
+      "realmRoles": ["owner"],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "test-password-123",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "member@example.com",
+      "email": "member@example.com",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "Member",
+      "lastName": "User",
+      "realmRoles": ["member"],
       "credentials": [
         {
           "type": "password",

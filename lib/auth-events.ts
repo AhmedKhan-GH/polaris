@@ -1,5 +1,6 @@
 import { db } from '@/lib/db/client'
 import { signInLog } from '@/lib/db/schema'
+import { logger } from '@/lib/logger'
 
 // The message shape Auth.js passes to events.signIn (subset we use).
 type SignInMessage = {
@@ -27,7 +28,8 @@ export async function recordSignIn(message: SignInMessage): Promise<void> {
       success: true,
       createdAt: Math.floor(Date.now() / 1000),
     })
-  } catch {
-    // best-effort — login proceeds even if logging fails
+  } catch (err) {
+    // best-effort — login proceeds even if logging fails, but surface it
+    logger.warn({ sub, err }, 'failed to write sign_in_log')
   }
 }
