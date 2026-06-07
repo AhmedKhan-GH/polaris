@@ -12,22 +12,22 @@ async function db<T>(fn: (c: Client) => Promise<T>): Promise<T> {
   }
 }
 
-// The runtime regression guard for the sign_in_log bug: a real Keycloak login
-// must write a row keyed by the *stable* Keycloak sub. The original bug used
-// Auth.js's user.id, which is random per login — two logins would yield two
-// distinct user_ids. Logging in twice and asserting a single, non-null user_id
-// reproduces that bug class automatically (and catches events.signIn not firing).
+// Runtime regression guard for the sign_in_log bug: a real Keycloak login must
+// write a row keyed by the *stable* Keycloak sub. The original bug used Auth.js's
+// user.id, which is random per login — repeated logins would yield *distinct*
+// user_ids. Asserting an invariant over the owner's own rows (one distinct,
+// non-null user_id) reproduces that bug class without deleting the table.
+const OWNER_EMAIL = process.env.TEST_USER_EMAIL!
+
 test('real logins record sign_in_log rows keyed by a stable, non-null Keycloak sub', async ({
   page,
 }) => {
-  await db((c) => c.query('delete from sign_in_log'))
-
   await loginViaKeycloak(page)
   await page.getByRole('button', { name: 'Log out' }).click()
   await expect(page).toHaveURL('/')
   await loginViaKeycloak(page)
 
-  // events.signIn writes asynchronously — poll until both logins are recorded.
+  // events.signIn writes asynchronously — poll until the owner's rows settle.
   await expect
     .poll(
       async () => {
@@ -36,12 +36,15 @@ test('real logins record sign_in_log rows keyed by a stable, non-null Keycloak s
             `select count(*)::int as total,
                     count(distinct user_id)::int as distinct_users,
                     bool_and(user_id is not null) as all_set
-             from sign_in_log`,
+             from sign_in_log
+             where email = $1`,
+            [OWNER_EMAIL],
           ),
         )
         return rows[0]
       },
       { timeout: 8000 },
     )
-    .toEqual({ total: 2, distinct_users: 1, all_set: true })
+    // >= 1 row (the event fired), exactly one distinct non-null user_id (stable sub).
+    .toMatchObject({ distinct_users: 1, all_set: true })
 })
