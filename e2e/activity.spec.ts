@@ -19,3 +19,21 @@ test('a member cannot view the sign-in log', async ({ page }) => {
   await expect(page).toHaveURL('/dashboard')
   await expect(page.getByRole('table')).toHaveCount(0)
 })
+
+test('owner sees an Activity link on the dashboard that opens /activity', async ({
+  page,
+}) => {
+  await loginViaKeycloak(page) // lands on /dashboard as owner
+
+  const link = page.getByRole('link', { name: 'Activity' })
+  await expect(link).toBeVisible()
+  await link.click()
+  await expect(page).toHaveURL('/activity')
+})
+
+test('member does not see an Activity link on the dashboard', async ({ page }) => {
+  await loginViaKeycloak(page, 'member@example.com')
+
+  await expect(page).toHaveURL('/dashboard')
+  await expect(page.getByRole('link', { name: 'Activity' })).toHaveCount(0)
+})
