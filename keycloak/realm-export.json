@@ -7,7 +7,8 @@
   "resetPasswordAllowed": true,
   "roles": {
     "realm": [
-      { "name": "owner", "description": "Highest platform-level role" }
+      { "name": "owner", "description": "Highest platform-level role" },
+      { "name": "member", "description": "Authenticated non-owner (no log access)" }
     ]
   },
   "clients": [
@@ -71,6 +72,7 @@
       "enabled": true,
       "firstName": "Member",
       "lastName": "User",
+      "realmRoles": ["member"],
       "credentials": [
         {
           "type": "password",
