@@ -1,8 +1,8 @@
 import Link from 'next/link'
-import type { User } from '@supabase/supabase-js'
+import type { AuthUser } from '@/lib/auth-user'
 import { signOutAction } from '@/app/_features/auth/actions'
 
-export function PageHeader({ user, hideAuth }: { user: User | null; hideAuth?: boolean }) {
+export function PageHeader({ user, hideAuth }: { user: AuthUser | null; hideAuth?: boolean }) {
   return (
     <header className="w-full border-b border-black/[.08] dark:border-white/[.145]">
       <div className="mx-auto flex w-full max-w-3xl items-center justify-between px-16 py-4">

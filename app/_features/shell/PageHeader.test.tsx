@@ -22,13 +22,13 @@ describe('PageHeader', () => {
   })
 
   test('shows log out button when authenticated', () => {
-    render(<PageHeader user={{ id: '123' } as unknown as import('@supabase/supabase-js').User} />)
+    render(<PageHeader user={{ email: 'test@example.com' }} />)
 
     expect(screen.getByRole('button', { name: /log out/i })).toBeInTheDocument()
   })
 
   test('does not show log in when authenticated', () => {
-    render(<PageHeader user={{ id: '123' } as unknown as import('@supabase/supabase-js').User} />)
+    render(<PageHeader user={{ email: 'test@example.com' }} />)
 
     expect(screen.queryByRole('link', { name: /log in/i })).not.toBeInTheDocument()
   })

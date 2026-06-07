@@ -1,9 +1,8 @@
-import { createClient } from '@/lib/supabase/server'
+import { auth } from '@/lib/auth'
 import { LandingPage } from '@/app/_features/landing/LandingPage'
 
 export default async function Home() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const session = await auth()
 
-  return <LandingPage user={user} />
+  return <LandingPage user={session?.user ?? null} />
 }

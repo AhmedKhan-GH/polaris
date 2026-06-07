@@ -1,24 +1,17 @@
-import { createClient } from '@supabase/supabase-js'
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
-const testEmail = process.env.TEST_USER_EMAIL!
-const testPassword = process.env.TEST_USER_PASSWORD!
-
+// The test user is provisioned declaratively by the Keycloak realm import
+// (keycloak/realm-export.json), so there is nothing to seed here. We only
+// verify Keycloak is reachable so suites fail fast with a clear message.
 export default async function globalSetup() {
-  const supabase = createClient(supabaseUrl, serviceRoleKey, {
-    auth: { autoRefreshToken: false, persistSession: false },
+  const issuer = process.env.AUTH_KEYCLOAK_ISSUER!
+  const discovery = `${issuer}/.well-known/openid-configuration`
+
+  const res = await fetch(discovery).catch((e) => {
+    throw new Error(
+      `Keycloak is not reachable at ${discovery}. Run \`docker compose up -d\` first. (${e})`,
+    )
   })
 
-  const { data: existing } = await supabase.auth.admin.listUsers()
-  const testUser = existing?.users?.find((u) => u.email === testEmail)
-
-  if (!testUser) {
-    const { error } = await supabase.auth.admin.createUser({
-      email: testEmail,
-      password: testPassword,
-      email_confirm: true,
-    })
-    if (error) throw new Error(`Failed to seed test user: ${error.message}`)
+  if (!res.ok) {
+    throw new Error(`Keycloak discovery returned ${res.status} at ${discovery}`)
   }
 }

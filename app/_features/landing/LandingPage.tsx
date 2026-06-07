@@ -1,8 +1,8 @@
 import Link from 'next/link'
-import type { User } from '@supabase/supabase-js'
+import type { AuthUser } from '@/lib/auth-user'
 import { PageHeader } from '@/app/_features/shell/PageHeader'
 
-export function LandingPage({ user }: { user: User | null }) {
+export function LandingPage({ user }: { user: AuthUser | null }) {
   return (
     <div className="flex flex-col flex-1 bg-zinc-50 font-sans dark:bg-black">
       <PageHeader user={user} />
