@@ -3,17 +3,18 @@ import { cleanup, render, screen, within } from '@testing-library/react'
 import { LandingPage } from './LandingPage'
 
 vi.mock('../auth/actions', () => ({
+  signInAction: vi.fn(),
   signOutAction: vi.fn(),
 }))
 
 afterEach(cleanup)
 
 describe('LandingPage', () => {
-  test('shows log in link in header when unauthenticated', () => {
+  test('shows log in button in header when unauthenticated', () => {
     render(<LandingPage user={null} />)
 
     const header = screen.getByRole('banner')
-    expect(within(header).getByRole('link', { name: /log in/i })).toHaveAttribute('href', '/login')
+    expect(within(header).getByRole('button', { name: /log in/i })).toBeInTheDocument()
   })
 
   test('shows log out button in header when authenticated', () => {

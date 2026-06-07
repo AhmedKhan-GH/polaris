@@ -3,6 +3,7 @@ import { cleanup, render, screen } from '@testing-library/react'
 import { PageHeader } from './PageHeader'
 
 vi.mock('../auth/actions', () => ({
+  signInAction: vi.fn(),
   signOutAction: vi.fn(),
 }))
 
@@ -15,10 +16,10 @@ describe('PageHeader', () => {
     expect(screen.getByRole('link', { name: /polaris/i })).toHaveAttribute('href', '/')
   })
 
-  test('shows log in link when unauthenticated', () => {
+  test('shows log in button when unauthenticated', () => {
     render(<PageHeader user={null} />)
 
-    expect(screen.getByRole('link', { name: /log in/i })).toHaveAttribute('href', '/login')
+    expect(screen.getByRole('button', { name: /log in/i })).toBeInTheDocument()
   })
 
   test('shows log out button when authenticated', () => {
@@ -30,13 +31,13 @@ describe('PageHeader', () => {
   test('does not show log in when authenticated', () => {
     render(<PageHeader user={{ email: 'test@example.com' }} />)
 
-    expect(screen.queryByRole('link', { name: /log in/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /log in/i })).not.toBeInTheDocument()
   })
 
   test('hides auth button when hideAuth is true', () => {
     render(<PageHeader user={null} hideAuth />)
 
-    expect(screen.queryByRole('link', { name: /log in/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /log in/i })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /log out/i })).not.toBeInTheDocument()
   })
 })
