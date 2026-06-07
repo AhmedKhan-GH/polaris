@@ -33,3 +33,12 @@ test('the owner sees all orders', async ({ page }) => {
   // Owner sees their own order + the member's order.
   await expect(page.getByTestId('order-row')).toHaveCount(2)
 })
+
+test('the dashboard links to orders for any signed-in user', async ({ page }) => {
+  await loginViaKeycloak(page, 'member@example.com') // non-owner
+
+  const link = page.getByRole('link', { name: 'Orders' })
+  await expect(link).toBeVisible()
+  await link.click()
+  await expect(page).toHaveURL('/orders')
+})
