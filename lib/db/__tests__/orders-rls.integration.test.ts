@@ -38,24 +38,27 @@ describe('orders RLS (own OR owner)', () => {
   })
 
   // Act as the restricted role with a given identity (RLS applies).
-  async function asUser(userId: string, roles: string) {
+  // Roles are JSON-encoded into the GUC (matches withUserContext / the policy).
+  async function asUser(userId: string, roles: string[]) {
     await client.query('set role app_user')
     await client.query(`select set_config('app.user_id', $1, false)`, [userId])
-    await client.query(`select set_config('app.user_roles', $1, false)`, [roles])
+    await client.query(`select set_config('app.user_roles', $1, false)`, [
+      JSON.stringify(roles),
+    ])
   }
   async function asSuperuser() {
     await client.query('reset role')
   }
 
   it('a user sees only their own orders', async () => {
-    await asUser(USER_A, '')
+    await asUser(USER_A, [])
     const { rows } = await client.query('select created_by from orders')
     await asSuperuser()
     expect(rows).toEqual([{ created_by: USER_A }])
   })
 
   it("a user cannot see another user's orders", async () => {
-    await asUser(USER_B, '')
+    await asUser(USER_B, [])
     const { rows } = await client.query(
       'select created_by from orders where created_by = $1',
       [USER_A],
@@ -65,7 +68,7 @@ describe('orders RLS (own OR owner)', () => {
   })
 
   it('an owner sees all orders', async () => {
-    await asUser(USER_B, 'owner')
+    await asUser(USER_B, ['owner'])
     const { rows } = await client.query('select created_by from orders')
     await asSuperuser()
     expect(rows).toHaveLength(2)

@@ -47,4 +47,14 @@ describe('withUserContext', () => {
     )
     expect(rows).toHaveLength(2)
   })
+
+  it('a role literally containing a comma does not grant owner', async () => {
+    // 'x,owner' is ONE role, not two — it must not be split on the comma and
+    // matched against 'owner'. Guards against delimiter injection in the GUC.
+    const rows = await withUserContext(
+      { userId: USER_A, roles: ['x,owner'] },
+      (tx) => tx.select().from(orders),
+    )
+    expect(rows.map((r) => r.createdBy)).toEqual([USER_A])
+  })
 })

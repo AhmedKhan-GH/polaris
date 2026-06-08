@@ -10,6 +10,8 @@ vi.mock('@/lib/logger', () => ({
 
 import { withPermission } from './guard'
 
+const USER = '11111111-1111-1111-1111-111111111111'
+
 beforeEach(() => {
   auth.mockReset()
   warn.mockReset()
@@ -17,7 +19,11 @@ beforeEach(() => {
 
 describe('withPermission', () => {
   test('runs the action when the role allows it', async () => {
-    auth.mockResolvedValue({ roles: ['owner'], user: { email: 'o@example.com' } })
+    auth.mockResolvedValue({
+      userId: USER,
+      roles: ['owner'],
+      user: { email: 'o@example.com' },
+    })
     const fn = vi.fn().mockResolvedValue('result')
 
     const out = await withPermission('read', 'SignInLog', fn)
@@ -28,11 +34,33 @@ describe('withPermission', () => {
   })
 
   test('throws and logs a denial when the role lacks permission', async () => {
-    auth.mockResolvedValue({ roles: ['member'], user: { email: 'm@example.com' } })
+    auth.mockResolvedValue({
+      userId: USER,
+      roles: ['member'],
+      user: { email: 'm@example.com' },
+    })
     const fn = vi.fn()
 
     await expect(withPermission('read', 'SignInLog', fn)).rejects.toThrow()
     expect(fn).not.toHaveBeenCalled()
     expect(warn).toHaveBeenCalled()
+  })
+
+  test('fails closed when there is no authenticated session, even for an otherwise-allowed action', async () => {
+    auth.mockResolvedValue(null)
+    const fn = vi.fn()
+
+    // create Order is unconditional in the ability — but no session must still deny.
+    await expect(withPermission('create', 'Order', fn)).rejects.toThrow()
+    expect(fn).not.toHaveBeenCalled()
+    expect(warn).toHaveBeenCalled()
+  })
+
+  test('fails closed when the session has no userId', async () => {
+    auth.mockResolvedValue({ roles: ['owner'], user: { email: 'o@example.com' } })
+    const fn = vi.fn()
+
+    await expect(withPermission('read', 'SignInLog', fn)).rejects.toThrow()
+    expect(fn).not.toHaveBeenCalled()
   })
 })

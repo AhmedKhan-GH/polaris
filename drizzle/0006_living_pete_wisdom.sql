@@ -1,0 +1,2 @@
+ALTER POLICY "orders_owner_or_self" ON "orders" TO app_user USING ("orders"."created_by" = current_setting('app.user_id', true)::uuid
+        OR coalesce(nullif(current_setting('app.user_roles', true), '')::jsonb @> '["owner"]'::jsonb, false)) WITH CHECK ("orders"."created_by" = current_setting('app.user_id', true)::uuid);

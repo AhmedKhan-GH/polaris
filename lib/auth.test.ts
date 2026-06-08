@@ -27,6 +27,18 @@ test('registers a keycloak provider using the issuer from env', async () => {
   expect(keycloak?.options?.issuer).toBe(ENV.AUTH_KEYCLOAK_ISSUER)
 })
 
+test('throws when a required Keycloak env var is missing', async () => {
+  delete process.env.AUTH_KEYCLOAK_ID
+  vi.resetModules()
+  await expect(import('./auth.config')).rejects.toThrow()
+})
+
+test('throws when the Keycloak issuer is not a URL', async () => {
+  process.env.AUTH_KEYCLOAK_ISSUER = 'not-a-url'
+  vi.resetModules()
+  await expect(import('./auth.config')).rejects.toThrow()
+})
+
 test('maps the Keycloak roles claim into the session', async () => {
   const { authConfig } = await import('./auth.config')
   const callbacks = authConfig.callbacks!
@@ -43,6 +55,24 @@ test('maps the Keycloak roles claim into the session', async () => {
   } as unknown as Parameters<NonNullable<typeof callbacks.session>>[0])
 
   expect((session as { roles?: string[] }).roles).toEqual(['owner'])
+})
+
+test('hardens a malformed roles claim to an empty array (not a raw value)', async () => {
+  const { authConfig } = await import('./auth.config')
+  const callbacks = authConfig.callbacks!
+
+  const token = await callbacks.jwt!({
+    token: {},
+    account: null,
+    profile: { roles: 'owner' }, // string, not string[] — malformed
+  } as unknown as Parameters<NonNullable<typeof callbacks.jwt>>[0])
+
+  const session = await callbacks.session!({
+    session: { user: {}, expires: '' },
+    token,
+  } as unknown as Parameters<NonNullable<typeof callbacks.session>>[0])
+
+  expect((session as { roles?: string[] }).roles).toEqual([])
 })
 
 test('maps the Keycloak sub into the session as userId', async () => {

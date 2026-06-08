@@ -65,4 +65,12 @@ describe('recordSignIn', () => {
 
     expect(warn).toHaveBeenCalled()
   })
+
+  test('records (does not silently skip) when the message has no user', async () => {
+    await recordSignIn({ account: { providerAccountId: 'x' } })
+
+    expect(insertValues).toHaveBeenCalledWith(
+      expect.objectContaining({ userId: 'x', email: '' }),
+    )
+  })
 })

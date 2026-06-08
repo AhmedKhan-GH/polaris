@@ -11,14 +11,25 @@ export async function withPermission<T>(
   fn: () => Promise<T>,
 ): Promise<T> {
   const session = await auth()
+  const userId = (session as { userId?: string } | null)?.userId
   const roles = (session as { roles?: string[] } | null)?.roles ?? []
 
-  if (defineAbilityFor(roles).can(action, subject)) {
+  // Fail closed: authorization requires an authenticated identity. Don't rely on
+  // the ability rules being non-permissive for the unauthenticated case (e.g.
+  // `create Order` is unconditional) — assert the session up front.
+  if (!userId) {
+    logger.warn({ action, subject }, 'authorization denied: no authenticated session')
+    throw new Error('Not authenticated')
+  }
+
+  // Pass userId so ownership-conditioned rules can be evaluated against
+  // subject instances (defense in depth alongside RLS).
+  if (defineAbilityFor(roles, userId).can(action, subject)) {
     return fn()
   }
 
   const email = (session as { user?: { email?: string | null } } | null)?.user
     ?.email
-  logger.warn({ email, roles, action, subject }, 'authorization denied')
+  logger.warn({ email, userId, roles, action, subject }, 'authorization denied')
   throw new Error('Not authorized')
 }
