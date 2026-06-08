@@ -2,8 +2,14 @@ import { test, expect } from '@playwright/test'
 import { Client } from 'pg'
 import { loginViaKeycloak } from './helpers'
 
+// Verify via the admin connection: the app read path (app_user) is now
+// owner-only RLS-gated, but this test asserts the *writer* recorded a row, so a
+// bypass-RLS admin read is the correct probe.
 async function db<T>(fn: (c: Client) => Promise<T>): Promise<T> {
-  const client = new Client({ connectionString: process.env.DATABASE_URL })
+  const client = new Client({
+    connectionString:
+      process.env.MIGRATE_DATABASE_URL ?? process.env.DATABASE_URL,
+  })
   await client.connect()
   try {
     return await fn(client)
