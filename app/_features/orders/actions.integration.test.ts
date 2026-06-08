@@ -1,11 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest'
-import {
-  PostgreSqlContainer,
-  type StartedPostgreSqlContainer,
-} from '@testcontainers/postgresql'
-import { drizzle } from 'drizzle-orm/node-postgres'
-import { migrate } from 'drizzle-orm/node-postgres/migrator'
 import pg from 'pg'
+import { startRlsTestDb, type RlsTestDb } from '@/lib/db/__tests__/rls-test-db'
 
 const USER_A = '11111111-1111-1111-1111-111111111111'
 const USER_B = '22222222-2222-2222-2222-222222222222'
@@ -16,20 +11,17 @@ vi.mock('@/lib/logger', () => ({ logger: { warn: vi.fn() } }))
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }))
 
 // Proves the order actions wire CASL + withUserContext correctly against a real
-// DB (session mocked). The real Keycloak-session wiring is proven by the E2E.
+// DB (session mocked), connecting as a NON-SUPERUSER member of app_user like
+// dev/prod. The real Keycloak-session wiring is proven by the E2E.
 describe('order actions', () => {
-  let container: StartedPostgreSqlContainer
+  let rls: RlsTestDb
   let appDb: { $client: pg.Pool }
-  let createOrder: typeof import('./actions')['createOrder']
-  let getOrders: typeof import('./actions')['getOrders']
+  let createOrder: (typeof import('./actions'))['createOrder']
+  let getOrders: (typeof import('./actions'))['getOrders']
 
   beforeAll(async () => {
-    container = await new PostgreSqlContainer('postgres:17').start()
-    process.env.DATABASE_URL = container.getConnectionUri()
-
-    const migrationPool = new pg.Pool({ connectionString: process.env.DATABASE_URL })
-    await migrate(drizzle(migrationPool), { migrationsFolder: './drizzle' })
-    await migrationPool.end()
+    rls = await startRlsTestDb()
+    process.env.DATABASE_URL = rls.appConnUri
 
     appDb = (await import('@/lib/db/client')).db as unknown as { $client: pg.Pool }
     ;({ createOrder, getOrders } = await import('./actions'))
@@ -37,7 +29,7 @@ describe('order actions', () => {
 
   afterAll(async () => {
     await appDb?.$client?.end()
-    await container?.stop()
+    await rls?.cleanup()
   })
 
   it('createOrder inserts a row owned by the current user', async () => {
