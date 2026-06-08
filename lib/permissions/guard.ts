@@ -8,11 +8,11 @@ import { logger } from '@/lib/logger'
 export async function withPermission<T>(
   action: string,
   subject: string,
-  fn: () => Promise<T>,
+  fn: (ctx: { userId: string; roles: string[] }) => Promise<T>,
 ): Promise<T> {
   const session = await auth()
-  const userId = (session as { userId?: string } | null)?.userId
-  const roles = (session as { roles?: string[] } | null)?.roles ?? []
+  const userId = session?.userId
+  const roles = session?.roles ?? []
 
   // Fail closed: authorization requires an authenticated identity. Don't rely on
   // the ability rules being non-permissive for the unauthenticated case (e.g.
@@ -22,14 +22,16 @@ export async function withPermission<T>(
     throw new Error('Not authenticated')
   }
 
-  // Pass userId so ownership-conditioned rules can be evaluated against
+  // Resolve the session ONCE and hand the identity to fn — callers no longer
+  // re-fetch it. userId also lets ownership-conditioned rules evaluate against
   // subject instances (defense in depth alongside RLS).
   if (defineAbilityFor(roles, userId).can(action, subject)) {
-    return fn()
+    return fn({ userId, roles })
   }
 
-  const email = (session as { user?: { email?: string | null } } | null)?.user
-    ?.email
-  logger.warn({ email, userId, roles, action, subject }, 'authorization denied')
+  logger.warn(
+    { email: session?.user?.email, userId, roles, action, subject },
+    'authorization denied',
+  )
   throw new Error('Not authorized')
 }

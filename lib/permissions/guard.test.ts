@@ -33,6 +33,19 @@ describe('withPermission', () => {
     expect(warn).not.toHaveBeenCalled()
   })
 
+  test('passes the authenticated userId and roles to the callback', async () => {
+    auth.mockResolvedValue({
+      userId: USER,
+      roles: ['owner'],
+      user: { email: 'o@example.com' },
+    })
+    const fn = vi.fn().mockResolvedValue('ok')
+
+    await withPermission('read', 'SignInLog', fn)
+
+    expect(fn).toHaveBeenCalledWith({ userId: USER, roles: ['owner'] })
+  })
+
   test('throws and logs a denial when the role lacks permission', async () => {
     auth.mockResolvedValue({
       userId: USER,
