@@ -36,6 +36,13 @@
       "when": 1780884322125,
       "tag": "0004_grant_sign_in_log_to_app_user",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1780886375563,
+      "tag": "0005_rapid_cyclops",
+      "breakpoints": true
     }
   ]
 }

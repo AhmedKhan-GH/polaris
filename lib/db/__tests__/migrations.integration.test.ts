@@ -38,7 +38,6 @@ describe('database migrations', () => {
       { column_name: 'id', data_type: 'uuid' },
       { column_name: 'user_id', data_type: 'uuid' },
       { column_name: 'email', data_type: 'text' },
-      { column_name: 'success', data_type: 'boolean' },
       { column_name: 'created_at', data_type: 'timestamp with time zone' },
     ])
   })

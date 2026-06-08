@@ -22,7 +22,6 @@ export default async function ActivityPage() {
           <tr className="border-b border-black/[.08] dark:border-white/[.145]">
             <th className="py-2 pr-4 font-medium">Email</th>
             <th className="py-2 pr-4 font-medium">User</th>
-            <th className="py-2 pr-4 font-medium">Success</th>
             <th className="py-2 font-medium">When (UTC)</th>
           </tr>
         </thead>
@@ -36,15 +35,12 @@ export default async function ActivityPage() {
               <td className="py-2 pr-4 font-mono text-xs">
                 {row.userId ?? '—'}
               </td>
-              <td className="py-2 pr-4">{row.success ? 'yes' : 'no'}</td>
-              <td className="py-2">
-                {row.createdAt.toISOString()}
-              </td>
+              <td className="py-2">{row.createdAt.toISOString()}</td>
             </tr>
           ))}
           {rows.length === 0 && (
             <tr>
-              <td className="py-2 text-zinc-500" colSpan={4}>
+              <td className="py-2 text-zinc-500" colSpan={3}>
                 No sign-ins recorded yet.
               </td>
             </tr>

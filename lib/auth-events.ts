@@ -25,8 +25,8 @@ export async function recordSignIn(message: SignInMessage): Promise<void> {
     await db.insert(signInLog).values({
       userId: sub,
       email: message.user.email ?? '',
-      success: true,
-      // created_at is set by the DB default (now()).
+      // created_at is set by the DB default. Only successful logins reach here
+      // (failures happen at Keycloak), so there's no success flag to record.
     })
   } catch (err) {
     // best-effort — login proceeds even if logging fails, but surface it
