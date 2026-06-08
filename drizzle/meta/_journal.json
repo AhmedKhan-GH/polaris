@@ -29,6 +29,13 @@
       "when": 1780877662910,
       "tag": "0003_familiar_union_jack",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1780884322125,
+      "tag": "0004_grant_sign_in_log_to_app_user",
+      "breakpoints": true
     }
   ]
 }
