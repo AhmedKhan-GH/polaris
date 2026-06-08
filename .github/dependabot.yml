@@ -1,0 +1,21 @@
+version: 2
+updates:
+  # npm dependencies. Security-fix PRs land automatically (Dependabot security
+  # updates, repo setting); these are the scheduled VERSION-update PRs.
+  - package-ecosystem: 'npm'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+    open-pull-requests-limit: 5
+    groups:
+      # One low-risk PR/week for all minor+patch bumps; majors come separately
+      # so each breaking upgrade is reviewed on its own.
+      minor-and-patch:
+        update-types: ['minor', 'patch']
+
+  # GitHub Actions versions (keeps actions/checkout, setup-node current — also
+  # clears the "Node 20 deprecated" warning in CI).
+  - package-ecosystem: 'github-actions'
+    directory: '/'
+    schedule:
+      interval: 'weekly'

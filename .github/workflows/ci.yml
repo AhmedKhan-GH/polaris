@@ -25,6 +25,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Audit dependencies
+        # Fail only on high/critical advisories — moderate/transitive noise is
+        # tracked by Dependabot (.github/dependabot.yml), not blocked here.
+        run: npm audit --audit-level=high
+
       - name: Typecheck
         run: npx tsc --noEmit
 
