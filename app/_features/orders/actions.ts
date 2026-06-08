@@ -6,6 +6,7 @@ import { auth } from '@/lib/auth'
 import { orders } from '@/lib/db/schema'
 import { withUserContext } from '@/lib/db/with-user-context'
 import { withPermission } from '@/lib/permissions/guard'
+import { withRateLimit, orderWriteLimiter } from '@/lib/rate-limit'
 
 async function requireUser() {
   const session = await auth()
@@ -29,8 +30,10 @@ export async function getOrders() {
 export async function createOrder() {
   await withPermission('create', 'Order', async () => {
     const { userId, roles } = await requireUser()
-    await withUserContext({ userId, roles }, (tx) =>
-      tx.insert(orders).values({ createdBy: userId }),
+    await withRateLimit(orderWriteLimiter, `order:create:${userId}`, () =>
+      withUserContext({ userId, roles }, (tx) =>
+        tx.insert(orders).values({ createdBy: userId }),
+      ),
     )
   })
   revalidatePath('/orders')
