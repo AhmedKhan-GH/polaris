@@ -11,11 +11,15 @@ const CONTAINER = 'polaris-e2e-db'
 export default async function globalSetup() {
   await assertKeycloakReachable()
 
-  const databaseUrl = process.env.DATABASE_URL
-  if (!databaseUrl) throw new Error('DATABASE_URL is not set (.env.test)')
+  // The app connects as the non-superuser app_user (DATABASE_URL); migrations
+  // and role setup use the privileged admin (MIGRATE_DATABASE_URL).
+  const appUrl = process.env.DATABASE_URL
+  const adminUrl = process.env.MIGRATE_DATABASE_URL
+  if (!appUrl) throw new Error('DATABASE_URL is not set (.env.test)')
+  if (!adminUrl) throw new Error('MIGRATE_DATABASE_URL is not set (.env.test)')
 
   if (!process.env.CI) {
-    const port = new URL(databaseUrl).port || '5432'
+    const port = new URL(adminUrl).port || '5432'
     execSync(`docker rm -f ${CONTAINER}`, { stdio: 'ignore' })
     execSync(
       `docker run -d --name ${CONTAINER} ` +
@@ -23,14 +27,20 @@ export default async function globalSetup() {
         `-p ${port}:5432 postgres:17`,
       { stdio: 'ignore' },
     )
-    await waitForPostgres(databaseUrl)
+    await waitForPostgres(adminUrl)
   }
 
-  // Migrate (idempotent) — the E2E DB is always built from the same migrations
-  // as prod, so its structure can't drift.
-  const pool = new pg.Pool({ connectionString: databaseUrl })
+  // Migrate as the privileged admin (idempotent — same migrations as prod, so
+  // structure can't drift), then make app_user the app's LOGIN role matching
+  // DATABASE_URL so the E2E app connects AS the non-superuser app_user (RLS
+  // applies to real requests, exactly like prod).
+  const pool = new pg.Pool({ connectionString: adminUrl })
   try {
     await migrate(drizzle(pool), { migrationsFolder: './drizzle' })
+    const app = new URL(appUrl)
+    await pool.query(
+      `ALTER ROLE "${app.username}" WITH LOGIN PASSWORD '${app.password}'`,
+    )
   } finally {
     await pool.end()
   }

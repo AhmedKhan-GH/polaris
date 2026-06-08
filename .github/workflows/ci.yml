@@ -63,7 +63,9 @@ jobs:
           --health-retries 10
 
     env:
-      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
+      # App connects as the non-superuser app_user; migrations use the admin role.
+      DATABASE_URL: postgresql://app_user:apppw@localhost:5432/postgres
+      MIGRATE_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
 
     steps:
       - uses: actions/checkout@v4
@@ -95,7 +97,8 @@ jobs:
             echo "AUTH_TRUST_HOST=true"
             echo "TEST_USER_EMAIL=owner@example.com"
             echo "TEST_USER_PASSWORD=test-password-123"
-            echo "DATABASE_URL=postgresql://postgres:postgres@localhost:5432/postgres"
+            echo "DATABASE_URL=postgresql://app_user:apppw@localhost:5432/postgres"
+            echo "MIGRATE_DATABASE_URL=postgresql://postgres:postgres@localhost:5432/postgres"
           } >> .env.test
 
       - name: Wait for Keycloak
