@@ -5,18 +5,18 @@ import {
   uuid,
   timestamp,
   text,
-  boolean,
 } from 'drizzle-orm/pg-core'
 import { sql } from 'drizzle-orm'
 
 // Restricted runtime role — subject to RLS (no BYPASSRLS, not a table owner).
 export const appUser = pgRole('app_user')
 
+// A record of *successful* logins (the only auth event the app sees — failures
+// happen at Keycloak and never reach it; review those in Keycloak's console).
 export const signInLog = pgTable('sign_in_log', {
   id: uuid('id').defaultRandom().primaryKey(),
   userId: uuid('user_id'),
   email: text('email').notNull(),
-  success: boolean('success').notNull(),
   createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' })
     .notNull()
     .defaultNow(),

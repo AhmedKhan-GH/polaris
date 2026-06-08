@@ -41,11 +41,7 @@ describe('recordSignIn (integration)', () => {
       account: { providerAccountId: sub },
     })
 
-    const { rows } = await pool.query(
-      'select user_id, email, success from sign_in_log',
-    )
-    expect(rows).toEqual([
-      { user_id: sub, email: 'test@example.com', success: true },
-    ])
+    const { rows } = await pool.query('select user_id, email from sign_in_log')
+    expect(rows).toEqual([{ user_id: sub, email: 'test@example.com' }])
   })
 })

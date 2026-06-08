@@ -1,0 +1,1 @@
+ALTER TABLE "sign_in_log" DROP COLUMN "success";
