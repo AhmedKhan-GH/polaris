@@ -1,5 +1,4 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
-import { signInAction, signOutAction } from './actions'
 
 const signIn = vi.fn()
 const signOut = vi.fn()
@@ -16,17 +15,26 @@ vi.mock('next/navigation', () => ({
   redirect: (...args: unknown[]) => redirect(...args),
 }))
 
-vi.mock('next/headers', () => ({
-  headers: async () =>
-    new Map([
-      ['host', 'localhost:3000'],
-      ['x-forwarded-proto', 'http'],
-    ]),
+const hdrs = vi.hoisted(() => ({ map: new Map<string, string>() }))
+vi.mock('next/headers', () => ({ headers: async () => hdrs.map }))
+
+vi.mock('@/lib/env-auth', () => ({
+  authEnv: {
+    AUTH_KEYCLOAK_ID: 'polaris-web',
+    AUTH_KEYCLOAK_SECRET: 'secret',
+    AUTH_KEYCLOAK_ISSUER: 'http://localhost:8080/realms/polaris',
+    AUTH_SECRET: 'auth-secret',
+  },
 }))
+
+import { signInAction, signOutAction } from './actions'
 
 beforeEach(() => {
   vi.clearAllMocks()
-  process.env.AUTH_KEYCLOAK_ISSUER = 'http://localhost:8080/realms/polaris'
+  hdrs.map = new Map([
+    ['host', 'localhost:3000'],
+    ['x-forwarded-proto', 'http'],
+  ])
 })
 
 describe('signInAction', () => {
@@ -51,5 +59,21 @@ describe('signOutAction', () => {
     )
     expect(url).toContain('id_token_hint=id-tok-123')
     expect(url).toContain('post_logout_redirect_uri=')
+  })
+
+  test('constrains the redirect-origin scheme (a forged proto cannot inject javascript:)', async () => {
+    auth.mockResolvedValueOnce({ idToken: 't' })
+    hdrs.map = new Map([
+      ['host', 'evil.example'],
+      ['x-forwarded-proto', 'javascript'],
+    ])
+
+    await signOutAction()
+
+    const url = redirect.mock.calls[0]?.[0] as string
+    const redirectUri =
+      new URL(url).searchParams.get('post_logout_redirect_uri') ?? ''
+    expect(redirectUri.startsWith('http://')).toBe(true)
+    expect(redirectUri).not.toContain('javascript:')
   })
 })
