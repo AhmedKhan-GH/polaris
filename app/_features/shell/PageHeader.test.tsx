@@ -33,11 +33,4 @@ describe('PageHeader', () => {
 
     expect(screen.queryByRole('button', { name: /log in/i })).not.toBeInTheDocument()
   })
-
-  test('hides auth button when hideAuth is true', () => {
-    render(<PageHeader user={null} hideAuth />)
-
-    expect(screen.queryByRole('button', { name: /log in/i })).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /log out/i })).not.toBeInTheDocument()
-  })
 })

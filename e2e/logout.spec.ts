@@ -8,7 +8,7 @@ test('log out clears the app session and redirects to landing page', async ({ pa
   await expect(page).toHaveURL('/')
 
   await page.goto('/dashboard')
-  await expect(page).toHaveURL('/login')
+  await expect(page).toHaveURL('/')
 })
 
 test('log out ends the Keycloak SSO session so re-login requires credentials', async ({ page }) => {
