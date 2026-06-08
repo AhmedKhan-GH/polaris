@@ -60,11 +60,10 @@ export const authConfig: NextAuthConfig = {
     },
     async session({ session, token }) {
       const claims = SessionClaims.safeParse(token).data ?? {}
-      const s = session as {
-        idToken?: string
-        roles?: string[]
-        userId?: string
-      }
+      // Local write-cast where the session is assembled (the augmented fields
+      // are optional on reads but NextAuth types them strictly on the callback
+      // param). Readers elsewhere use the typed session — no casts.
+      const s = session as { idToken?: string; roles?: string[]; userId?: string }
       s.idToken = claims.idToken
       s.roles = claims.roles ?? []
       s.userId = claims.userId

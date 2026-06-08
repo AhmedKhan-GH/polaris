@@ -5,7 +5,7 @@ import { getSignInLog } from '@/app/_features/activity/getSignInLog'
 
 export default async function ActivityPage() {
   const session = await auth()
-  const roles = (session as { roles?: string[] } | null)?.roles ?? []
+  const roles = session?.roles ?? []
 
   // Non-owners get redirected (the guard in getSignInLog is the real backstop).
   if (!defineAbilityFor(roles).can('read', 'SignInLog')) {

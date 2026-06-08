@@ -4,7 +4,7 @@ import { defineAbilityFor } from '@/lib/permissions/ability'
 
 export default async function DashboardPage() {
   const session = await auth()
-  const roles = (session as { roles?: string[] } | null)?.roles ?? []
+  const roles = session?.roles ?? []
   const canViewActivity = defineAbilityFor(roles).can('read', 'SignInLog')
 
   return (

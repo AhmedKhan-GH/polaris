@@ -20,7 +20,7 @@ export async function signInAction() {
 
 export async function signOutAction() {
   const session = await auth()
-  const idToken = (session as { idToken?: string } | null)?.idToken
+  const idToken = session?.idToken
 
   const headerList = await headers()
   const { proto, host } = OriginHeaders.parse({
