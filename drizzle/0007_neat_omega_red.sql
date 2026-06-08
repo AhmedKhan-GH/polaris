@@ -1,0 +1,2 @@
+ALTER TABLE "sign_in_log" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
+CREATE POLICY "sign_in_log_owner_read" ON "sign_in_log" AS PERMISSIVE FOR ALL TO "app_user" USING (coalesce(nullif(current_setting('app.user_roles', true), '')::jsonb @> '["owner"]'::jsonb, false)) WITH CHECK (true);
