@@ -35,10 +35,10 @@ describe('RLS under a non-superuser connection', () => {
     )
     await admin.query(`GRANT "app_user" TO app_conn`)
     // Seed as the superuser admin (owner → bypasses RLS).
-    await admin.query(
-      `insert into orders (created_by, created_at) values ($1,$2),($3,$4)`,
-      [USER_A, 1, USER_B, 2],
-    )
+    await admin.query(`insert into orders (created_by) values ($1),($2)`, [
+      USER_A,
+      USER_B,
+    ])
     await admin.end()
 
     process.env.DATABASE_URL = `postgresql://app_conn:connpw@${container.getHost()}:${container.getPort()}/${container.getDatabase()}`

@@ -39,7 +39,7 @@ describe('database migrations', () => {
       { column_name: 'user_id', data_type: 'uuid' },
       { column_name: 'email', data_type: 'text' },
       { column_name: 'success', data_type: 'boolean' },
-      { column_name: 'created_at', data_type: 'bigint' },
+      { column_name: 'created_at', data_type: 'timestamp with time zone' },
     ])
   })
 
@@ -54,7 +54,7 @@ describe('database migrations', () => {
     expect(result.rows).toEqual([
       { column_name: 'id', data_type: 'uuid' },
       { column_name: 'created_by', data_type: 'uuid' },
-      { column_name: 'created_at', data_type: 'bigint' },
+      { column_name: 'created_at', data_type: 'timestamp with time zone' },
     ])
   })
 })

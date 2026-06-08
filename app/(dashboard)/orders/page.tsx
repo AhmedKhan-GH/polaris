@@ -42,7 +42,7 @@ export default async function OrdersPage() {
                   {order.createdBy}
                 </td>
                 <td className="py-2">
-                  {new Date(order.createdAt * 1000).toISOString()}
+                  {order.createdAt.toISOString()}
                 </td>
               </tr>
             ))}

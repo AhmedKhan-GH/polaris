@@ -30,10 +30,7 @@ export async function createOrder() {
   await withPermission('create', 'Order', async () => {
     const { userId, roles } = await requireUser()
     await withUserContext({ userId, roles }, (tx) =>
-      tx.insert(orders).values({
-        createdBy: userId,
-        createdAt: Math.floor(Date.now() / 1000),
-      }),
+      tx.insert(orders).values({ createdBy: userId }),
     )
   })
   revalidatePath('/orders')

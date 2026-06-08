@@ -25,10 +25,10 @@ describe('orders RLS (own OR owner)', () => {
 
     client = await pool.connect()
     // Seed as the migration/owner connection (superuser → bypasses RLS).
-    await client.query(
-      `insert into orders (created_by, created_at) values ($1, $2), ($3, $4)`,
-      [USER_A, 1, USER_B, 2],
-    )
+    await client.query(`insert into orders (created_by) values ($1), ($2)`, [
+      USER_A,
+      USER_B,
+    ])
   }, 60_000)
 
   afterAll(async () => {

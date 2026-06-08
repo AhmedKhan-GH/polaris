@@ -26,7 +26,7 @@ export async function recordSignIn(message: SignInMessage): Promise<void> {
       userId: sub,
       email: message.user.email ?? '',
       success: true,
-      createdAt: Math.floor(Date.now() / 1000),
+      // created_at is set by the DB default (now()).
     })
   } catch (err) {
     // best-effort — login proceeds even if logging fails, but surface it

@@ -34,8 +34,8 @@ describe('withUserContext', () => {
 
     // Seed as the base (superuser) connection — bypasses RLS.
     await client.db.insert(orders).values([
-      { createdBy: USER_A, createdAt: 1 },
-      { createdBy: USER_B, createdAt: 2 },
+      { createdBy: USER_A },
+      { createdBy: USER_B },
     ])
   }, 60_000)
 

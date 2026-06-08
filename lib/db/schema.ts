@@ -3,7 +3,7 @@ import {
   pgRole,
   pgPolicy,
   uuid,
-  bigint,
+  timestamp,
   text,
   boolean,
 } from 'drizzle-orm/pg-core'
@@ -17,7 +17,9 @@ export const signInLog = pgTable('sign_in_log', {
   userId: uuid('user_id'),
   email: text('email').notNull(),
   success: boolean('success').notNull(),
-  createdAt: bigint('created_at', { mode: 'number' }).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' })
+    .notNull()
+    .defaultNow(),
 })
 
 // Orders — bare base (UUIDs only; order_number, line items, status come later).
@@ -27,7 +29,9 @@ export const orders = pgTable(
   {
     id: uuid('id').defaultRandom().primaryKey(),
     createdBy: uuid('created_by').notNull(),
-    createdAt: bigint('created_at', { mode: 'number' }).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' })
+      .notNull()
+      .defaultNow(),
   },
   (t) => [
     // A user sees/acts on their own orders; the `owner` role sees all.
