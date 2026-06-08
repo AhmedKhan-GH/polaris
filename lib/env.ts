@@ -1,17 +1,18 @@
+import { createEnv } from '@t3-oss/env-nextjs'
 import { z } from 'zod'
 
-// Validated server (Node) environment. Fail fast with a clear error at startup
-// instead of cryptic `undefined`s deep in the app.
-//
-// NODE-ONLY: do not import from edge code (proxy.ts / auth.config.ts). A dynamic
-// `process.env` parse can't be inlined into the edge bundle, so the edge reads
-// its few vars (AUTH_KEYCLOAK_*) directly. SKIP_ENV_VALIDATION lets `next build`
-// and other no-runtime contexts skip the check — real values matter at runtime.
-const EnvSchema = z.object({
-  DATABASE_URL: z.string().min(1),
-  LOG_LEVEL: z.string().optional(),
+// Validated server (Node) environment (t3-env). DB-only contexts (db/client,
+// logger, integration tests) import this without needing auth vars.
+// SKIP_ENV_VALIDATION covers `next build` and no-runtime contexts.
+export const env = createEnv({
+  server: {
+    DATABASE_URL: z.string().min(1),
+    LOG_LEVEL: z.string().optional(),
+  },
+  runtimeEnv: {
+    DATABASE_URL: process.env.DATABASE_URL,
+    LOG_LEVEL: process.env.LOG_LEVEL,
+  },
+  skipValidation: !!process.env.SKIP_ENV_VALIDATION,
+  emptyStringAsUndefined: true,
 })
-
-export const env = process.env.SKIP_ENV_VALIDATION
-  ? (process.env as unknown as z.infer<typeof EnvSchema>)
-  : EnvSchema.parse(process.env)
