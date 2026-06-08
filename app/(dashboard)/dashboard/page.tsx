@@ -10,14 +10,24 @@ export default async function DashboardPage() {
   return (
     <div className="flex flex-col gap-6">
       <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
-      {canViewActivity && (
+      <nav className="flex flex-wrap gap-3">
+        {/* Orders: available to every signed-in user (rows are scoped). */}
         <Link
-          href="/activity"
+          href="/orders"
           className="flex h-12 w-fit items-center justify-center rounded-lg bg-foreground px-5 text-base font-medium text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc]"
         >
-          Activity
+          Orders
         </Link>
-      )}
+        {/* Activity (sign-in log): owners only. */}
+        {canViewActivity && (
+          <Link
+            href="/activity"
+            className="flex h-12 w-fit items-center justify-center rounded-lg border border-black/[.08] px-5 text-base font-medium transition-colors hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a]"
+          >
+            Activity
+          </Link>
+        )}
+      </nav>
     </div>
   )
 }

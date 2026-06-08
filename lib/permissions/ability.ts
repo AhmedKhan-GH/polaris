@@ -4,14 +4,23 @@ import {
   type MongoAbility,
 } from '@casl/ability'
 
-// App-layer authorization rules, keyed by the user's roles (from session.roles).
-// Only the `owner` role grants anything for now — everyone else is denied by
-// default (no rule → no access).
-export function defineAbilityFor(roles: string[]): MongoAbility {
+// App-layer authorization rules, derived from the user's roles and id (the
+// Keycloak sub). RLS enforces row ownership at the DB; CASL gates the actions.
+export function defineAbilityFor(
+  roles: string[],
+  userId?: string,
+): MongoAbility {
   const { can, build } = new AbilityBuilder(createMongoAbility)
 
   if (roles.includes('owner')) {
     can('read', 'SignInLog')
+  }
+
+  // Orders: any signed-in user creates and reads their own; the owner reads all.
+  can('create', 'Order')
+  can('read', 'Order', { createdBy: userId })
+  if (roles.includes('owner')) {
+    can('read', 'Order')
   }
 
   return build()

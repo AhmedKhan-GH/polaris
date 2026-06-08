@@ -30,7 +30,7 @@ describe('recordSignIn', () => {
         userId: 'kc-sub-aba6',
         email: 'test@example.com',
         success: true,
-        createdAt: expect.any(Number),
+        // createdAt is no longer set here — the DB default (now()) supplies it.
       }),
     )
   })

@@ -24,6 +24,10 @@ export const authConfig: NextAuthConfig = {
         ;(token as Record<string, unknown>).roles =
           (profile.roles as string[] | undefined) ?? []
       }
+      if (account?.providerAccountId || profile?.sub) {
+        ;(token as Record<string, unknown>).userId =
+          account?.providerAccountId ?? (profile?.sub as string | undefined)
+      }
       return token
     },
     async session({ session, token }) {
@@ -33,6 +37,9 @@ export const authConfig: NextAuthConfig = {
         | undefined
       ;(session as { roles?: string[] }).roles =
         (claims.roles as string[] | undefined) ?? []
+      ;(session as { userId?: string }).userId = claims.userId as
+        | string
+        | undefined
       return session
     },
   },

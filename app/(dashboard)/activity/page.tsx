@@ -38,7 +38,7 @@ export default async function ActivityPage() {
               </td>
               <td className="py-2 pr-4">{row.success ? 'yes' : 'no'}</td>
               <td className="py-2">
-                {new Date(row.createdAt * 1000).toISOString()}
+                {row.createdAt.toISOString()}
               </td>
             </tr>
           ))}
