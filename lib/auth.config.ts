@@ -16,15 +16,32 @@ const SessionClaims = z.object({
   userId: z.string().optional(),
 })
 
+// Edge-safe provider-env validation: parse EXPLICIT static refs (Next can inline
+// each into the edge bundle) — not a dynamic `process.env` parse. SKIP_ENV_
+// VALIDATION covers `next build`; the node runtime validates for real.
+const KeycloakEnvSchema = z.object({
+  AUTH_KEYCLOAK_ID: z.string().min(1),
+  AUTH_KEYCLOAK_SECRET: z.string().min(1),
+  AUTH_KEYCLOAK_ISSUER: z.string().url(),
+})
+const rawKeycloakEnv = {
+  AUTH_KEYCLOAK_ID: process.env.AUTH_KEYCLOAK_ID,
+  AUTH_KEYCLOAK_SECRET: process.env.AUTH_KEYCLOAK_SECRET,
+  AUTH_KEYCLOAK_ISSUER: process.env.AUTH_KEYCLOAK_ISSUER,
+}
+const kc = process.env.SKIP_ENV_VALIDATION
+  ? (rawKeycloakEnv as z.infer<typeof KeycloakEnvSchema>)
+  : KeycloakEnvSchema.parse(rawKeycloakEnv)
+
 // Provider/config only — no NextAuth() instantiation here, so this module
 // stays free of the Next server runtime and is safe to import in tests/edge.
 export const authConfig: NextAuthConfig = {
   trustHost: true,
   providers: [
     Keycloak({
-      clientId: process.env.AUTH_KEYCLOAK_ID,
-      clientSecret: process.env.AUTH_KEYCLOAK_SECRET,
-      issuer: process.env.AUTH_KEYCLOAK_ISSUER,
+      clientId: kc.AUTH_KEYCLOAK_ID,
+      clientSecret: kc.AUTH_KEYCLOAK_SECRET,
+      issuer: kc.AUTH_KEYCLOAK_ISSUER,
     }),
   ],
   session: { strategy: 'jwt' },
