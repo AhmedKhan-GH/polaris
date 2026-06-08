@@ -1,3 +1,5 @@
+// @vitest-environment node
+// (t3-env guards server-var access on the "client"; auth.config reads server env)
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 
 const ENV = {
