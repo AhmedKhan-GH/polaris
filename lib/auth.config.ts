@@ -1,6 +1,7 @@
 import type { NextAuthConfig } from 'next-auth'
 import Keycloak from 'next-auth/providers/keycloak'
 import { z } from 'zod'
+import { keycloakEnvFields } from '@/lib/keycloak-env-fields'
 
 // The Keycloak claims we read are external data — validate their shape rather
 // than `as`-casting. safeParse + fallback keeps login resilient: a malformed
@@ -19,11 +20,7 @@ const SessionClaims = z.object({
 // Edge-safe provider-env validation: parse EXPLICIT static refs (Next can inline
 // each into the edge bundle) — not a dynamic `process.env` parse. SKIP_ENV_
 // VALIDATION covers `next build`; the node runtime validates for real.
-const KeycloakEnvSchema = z.object({
-  AUTH_KEYCLOAK_ID: z.string().min(1),
-  AUTH_KEYCLOAK_SECRET: z.string().min(1),
-  AUTH_KEYCLOAK_ISSUER: z.string().url(),
-})
+const KeycloakEnvSchema = z.object(keycloakEnvFields)
 const rawKeycloakEnv = {
   AUTH_KEYCLOAK_ID: process.env.AUTH_KEYCLOAK_ID,
   AUTH_KEYCLOAK_SECRET: process.env.AUTH_KEYCLOAK_SECRET,

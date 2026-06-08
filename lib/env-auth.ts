@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { keycloakEnvFields } from '@/lib/keycloak-env-fields'
 
 // Validated auth environment. Kept SEPARATE from lib/env.ts so DB-only contexts
 // (e.g. integration tests that import db/client) don't have to supply auth vars,
@@ -10,9 +11,7 @@ import { z } from 'zod'
 // the node-side fail-fast check for the same vars (used by the auth actions).
 // SKIP_ENV_VALIDATION lets `next build` / no-runtime contexts skip the check.
 const AuthEnvSchema = z.object({
-  AUTH_KEYCLOAK_ID: z.string().min(1),
-  AUTH_KEYCLOAK_SECRET: z.string().min(1),
-  AUTH_KEYCLOAK_ISSUER: z.string().url(),
+  ...keycloakEnvFields,
   AUTH_SECRET: z.string().min(1),
 })
 
