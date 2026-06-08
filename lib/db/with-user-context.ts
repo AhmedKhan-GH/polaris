@@ -27,8 +27,10 @@ export async function withUserContext<T>(
   const { userId, roles } = ContextSchema.parse(ctx)
   return db.transaction(async (tx) => {
     await tx.execute(sql`select set_config('app.user_id', ${userId}, true)`)
+    // JSON-encode roles so a role name can never collide with the delimiter
+    // (a comma in a role name must not be parseable as two roles).
     await tx.execute(
-      sql`select set_config('app.user_roles', ${roles.join(',')}, true)`,
+      sql`select set_config('app.user_roles', ${JSON.stringify(roles)}, true)`,
     )
     return fn(tx)
   })

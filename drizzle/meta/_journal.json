@@ -43,6 +43,13 @@
       "when": 1780886375563,
       "tag": "0005_rapid_cyclops",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1780906041563,
+      "tag": "0006_living_pete_wisdom",
+      "breakpoints": true
     }
   ]
 }

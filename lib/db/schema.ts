@@ -39,7 +39,7 @@ export const orders = pgTable(
       for: 'all',
       to: appUser,
       using: sql`${t.createdBy} = current_setting('app.user_id', true)::uuid
-        OR 'owner' = ANY(string_to_array(current_setting('app.user_roles', true), ','))`,
+        OR coalesce(nullif(current_setting('app.user_roles', true), '')::jsonb @> '["owner"]'::jsonb, false)`,
       withCheck: sql`${t.createdBy} = current_setting('app.user_id', true)::uuid`,
     }),
   ],
