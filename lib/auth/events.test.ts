@@ -11,7 +11,7 @@ vi.mock('@/lib/logger', () => ({
   logger: { warn: (...args: unknown[]) => warn(...args) },
 }))
 
-import { recordSignIn } from './auth-events'
+import { recordSignIn } from './events'
 
 beforeEach(() => {
   insertValues.mockReset().mockResolvedValue(undefined)

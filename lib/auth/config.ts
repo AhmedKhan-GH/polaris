@@ -1,7 +1,7 @@
 import type { NextAuthConfig } from 'next-auth'
 import Keycloak from 'next-auth/providers/keycloak'
 import { z } from 'zod'
-import { authEnv } from '@/lib/env-auth'
+import { authEnv } from '@/lib/env/auth'
 
 // The Keycloak claims we read are external data — validate their shape rather
 // than `as`-casting. safeParse + fallback keeps login resilient: a malformed

@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import type { AuthUser } from '@/lib/auth-user'
+import type { AuthUser } from '@/lib/auth/user'
 import { signInAction, signOutAction } from '@/app/_features/auth/actions'
 
 export function PageHeader({ user }: { user: AuthUser | null }) {

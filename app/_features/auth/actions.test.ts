@@ -18,7 +18,7 @@ vi.mock('next/navigation', () => ({
 const hdrs = vi.hoisted(() => ({ map: new Map<string, string>() }))
 vi.mock('next/headers', () => ({ headers: async () => hdrs.map }))
 
-vi.mock('@/lib/env-auth', () => ({
+vi.mock('@/lib/env/auth', () => ({
   authEnv: {
     AUTH_KEYCLOAK_ID: 'polaris-web',
     AUTH_KEYCLOAK_SECRET: 'secret',

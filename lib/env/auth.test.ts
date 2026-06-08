@@ -19,7 +19,7 @@ describe('authEnv', () => {
     delete process.env.SKIP_ENV_VALIDATION
     Object.assign(process.env, VALID)
     vi.resetModules()
-    const { authEnv } = await import('./env-auth')
+    const { authEnv } = await import('./auth')
     expect(authEnv.AUTH_KEYCLOAK_ISSUER).toBe(VALID.AUTH_KEYCLOAK_ISSUER)
   })
 
@@ -28,20 +28,20 @@ describe('authEnv', () => {
     Object.assign(process.env, VALID)
     delete process.env.AUTH_KEYCLOAK_SECRET
     vi.resetModules()
-    await expect(import('./env-auth')).rejects.toThrow()
+    await expect(import('./auth')).rejects.toThrow()
   })
 
   it('throws when the issuer is not a URL', async () => {
     delete process.env.SKIP_ENV_VALIDATION
     Object.assign(process.env, VALID, { AUTH_KEYCLOAK_ISSUER: 'not-a-url' })
     vi.resetModules()
-    await expect(import('./env-auth')).rejects.toThrow()
+    await expect(import('./auth')).rejects.toThrow()
   })
 
   it('skips validation when SKIP_ENV_VALIDATION is set', async () => {
     process.env.SKIP_ENV_VALIDATION = '1'
     delete process.env.AUTH_KEYCLOAK_SECRET
     vi.resetModules()
-    await expect(import('./env-auth')).resolves.toBeDefined()
+    await expect(import('./auth')).resolves.toBeDefined()
   })
 })

@@ -1,7 +1,7 @@
 import NextAuth from 'next-auth'
 import { NextResponse } from 'next/server'
-import { authConfig } from '@/lib/auth.config'
-import { authRedirect } from '@/lib/route-guard'
+import { authConfig } from '@/lib/auth/config'
+import { authRedirect } from '@/lib/auth/route-guard'
 
 // Edge-safe auth instance built from the shared config only — never imports the
 // Node-only lib/auth (which pulls node-postgres via events). Canonical Auth.js

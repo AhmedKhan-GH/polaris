@@ -11,7 +11,7 @@ describe('recordSignIn (integration)', () => {
   let container: StartedPostgreSqlContainer
   let pool: pg.Pool
   let appDb: { $client: pg.Pool }
-  let recordSignIn: (typeof import('@/lib/auth-events'))['recordSignIn']
+  let recordSignIn: (typeof import('@/lib/auth/events'))['recordSignIn']
 
   beforeAll(async () => {
     container = await new PostgreSqlContainer('postgres:17').start()
@@ -25,7 +25,7 @@ describe('recordSignIn (integration)', () => {
 
     // Import after DATABASE_URL is set — lib/db/client reads it at module load.
     appDb = (await import('@/lib/db/client')).db as unknown as { $client: pg.Pool }
-    ;({ recordSignIn } = await import('@/lib/auth-events'))
+    ;({ recordSignIn } = await import('@/lib/auth/events'))
   }, 60_000)
 
   afterAll(async () => {
