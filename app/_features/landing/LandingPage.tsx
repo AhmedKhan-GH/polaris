@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import type { AuthUser } from '@/lib/auth-user'
+import type { AuthUser } from '@/lib/auth/user'
 import { PageHeader } from '@/app/_features/shell/PageHeader'
 
 export function LandingPage({ user }: { user: AuthUser | null }) {

@@ -1,6 +1,6 @@
 import NextAuth from 'next-auth'
-import { authConfig } from './auth.config'
-import { recordSignIn } from './auth-events'
+import { authConfig } from './config'
+import { recordSignIn } from './events'
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,

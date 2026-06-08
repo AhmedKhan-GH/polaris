@@ -4,7 +4,7 @@ import { z } from 'zod'
 import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { auth, signIn, signOut } from '@/lib/auth'
-import { authEnv } from '@/lib/env-auth'
+import { authEnv } from '@/lib/env/auth'
 
 // Validate the request headers used to build the post-logout redirect origin.
 // `.catch` keeps logout resilient while constraining the scheme — a forged

@@ -19,7 +19,7 @@ afterEach(() => {
 })
 
 test('registers a keycloak provider using the issuer from env', async () => {
-  const { authConfig } = await import('./auth.config')
+  const { authConfig } = await import('./config')
 
   const keycloak = authConfig.providers.find(
     (p) => (p as { id?: string }).id === 'keycloak',
@@ -32,17 +32,17 @@ test('registers a keycloak provider using the issuer from env', async () => {
 test('throws when a required Keycloak env var is missing', async () => {
   delete process.env.AUTH_KEYCLOAK_ID
   vi.resetModules()
-  await expect(import('./auth.config')).rejects.toThrow()
+  await expect(import('./config')).rejects.toThrow()
 })
 
 test('throws when the Keycloak issuer is not a URL', async () => {
   process.env.AUTH_KEYCLOAK_ISSUER = 'not-a-url'
   vi.resetModules()
-  await expect(import('./auth.config')).rejects.toThrow()
+  await expect(import('./config')).rejects.toThrow()
 })
 
 test('maps the Keycloak roles claim into the session', async () => {
-  const { authConfig } = await import('./auth.config')
+  const { authConfig } = await import('./config')
   const callbacks = authConfig.callbacks!
 
   const token = await callbacks.jwt!({
@@ -60,7 +60,7 @@ test('maps the Keycloak roles claim into the session', async () => {
 })
 
 test('hardens a malformed roles claim to an empty array (not a raw value)', async () => {
-  const { authConfig } = await import('./auth.config')
+  const { authConfig } = await import('./config')
   const callbacks = authConfig.callbacks!
 
   const token = await callbacks.jwt!({
@@ -78,7 +78,7 @@ test('hardens a malformed roles claim to an empty array (not a raw value)', asyn
 })
 
 test('maps the Keycloak sub into the session as userId', async () => {
-  const { authConfig } = await import('./auth.config')
+  const { authConfig } = await import('./config')
   const callbacks = authConfig.callbacks!
 
   const token = await callbacks.jwt!({
