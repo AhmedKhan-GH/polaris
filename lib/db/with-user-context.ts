@@ -1,7 +1,21 @@
+import { z } from 'zod'
 import { sql } from 'drizzle-orm'
 import { db } from '@/lib/db/client'
 
 type DbTx = Parameters<Parameters<typeof db.transaction>[0]>[0]
+
+// Fail-closed: a missing/invalid identity must never reach the DB. An empty or
+// malformed userId would otherwise be cast by the RLS policy
+// (`current_setting('app.user_id')::uuid`) and crash the query with
+// "invalid input syntax for type uuid". Validate it's a real UUID up front.
+// Standard dashed-hex UUID form (what Keycloak emits and Postgres `::uuid`
+// accepts). Looser than strict RFC-4122 on variant bits — we only need to
+// guarantee the cast won't crash, not enforce a specific UUID version.
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+const ContextSchema = z.object({
+  userId: z.string().regex(UUID, 'userId must be a UUID'),
+  roles: z.array(z.string()),
+})
 
 // Runs `fn` inside a transaction with the caller's identity in session GUCs, so
 // RLS applies to the queries. The app connects AS the non-superuser `app_user`
@@ -13,10 +27,11 @@ export async function withUserContext<T>(
   ctx: { userId: string; roles: string[] },
   fn: (tx: DbTx) => Promise<T>,
 ): Promise<T> {
+  const { userId, roles } = ContextSchema.parse(ctx)
   return db.transaction(async (tx) => {
-    await tx.execute(sql`select set_config('app.user_id', ${ctx.userId}, true)`)
+    await tx.execute(sql`select set_config('app.user_id', ${userId}, true)`)
     await tx.execute(
-      sql`select set_config('app.user_roles', ${ctx.roles.join(',')}, true)`,
+      sql`select set_config('app.user_roles', ${roles.join(',')}, true)`,
     )
     return fn(tx)
   })
