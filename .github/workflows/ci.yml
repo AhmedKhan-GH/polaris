@@ -39,6 +39,9 @@ jobs:
 
       - name: Build
         run: npm run build
+        env:
+          # Build needs no real env; runtime (E2E job, prod) validates for real.
+          SKIP_ENV_VALIDATION: '1'
 
   e2e:
     name: E2E Tests
