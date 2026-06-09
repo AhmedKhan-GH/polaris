@@ -7,9 +7,38 @@ import {
   text,
 } from 'drizzle-orm/pg-core'
 import { sql } from 'drizzle-orm'
+import { authenticatedRole } from 'drizzle-orm/supabase'
 
 // Restricted runtime role — subject to RLS (no BYPASSRLS, not a table owner).
 export const appUser = pgRole('app_user')
+
+// App-side identity layered on Supabase auth.users. id = auth.users.id.
+// Source of the app role for CASL + withUserContext. org_id arrives at F12.
+// Read via the Supabase authenticated client (auth.uid()), NOT the app_user
+// Drizzle path — so these policies target `authenticated`, not `app_user`.
+export const profiles = pgTable(
+  'profiles',
+  {
+    id: uuid('id').primaryKey(),
+    email: text('email'),
+    role: text('role').notNull().default('member'),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    // Self-read only. getSessionUser reads the caller's own row; the realtime
+    // owner-firehose check (F7) also reads the owner's OWN row, so this suffices.
+    // An owner-reads-all-profiles policy would self-reference profiles (infinite
+    // RLS recursion) and isn't needed until F9 user management — add it then via
+    // a SECURITY DEFINER helper or a JWT role claim.
+    pgPolicy('profiles_select_self', {
+      for: 'select',
+      to: authenticatedRole,
+      using: sql`${t.id} = auth.uid()`,
+    }),
+  ],
+)
 
 // A record of *successful* logins (the only auth event the app sees — failures
 // happen at Keycloak and never reach it; review those in Keycloak's console).
