@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { Client } from 'pg'
-import { loginViaKeycloak } from './helpers'
+import { loginViaSupabase } from './helpers'
 
 // Verify via the admin connection: the app read path (app_user) is now
 // owner-only RLS-gated, but this test asserts the *writer* recorded a row, so a
@@ -28,10 +28,10 @@ const OWNER_EMAIL = process.env.TEST_USER_EMAIL!
 test('real logins record sign_in_log rows keyed by a stable, non-null Keycloak sub', async ({
   page,
 }) => {
-  await loginViaKeycloak(page)
+  await loginViaSupabase(page)
   await page.getByRole('button', { name: 'Log out' }).click()
   await expect(page).toHaveURL('/')
-  await loginViaKeycloak(page)
+  await loginViaSupabase(page)
 
   // events.signIn writes asynchronously — poll until the owner's rows settle.
   await expect

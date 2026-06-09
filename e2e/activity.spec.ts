@@ -1,8 +1,8 @@
 import { test, expect } from '@playwright/test'
-import { loginViaKeycloak } from './helpers'
+import { loginViaSupabase } from './helpers'
 
 test('owner can view the sign-in log at /activity', async ({ page }) => {
-  await loginViaKeycloak(page) // owner@example.com (TEST_USER_EMAIL)
+  await loginViaSupabase(page) // owner@example.com (TEST_USER_EMAIL)
 
   await page.goto('/activity')
 
@@ -11,7 +11,7 @@ test('owner can view the sign-in log at /activity', async ({ page }) => {
 })
 
 test('a member cannot view the sign-in log', async ({ page }) => {
-  await loginViaKeycloak(page, 'member@example.com')
+  await loginViaSupabase(page, 'member@example.com')
 
   await page.goto('/activity')
 
@@ -23,7 +23,7 @@ test('a member cannot view the sign-in log', async ({ page }) => {
 test('owner sees an Activity link on the dashboard that opens /activity', async ({
   page,
 }) => {
-  await loginViaKeycloak(page) // lands on /dashboard as owner
+  await loginViaSupabase(page) // lands on /dashboard as owner
 
   const link = page.getByRole('link', { name: 'Activity' })
   await expect(link).toBeVisible()
@@ -32,7 +32,7 @@ test('owner sees an Activity link on the dashboard that opens /activity', async 
 })
 
 test('member does not see an Activity link on the dashboard', async ({ page }) => {
-  await loginViaKeycloak(page, 'member@example.com')
+  await loginViaSupabase(page, 'member@example.com')
 
   await expect(page).toHaveURL('/dashboard')
   await expect(page.getByRole('link', { name: 'Activity' })).toHaveCount(0)
