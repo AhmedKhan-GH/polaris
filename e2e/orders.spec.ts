@@ -1,9 +1,9 @@
 import { test, expect } from '@playwright/test'
 import { loginViaSupabase } from './helpers'
 
-// Runs against the fresh ephemeral E2E DB (orders empty at start). Proves the
-// REAL Keycloak-session → CASL/RLS wiring end-to-end (what mocked-session
-// integration tests can't). Tests are ordered and share the run's DB.
+// Runs against the local Supabase DB, reset to empty `orders` in global-setup.
+// Proves the REAL Supabase-session → CASL/RLS wiring end-to-end (what mocked-
+// session integration tests can't). Tests are ordered and share the run's DB.
 
 test('a signed-in user can create an order and see it', async ({ page }) => {
   await loginViaSupabase(page) // owner@example.com

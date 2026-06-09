@@ -26,6 +26,11 @@ export default async function globalSetup() {
     await migrate(drizzle(pool), { migrationsFolder: './drizzle' })
     const app = new URL(appUrl)
     await pool.query(`ALTER ROLE "${app.username}" WITH LOGIN PASSWORD '${app.password}'`)
+    // E2E runs against the persistent local Supabase DB (not a throwaway), so
+    // reset the test-owned tables to a clean slate each run. Specs assert exact
+    // row counts and a single stable sign-in user_id — both require a fresh start.
+    // (auth.users + profiles keep the seeded users; only app data is cleared.)
+    await pool.query('TRUNCATE orders, sign_in_log')
   } finally {
     await pool.end()
   }

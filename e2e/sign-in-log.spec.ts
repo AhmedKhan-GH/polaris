@@ -18,14 +18,15 @@ async function db<T>(fn: (c: Client) => Promise<T>): Promise<T> {
   }
 }
 
-// Runtime regression guard for the sign_in_log bug: a real Keycloak login must
-// write a row keyed by the *stable* Keycloak sub. The original bug used Auth.js's
-// user.id, which is random per login — repeated logins would yield *distinct*
-// user_ids. Asserting an invariant over the owner's own rows (one distinct,
-// non-null user_id) reproduces that bug class without deleting the table.
+// Runtime regression guard for the sign_in_log bug class: a real login must
+// write a row keyed by the *stable* Supabase user id (auth.users.id), not a
+// random per-login id. The original (Auth.js) bug used a random user.id, so
+// repeated logins yielded *distinct* user_ids. Asserting an invariant over the
+// owner's own rows (one distinct, non-null user_id) guards against that class.
+// global-setup truncates sign_in_log, so only this run's logins are present.
 const OWNER_EMAIL = process.env.TEST_USER_EMAIL!
 
-test('real logins record sign_in_log rows keyed by a stable, non-null Keycloak sub', async ({
+test('real logins record sign_in_log rows keyed by a stable, non-null Supabase user id', async ({
   page,
 }) => {
   await loginViaSupabase(page)
