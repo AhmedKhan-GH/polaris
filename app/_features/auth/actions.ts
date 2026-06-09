@@ -49,9 +49,9 @@ export async function signInAction(
   redirect('/dashboard')
 }
 
-// No public self-registration: this is an internal tool. Accounts are provisioned
-// by an admin (service-role) and gated by invite codes at F9; public registration
-// is an F14 concern. getServiceRoleSupabase() is the provisioning primitive.
+// No registration here — login + logout only. This is an internal tool; accounts
+// are created out-of-band (Supabase admin/dashboard today; invite-code
+// provisioning lands at F9). There is no in-app account-creation code path.
 
 export async function signOutAction() {
   const supabase = await getServerSupabase()

@@ -1,15 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
-import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 import { env } from '@/lib/env'
-
-// Admin client (service-role) — bypasses RLS. Server-only; the provisioning
-// primitive for admin/invite-code user creation (F9). No session persistence.
-export function getServiceRoleSupabase() {
-  return createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  })
-}
 
 // Cookie-bound client carrying the caller's session (anon key + RLS).
 export async function getServerSupabase() {

@@ -29,7 +29,6 @@ const {
 
 vi.mock('@/lib/supabase/server', () => ({
   getServerSupabase: getServerSupabaseMock,
-  getServiceRoleSupabase: vi.fn(),
 }))
 vi.mock('@/lib/logger', () => ({
   logger: { info: infoMock, warn: warnMock, error: errorMock },

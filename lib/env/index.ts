@@ -8,6 +8,8 @@ export const env = createEnv({
   server: {
     DATABASE_URL: z.string().min(1),
     LOG_LEVEL: z.string().optional(),
+    // No in-app consumer today (registration was removed); kept for the E2E
+    // harness's user seeding and future F9 invite-code provisioning.
     SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
   },
   client: {
