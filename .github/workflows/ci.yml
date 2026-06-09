@@ -5,6 +5,9 @@ on:
     branches: [clean-rewrite]
   pull_request:
     branches: [clean-rewrite]
+  # Manual trigger so CI can be run on any branch (e.g. feature/* before its PR
+  # into clean-rewrite) to validate changes — including changes to this file.
+  workflow_dispatch:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -39,8 +42,29 @@ jobs:
       - name: Test
         run: npm test --if-present
 
+      # Integration tests boot a throwaway postgres:17 via Testcontainers (plus
+      # the Ryuk reaper). Cache those images so reruns load them from disk
+      # instead of pulling from the registry every time.
+      - name: Cache Testcontainers images
+        id: tc-images
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/tc-images.tar
+          key: tc-images-${{ runner.os }}-postgres17-ryuk
+
+      - name: Load cached Testcontainers images
+        if: steps.tc-images.outputs.cache-hit == 'true'
+        run: docker load -i ~/.cache/tc-images.tar
+
       - name: Integration test
         run: npm run test:integration
+
+      - name: Save Testcontainers images
+        if: steps.tc-images.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/.cache
+          docker save -o ~/.cache/tc-images.tar \
+            $(docker images --format '{{.Repository}}:{{.Tag}}' | grep -vi '<none>')
 
       - name: Build
         run: npm run build
@@ -51,7 +75,8 @@ jobs:
   e2e:
     name: E2E Tests
     runs-on: ubuntu-latest
-    needs: build
+    # No artifact dependency on `build`, so run both jobs in parallel for faster
+    # overall feedback. (Trade-off: e2e still runs even if build fails.)
 
     env:
       # The app's relational data, auth, AND realtime must share ONE database:
@@ -75,11 +100,52 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Install Playwright
+      # Cache the Playwright browser download (version pinned by the lockfile, so
+      # key on it). On a hit we skip the download and only install the OS-level
+      # deps (cheap), which live outside the cached path.
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - name: Install Playwright (browser + OS deps)
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: npx playwright install --with-deps chromium
 
+      - name: Install Playwright OS deps (cached browser)
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
+
+      # `supabase start` otherwise pulls ~10 Docker images every run. Cache them
+      # so reruns load from disk. Keyed on config.toml; if a CLI bump changes
+      # image tags, `supabase start` just pulls the few that differ (docker skips
+      # any already loaded) — a stale cache is never wrong, only less effective.
+      - name: Cache Supabase Docker images
+        id: supabase-images
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/supabase-images.tar
+          key: supabase-images-${{ runner.os }}-${{ hashFiles('supabase/config.toml') }}
+
+      - name: Load cached Supabase images
+        if: steps.supabase-images.outputs.cache-hit == 'true'
+        run: docker load -i ~/.cache/supabase-images.tar
+
+      # Start only the services the E2E suite needs: Postgres, Auth (GoTrue), the
+      # API gateway (Kong), PostgREST, and Realtime (per-user delivery E2E).
+      # Excluding Studio, Storage, imgproxy, Inbucket, Edge Runtime, Vector,
+      # Analytics, and postgres-meta avoids ~8 images the tests never touch.
       - name: Start Supabase
-        run: npx supabase start
+        run: npx supabase start -x studio,imgproxy,inbucket,edge-runtime,functions,vector,analytics,meta,storage
+
+      - name: Save Supabase images
+        if: steps.supabase-images.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/.cache
+          docker save -o ~/.cache/supabase-images.tar \
+            $(docker images --format '{{.Repository}}:{{.Tag}}' | grep -vi '<none>')
 
       - name: Run database migrations
         run: npm run db:migrate
