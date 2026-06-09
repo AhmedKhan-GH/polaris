@@ -2,9 +2,9 @@
 
 import { z } from 'zod'
 import { redirect } from 'next/navigation'
-import { getServerSupabase, getServiceRoleSupabase } from '@/lib/supabase/server'
+import { getServerSupabase } from '@/lib/supabase/server'
 import { db } from '@/lib/db/client'
-import { profiles, signInLog } from '@/lib/db/schema'
+import { signInLog } from '@/lib/db/schema'
 import { logger } from '@/lib/logger'
 
 export interface LoginState {
@@ -15,17 +15,6 @@ const signInSchema = z.object({
   email: z.string().email(),
   password: z.string().min(1),
 })
-
-const registerSchema = z
-  .object({
-    email: z.string().email(),
-    password: z.string().min(6),
-    confirm: z.string().min(6),
-  })
-  .refine((d) => d.password === d.confirm, {
-    message: 'Passwords do not match.',
-    path: ['confirm'],
-  })
 
 function toObject(formData: FormData): Record<string, string> {
   const o: Record<string, string> = {}
@@ -60,40 +49,9 @@ export async function signInAction(
   redirect('/dashboard')
 }
 
-export async function registerAction(
-  _prev: LoginState,
-  formData: FormData,
-): Promise<LoginState> {
-  const parsed = registerSchema.safeParse(toObject(formData))
-  if (!parsed.success) return { error: parsed.error.issues[0].message }
-
-  const { email, password } = parsed.data
-  const admin = getServiceRoleSupabase()
-  const { data, error } = await admin.auth.admin.createUser({
-    email,
-    password,
-    email_confirm: true,
-  })
-  if (error) {
-    logger.warn({ email, reason: error.message }, 'registration failed')
-    return { error: error.message }
-  }
-
-  await db.insert(profiles).values({ id: data.user.id, email, role: 'member' })
-
-  const supabase = await getServerSupabase()
-  const { error: signInError } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  })
-  if (signInError) {
-    logger.error({ email, reason: signInError.message }, 'post-register sign-in failed')
-    return { error: 'Account created but sign-in failed. Try signing in.' }
-  }
-
-  logger.info({ email, userId: data.user.id }, 'member account registered')
-  redirect('/dashboard')
-}
+// No public self-registration: this is an internal tool. Accounts are provisioned
+// by an admin (service-role) and gated by invite codes at F9; public registration
+// is an F14 concern. getServiceRoleSupabase() is the provisioning primitive.
 
 export async function signOutAction() {
   const supabase = await getServerSupabase()

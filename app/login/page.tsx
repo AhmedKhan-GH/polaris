@@ -20,12 +20,6 @@ export default async function LoginPage() {
       </Link>
       <h1 className="mb-6 text-xl font-semibold text-zinc-50">Sign in</h1>
       <LoginForm />
-      <p className="mt-4 text-sm text-zinc-500">
-        No account?{' '}
-        <Link href="/register" className="text-zinc-300 hover:text-zinc-100">
-          Create one
-        </Link>
-      </p>
     </main>
   )
 }

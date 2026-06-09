@@ -1,6 +1,6 @@
 // Pure route-protection policy, unit-testable without the Next runtime.
 export function isPublicPath(pathname: string): boolean {
-  return pathname === '/' || pathname === '/login' || pathname === '/register'
+  return pathname === '/' || pathname === '/login'
 }
 
 // Coarse role→route gate (owner/member both reach the dashboard for now;

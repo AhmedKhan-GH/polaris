@@ -5,7 +5,8 @@ describe('route policy', () => {
   test('public paths need no session', () => {
     expect(isPublicPath('/')).toBe(true)
     expect(isPublicPath('/login')).toBe(true)
-    expect(isPublicPath('/register')).toBe(true)
+    // No public self-registration — /register is not a route (removed).
+    expect(isPublicPath('/register')).toBe(false)
     expect(isPublicPath('/dashboard')).toBe(false)
     expect(isPublicPath('/orders')).toBe(false)
   })
