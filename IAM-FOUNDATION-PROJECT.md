@@ -3,7 +3,7 @@
 This is the **one document** you need. **Part I** is the foundation every Polaris
 feature is built on (the security model, conventions, and the exact patterns you'll
 copy). **Part II** is your project: organizations, membership, and org-scoped orders.
-Read Part I once, keep it open, and check your work against its §6 checklist on every
+Read Part I once, keep it open, and check your work against its §5 checklist on every
 PR. The live task list is GitHub **Project "IAM Foundation"** + epic issue (the 14
 issues `IAM 1…14`). For the **full security model** — every layer, the mechanics
 diagrams, the threat model, and the control→file map — see **`SECURITY-HANDBOOK.md`**
@@ -208,7 +208,7 @@ Two people = **review + relay**, not divided domains.
   dependency graph is built so two issues are almost always independently ready.
 - **Pair (driver/navigator) on the 🤝 seams** — `IAM 5` (`withOrgContext`), `IAM 8` (orders
   RLS), `IAM 11` (the proof), `IAM 14` (E2E). Don't solo the seams.
-- **Cross-review every PR.** The *other* intern approves; reviewer runs the §6 checklist +
+- **Cross-review every PR.** The *other* intern approves; reviewer runs the §5 checklist +
   "is there an isolation test?". This is the real backstop and the best learning loop.
 - **Exchangeable handoff:** push the branch (a **red test is fine**) + one comment on the
   issue ("Red for X pushed on `iam/5-…`; next is the action"). Issues are small enough that
@@ -262,6 +262,6 @@ protection · org switcher polish · tie orders to the F6 order domain when it l
 
 ## 17. When in doubt
 
-The §6 checklist *is* the spec for "is this secure?". If a test is hard to make pass
+The §5 checklist *is* the spec for "is this secure?". If a test is hard to make pass
 **honestly**, the design is telling you something — ask in the PR before weakening anything.
 **A pushed red test + a question beats a green test that lies.**
