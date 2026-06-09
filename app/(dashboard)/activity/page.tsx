@@ -1,10 +1,10 @@
 import { redirect } from 'next/navigation'
-import { auth } from '@/lib/auth'
+import { getSessionUser } from '@/lib/auth/session'
 import { defineAbilityFor } from '@/lib/permissions/ability'
 import { getSignInLog } from '@/app/_features/activity/getSignInLog'
 
 export default async function ActivityPage() {
-  const session = await auth()
+  const session = await getSessionUser()
   const roles = session?.roles ?? []
 
   // Non-owners get redirected (the guard in getSignInLog is the real backstop).
