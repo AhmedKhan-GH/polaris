@@ -12,6 +12,8 @@ describe('env', () => {
   it('parses a valid environment', async () => {
     delete process.env.SKIP_ENV_VALIDATION
     process.env.DATABASE_URL = 'postgres://x'
+    process.env.NEXT_PUBLIC_SUPABASE_URL = 'http://127.0.0.1:54321'
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'anon-key'
     vi.resetModules()
     const { env } = await import('./index')
     expect(env.DATABASE_URL).toBe('postgres://x')
@@ -30,5 +32,16 @@ describe('env', () => {
     vi.resetModules()
     const { env } = await import('./index')
     expect(env.DATABASE_URL).toBeUndefined()
+  })
+
+  it('exposes the Supabase client vars', async () => {
+    delete process.env.SKIP_ENV_VALIDATION
+    process.env.DATABASE_URL = 'postgres://app_user@localhost/db'
+    process.env.NEXT_PUBLIC_SUPABASE_URL = 'http://127.0.0.1:54321'
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'anon-key'
+    vi.resetModules()
+    const { env } = await import('./index')
+    expect(env.NEXT_PUBLIC_SUPABASE_URL).toBe('http://127.0.0.1:54321')
+    expect(env.NEXT_PUBLIC_SUPABASE_ANON_KEY).toBe('anon-key')
   })
 })

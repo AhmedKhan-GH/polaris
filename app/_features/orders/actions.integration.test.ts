@@ -6,13 +6,13 @@ const USER_A = '11111111-1111-1111-1111-111111111111'
 const USER_B = '22222222-2222-2222-2222-222222222222'
 
 const authMock = vi.fn()
-vi.mock('@/lib/auth', () => ({ auth: () => authMock() }))
+vi.mock('@/lib/auth/session', () => ({ getSessionUser: () => authMock() }))
 vi.mock('@/lib/logger', () => ({ logger: { warn: vi.fn() } }))
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }))
 
 // Proves the order actions wire CASL + withUserContext correctly against a real
 // DB (session mocked), connecting as a NON-SUPERUSER member of app_user like
-// dev/prod. The real Keycloak-session wiring is proven by the E2E.
+// dev/prod. The real Supabase-session wiring is proven by the E2E.
 describe('order actions', () => {
   let rls: RlsTestDb
   let appDb: { $client: pg.Pool }

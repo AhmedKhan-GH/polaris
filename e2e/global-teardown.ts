@@ -1,12 +1,6 @@
-import { execSync } from 'node:child_process'
-
-// Remove the ephemeral E2E database container after the run (local only).
+// E2E runs against the live local Supabase (seeded idempotently in global-setup),
+// so there is no throwaway container to tear down. Kept as an explicit no-op hook
+// so playwright.config's globalTeardown reference stays valid.
 export default async function globalTeardown() {
-  if (!process.env.CI) {
-    try {
-      execSync('docker rm -f polaris-e2e-db', { stdio: 'ignore' })
-    } catch {
-      // ignore — nothing to clean up
-    }
-  }
+  // intentionally empty
 }

@@ -7,7 +7,7 @@ type DbTx = Parameters<Parameters<typeof db.transaction>[0]>[0]
 // Fail-closed: a missing/invalid identity must never reach the DB. An empty or
 // malformed userId would otherwise be cast by the RLS policy
 // (`current_setting('app.user_id')::uuid`) and crash the query. Dashed-hex form
-// (what Keycloak emits / Postgres accepts) — looser than strict RFC-4122.
+// (what Supabase auth emits / Postgres accepts) — looser than strict RFC-4122.
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const ContextSchema = z.object({
   userId: z.string().regex(UUID, 'userId must be a UUID'),

@@ -1,0 +1,181 @@
+{
+  "id": "a0034e71-d7e4-4a0c-b0d4-943fa4b1c2da",
+  "prevId": "cdd2ce09-cefc-4abf-af73-2ee3488ae0c5",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.orders": {
+      "name": "orders",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "orders_owner_or_self": {
+          "name": "orders_owner_or_self",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "app_user"
+          ],
+          "using": "\"orders\".\"created_by\" = current_setting('app.user_id', true)::uuid\n        OR coalesce(nullif(current_setting('app.user_roles', true), '')::jsonb @> '[\"owner\"]'::jsonb, false)",
+          "withCheck": "\"orders\".\"created_by\" = current_setting('app.user_id', true)::uuid"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.profiles": {
+      "name": "profiles",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "role": {
+          "name": "role",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'member'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "profiles_select_self": {
+          "name": "profiles_select_self",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "authenticated"
+          ],
+          "using": "\"profiles\".\"id\" = auth.uid()"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.sign_in_log": {
+      "name": "sign_in_log",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "sign_in_log_owner_read": {
+          "name": "sign_in_log_owner_read",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "app_user"
+          ],
+          "using": "coalesce(nullif(current_setting('app.user_roles', true), '')::jsonb @> '[\"owner\"]'::jsonb, false)",
+          "withCheck": "true"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {},
+  "schemas": {},
+  "sequences": {},
+  "roles": {
+    "app_user": {
+      "name": "app_user",
+      "createDb": false,
+      "createRole": false,
+      "inherit": true
+    }
+  },
+  "policies": {
+    "orders_read_own_topic": {
+      "name": "orders_read_own_topic",
+      "as": "PERMISSIVE",
+      "for": "SELECT",
+      "to": [
+        "authenticated"
+      ],
+      "using": "realtime.topic() = 'orders:' || (select auth.uid())::text\n    OR (\n      realtime.topic() = 'orders:all'\n      AND EXISTS (SELECT 1 FROM \"profiles\" WHERE \"profiles\".\"id\" = (select auth.uid()) AND \"profiles\".\"role\" = 'owner')\n    )",
+      "schema": "realtime",
+      "on": "\"realtime\".\"messages\""
+    }
+  },
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

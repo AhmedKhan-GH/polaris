@@ -57,6 +57,27 @@
       "when": 1780912235005,
       "tag": "0007_neat_omega_red",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1780998841328,
+      "tag": "0008_handy_justin_hammer",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1780999939643,
+      "tag": "0009_orders_broadcast_trigger",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1781000051171,
+      "tag": "0010_realtime_messages_policy",
+      "breakpoints": true
     }
   ]
 }

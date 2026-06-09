@@ -1,8 +1,8 @@
-import { auth } from '@/lib/auth'
+import { getSessionUser } from '@/lib/auth/session'
 import { LandingPage } from '@/app/_features/landing/LandingPage'
 
 export default async function Home() {
-  const session = await auth()
+  const session = await getSessionUser()
 
-  return <LandingPage user={session?.user ?? null} />
+  return <LandingPage user={session ? { email: session.email } : null} />
 }

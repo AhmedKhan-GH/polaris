@@ -1,26 +1,25 @@
 import { test, expect } from '@playwright/test'
-import { loginViaKeycloak } from './helpers'
+import { loginViaSupabase } from './helpers'
 
-test('log out clears the app session and redirects to landing page', async ({ page }) => {
-  await loginViaKeycloak(page)
+test('log out clears the app session and redirects to the landing page', async ({ page }) => {
+  await loginViaSupabase(page)
 
   await page.getByRole('button', { name: 'Log out' }).click()
   await expect(page).toHaveURL('/')
 
   await page.goto('/dashboard')
-  await expect(page).toHaveURL('/')
+  await expect(page).toHaveURL('/login')
 })
 
-test('log out ends the Keycloak SSO session so re-login requires credentials', async ({ page }) => {
-  await loginViaKeycloak(page)
+test('after logout, reaching the app again requires credentials', async ({ page }) => {
+  await loginViaSupabase(page)
 
   await page.getByRole('button', { name: 'Log out' }).click()
   await expect(page).toHaveURL('/')
 
-  // If only the app cookie were cleared, clicking Log in would silently pass
-  // back through Keycloak's still-active SSO session straight to /dashboard.
-  // A real logout means Keycloak shows its login form again.
-  await page.getByRole('button', { name: 'Log in' }).click()
-  await expect(page.locator('#username')).toBeVisible()
-  await expect(page).not.toHaveURL('/dashboard')
+  // Session cleared: visiting a protected route lands on the login form, not the
+  // dashboard (no lingering SSO session as there was with Keycloak).
+  await page.goto('/dashboard')
+  await expect(page).toHaveURL('/login')
+  await expect(page.locator('input[name="password"]')).toBeVisible()
 })

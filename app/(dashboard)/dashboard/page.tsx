@@ -1,9 +1,9 @@
 import Link from 'next/link'
-import { auth } from '@/lib/auth'
+import { getSessionUser } from '@/lib/auth/session'
 import { defineAbilityFor } from '@/lib/permissions/ability'
 
 export default async function DashboardPage() {
-  const session = await auth()
+  const session = await getSessionUser()
   const roles = session?.roles ?? []
   const canViewActivity = defineAbilityFor(roles).can('read', 'SignInLog')
 

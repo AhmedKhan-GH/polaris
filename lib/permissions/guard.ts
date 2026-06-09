@@ -1,16 +1,16 @@
-import { auth } from '@/lib/auth'
+import { getSessionUser } from '@/lib/auth/session'
 import { defineAbilityFor } from '@/lib/permissions/ability'
 import { logger } from '@/lib/logger'
 
 // Wraps a server action/data fetch with a CASL check based on the current
 // session's roles. Runs `fn` when allowed; logs the denial (Pino) and throws
-// otherwise. Node-only (imports the NextAuth instance) — not for the edge.
+// otherwise. Node-only (getSessionUser reads cookies via the Supabase client).
 export async function withPermission<T>(
   action: string,
   subject: string,
   fn: (ctx: { userId: string; roles: string[] }) => Promise<T>,
 ): Promise<T> {
-  const session = await auth()
+  const session = await getSessionUser()
   const userId = session?.userId
   const roles = session?.roles ?? []
 
@@ -30,7 +30,7 @@ export async function withPermission<T>(
   }
 
   logger.warn(
-    { email: session?.user?.email, userId, roles, action, subject },
+    { email: session?.email, userId, roles, action, subject },
     'authorization denied',
   )
   throw new Error('Not authorized')

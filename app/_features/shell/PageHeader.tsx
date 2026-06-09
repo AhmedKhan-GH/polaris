@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import type { AuthUser } from '@/lib/auth/user'
-import { signInAction, signOutAction } from '@/app/_features/auth/actions'
+import { signOutAction } from '@/app/_features/auth/actions'
 
 export function PageHeader({ user }: { user: AuthUser | null }) {
   return (
@@ -19,14 +19,12 @@ export function PageHeader({ user }: { user: AuthUser | null }) {
             </button>
           </form>
         ) : (
-          <form action={signInAction}>
-            <button
-              type="submit"
-              className="flex h-12 items-center justify-center rounded-lg bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc]"
-            >
-              Log in
-            </button>
-          </form>
+          <Link
+            href="/login"
+            className="flex h-12 items-center justify-center rounded-lg bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc]"
+          >
+            Log in
+          </Link>
         )}
       </div>
     </header>

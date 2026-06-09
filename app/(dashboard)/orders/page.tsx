@@ -1,7 +1,14 @@
 import { createOrder, getOrders } from '@/app/_features/orders/actions'
+import { getSessionUser } from '@/lib/auth/session'
+import { OrdersLive } from '@/app/_features/orders/OrdersLive'
 
 export default async function OrdersPage() {
-  const rows = await getOrders()
+  const session = await getSessionUser()
+  const rows = (await getOrders()).map((o) => ({
+    id: o.id,
+    createdBy: o.createdBy,
+    createdAt: o.createdAt.toISOString(),
+  }))
 
   return (
     <div className="flex flex-col gap-6">
@@ -17,38 +24,7 @@ export default async function OrdersPage() {
         </form>
       </div>
 
-      {rows.length === 0 ? (
-        <p data-testid="no-orders" className="text-zinc-500">
-          No orders yet.
-        </p>
-      ) : (
-        <table className="w-full border-collapse text-left text-sm">
-          <thead>
-            <tr className="border-b border-black/[.08] dark:border-white/[.145]">
-              <th className="py-2 pr-4 font-medium">Order</th>
-              <th className="py-2 pr-4 font-medium">Created by</th>
-              <th className="py-2 font-medium">When (UTC)</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((order) => (
-              <tr
-                key={order.id}
-                data-testid="order-row"
-                className="border-b border-black/[.04] dark:border-white/[.08]"
-              >
-                <td className="py-2 pr-4 font-mono text-xs">{order.id}</td>
-                <td className="py-2 pr-4 font-mono text-xs">
-                  {order.createdBy}
-                </td>
-                <td className="py-2">
-                  {order.createdAt.toISOString()}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+      <OrdersLive userId={session!.userId} initial={rows} />
     </div>
   )
 }
