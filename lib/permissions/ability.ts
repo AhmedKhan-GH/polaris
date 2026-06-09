@@ -5,7 +5,7 @@ import {
 } from '@casl/ability'
 
 // App-layer authorization rules, derived from the user's roles and id (the
-// Keycloak sub). RLS enforces row ownership at the DB; CASL gates the actions.
+// Supabase auth user id). RLS enforces row ownership at the DB; CASL gates actions.
 export function defineAbilityFor(
   roles: string[],
   userId?: string,
