@@ -107,6 +107,9 @@ jobs:
             echo "TEST_USER_PASSWORD=test-password-123"
             echo "DATABASE_URL=postgresql://app_user:apppw@localhost:5432/postgres"
             echo "MIGRATE_DATABASE_URL=postgresql://postgres:postgres@localhost:5432/postgres"
+            echo "NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321"
+            echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=test-anon-key"
+            echo "SUPABASE_SERVICE_ROLE_KEY=test-service-role-key"
           } >> .env.test
 
       - name: Wait for Keycloak
