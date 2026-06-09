@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 const auth = vi.fn()
 const warn = vi.fn()
 
-vi.mock('@/lib/auth', () => ({ auth: () => auth() }))
+vi.mock('@/lib/auth/session', () => ({ getSessionUser: () => auth() }))
 vi.mock('@/lib/logger', () => ({
   logger: { warn: (...args: unknown[]) => warn(...args) },
 }))
