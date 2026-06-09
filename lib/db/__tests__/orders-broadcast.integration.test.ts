@@ -53,4 +53,35 @@ describe('orders broadcast trigger', () => {
     expect(owner.rows[0].n).toBeGreaterThanOrEqual(1)
     expect(all.rows[0].n).toBeGreaterThanOrEqual(1)
   })
+
+  // Channel authorization: as the `authenticated` role with auth.uid() = OWNER
+  // and a subscription topic GUC, a user may read only their own topic.
+  async function visibleTopicCount(sub: string, topic: string): Promise<number> {
+    const client = await admin.connect()
+    try {
+      await client.query('begin')
+      await client.query(`set local role authenticated`)
+      await client.query(`select set_config('request.jwt.claims', $1, true)`, [
+        JSON.stringify({ sub, role: 'authenticated' }),
+      ])
+      await client.query(`select set_config('realtime.topic', $1, true)`, [topic])
+      const { rows } = await client.query<{ n: number }>(
+        `select count(*)::int as n from realtime.messages where topic = $1`,
+        [topic],
+      )
+      await client.query('rollback')
+      return rows[0].n
+    } finally {
+      client.release()
+    }
+  }
+
+  it('a user may read only their own orders topic', async ({ skip }) => {
+    if (!reachable) return skip()
+    const OTHER = '0a000000-0000-4000-8000-00000000aa99'
+    // Own topic: visible (rows broadcast in the test above)
+    expect(await visibleTopicCount(OWNER, `orders:${OWNER}`)).toBeGreaterThanOrEqual(1)
+    // Another user's topic: denied → zero rows, even though they exist
+    expect(await visibleTopicCount(OTHER, `orders:${OWNER}`)).toBe(0)
+  })
 })

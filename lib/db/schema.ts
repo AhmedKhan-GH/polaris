@@ -7,7 +7,12 @@ import {
   text,
 } from 'drizzle-orm/pg-core'
 import { sql } from 'drizzle-orm'
-import { authenticatedRole } from 'drizzle-orm/supabase'
+import {
+  authenticatedRole,
+  realtimeMessages,
+  authUid,
+  realtimeTopic,
+} from 'drizzle-orm/supabase'
 
 // Restricted runtime role — subject to RLS (no BYPASSRLS, not a table owner).
 export const appUser = pgRole('app_user')
@@ -87,3 +92,18 @@ export const orders = pgTable(
     }),
   ],
 )
+
+// Channel authorization for the live order feed. Subscription auth runs with the
+// subscriber's JWT loaded, so authUid (auth.uid()) is reliable here — unlike the
+// Postgres-Changes row authorizer (drizzle/0021 scar). A member may read only
+// their own topic; an owner additionally reads the firehose. Linked to Supabase's
+// realtime.messages (not one of our tables) via .link().
+export const ordersReadOwnTopic = pgPolicy('orders_read_own_topic', {
+  for: 'select',
+  to: authenticatedRole,
+  using: sql`${realtimeTopic} = 'orders:' || ${authUid}::text
+    OR (
+      ${realtimeTopic} = 'orders:all'
+      AND EXISTS (SELECT 1 FROM ${profiles} WHERE ${profiles.id} = ${authUid} AND ${profiles.role} = 'owner')
+    )`,
+}).link(realtimeMessages)
