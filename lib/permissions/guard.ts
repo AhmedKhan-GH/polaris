@@ -4,7 +4,7 @@ import { logger } from '@/lib/logger'
 
 // Wraps a server action/data fetch with a CASL check based on the current
 // session's roles. Runs `fn` when allowed; logs the denial (Pino) and throws
-// otherwise. Node-only (imports the NextAuth instance) — not for the edge.
+// otherwise. Node-only (getSessionUser reads cookies via the Supabase client).
 export async function withPermission<T>(
   action: string,
   subject: string,

@@ -14,6 +14,9 @@ export function LoginForm() {
   // avoids the SSR/CSR diff. Cost is a brief skeleton on first paint.
   const [mounted, setMounted] = useState(false)
   useEffect(() => {
+    // Intentional mount flag (renders the form only after hydration). The single
+    // post-mount set is the point — not a cascading-render bug.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true)
   }, [])
 

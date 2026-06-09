@@ -11,6 +11,8 @@ export function RegisterForm() {
   // See LoginForm: defer to client to avoid password-manager hydration diffs.
   const [mounted, setMounted] = useState(false)
   useEffect(() => {
+    // See LoginForm: intentional one-shot mount flag, not a cascading render.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true)
   }, [])
 

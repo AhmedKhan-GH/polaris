@@ -89,8 +89,8 @@ jobs:
       - name: Install Playwright
         run: npx playwright install --with-deps chromium
 
-      - name: Start Keycloak
-        run: docker compose up -d
+      - name: Start Supabase
+        run: npx supabase start
 
       - name: Run database migrations
         run: npm run db:migrate
@@ -98,32 +98,15 @@ jobs:
       - name: Create .env.test
         run: |
           {
-            echo "AUTH_KEYCLOAK_ID=polaris-web"
-            echo "AUTH_KEYCLOAK_SECRET=polaris-dev-secret"
-            echo "AUTH_KEYCLOAK_ISSUER=http://localhost:8080/realms/polaris"
-            echo "AUTH_SECRET=ci-test-secret-not-for-production"
-            echo "AUTH_TRUST_HOST=true"
             echo "TEST_USER_EMAIL=owner@example.com"
             echo "TEST_USER_PASSWORD=test-password-123"
             echo "DATABASE_URL=postgresql://app_user:apppw@localhost:5432/postgres"
             echo "MIGRATE_DATABASE_URL=postgresql://postgres:postgres@localhost:5432/postgres"
-            echo "NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321"
-            echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=test-anon-key"
-            echo "SUPABASE_SERVICE_ROLE_KEY=test-service-role-key"
+            # Real local-Supabase keys for E2E (CLI emits deterministic demo keys).
+            echo "NEXT_PUBLIC_SUPABASE_URL=$(npx supabase status -o env | sed -n 's/^API_URL=\"\?\([^\"]*\)\"\?/\1/p')"
+            echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=$(npx supabase status -o env | sed -n 's/^ANON_KEY=\"\?\([^\"]*\)\"\?/\1/p')"
+            echo "SUPABASE_SERVICE_ROLE_KEY=$(npx supabase status -o env | sed -n 's/^SERVICE_ROLE_KEY=\"\?\([^\"]*\)\"\?/\1/p')"
           } >> .env.test
-
-      - name: Wait for Keycloak
-        run: |
-          for i in $(seq 1 40); do
-            if curl -fsS http://localhost:8080/realms/polaris/.well-known/openid-configuration >/dev/null 2>&1; then
-              echo "Keycloak ready after ~$((i * 3))s"
-              exit 0
-            fi
-            sleep 3
-          done
-          echo "Keycloak did not become ready"
-          docker compose logs keycloak
-          exit 1
 
       - name: Run E2E tests
         run: npm run test:e2e
