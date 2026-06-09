@@ -53,27 +53,16 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
 
-    services:
-      # App database. Migrations are vanilla SQL (no auth.* schema), so a plain
-      # Postgres is sufficient — the sign-in-log E2E reads it to verify the sub.
-      postgres:
-        image: postgres:17
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: postgres
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U postgres"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 10
-
     env:
-      # App connects as the non-superuser app_user; migrations use the admin role.
-      DATABASE_URL: postgresql://app_user:apppw@localhost:5432/postgres
-      MIGRATE_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
+      # The app's relational data, auth, AND realtime must share ONE database:
+      # the Supabase Postgres (:54322, started by `supabase start` below). A
+      # separate plain Postgres would split auth/realtime from the app tables —
+      # getSessionUser reads profiles via the Supabase client, and the orders
+      # broadcast trigger / realtime.messages policy only exist where the
+      # `realtime` schema lives. App connects as the non-superuser app_user;
+      # migrations use the privileged postgres role.
+      DATABASE_URL: postgresql://app_user:apppw@127.0.0.1:54322/postgres
+      MIGRATE_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
 
     steps:
       - uses: actions/checkout@v4
@@ -100,8 +89,8 @@ jobs:
           {
             echo "TEST_USER_EMAIL=owner@example.com"
             echo "TEST_USER_PASSWORD=test-password-123"
-            echo "DATABASE_URL=postgresql://app_user:apppw@localhost:5432/postgres"
-            echo "MIGRATE_DATABASE_URL=postgresql://postgres:postgres@localhost:5432/postgres"
+            echo "DATABASE_URL=postgresql://app_user:apppw@127.0.0.1:54322/postgres"
+            echo "MIGRATE_DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres"
             # Real local-Supabase keys for E2E (CLI emits deterministic demo keys).
             echo "NEXT_PUBLIC_SUPABASE_URL=$(npx supabase status -o env | sed -n 's/^API_URL=\"\?\([^\"]*\)\"\?/\1/p')"
             echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=$(npx supabase status -o env | sed -n 's/^ANON_KEY=\"\?\([^\"]*\)\"\?/\1/p')"
