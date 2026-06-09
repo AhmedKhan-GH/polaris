@@ -1,8 +1,8 @@
 import { describe, expect, test, vi } from 'vitest'
 
 const { createServerClientMock, createClientMock } = vi.hoisted(() => ({
-  createServerClientMock: vi.fn(() => ({ tag: 'server' })),
-  createClientMock: vi.fn(() => ({ tag: 'service' })),
+  createServerClientMock: vi.fn((..._args: unknown[]) => ({ tag: 'server' })),
+  createClientMock: vi.fn((..._args: unknown[]) => ({ tag: 'service' })),
 }))
 
 vi.mock('@/lib/env', () => ({
@@ -31,7 +31,11 @@ describe('supabase server clients', () => {
 
   test('getServiceRoleSupabase uses the service-role key, no session persistence', () => {
     getServiceRoleSupabase()
-    const [, key, opts] = createClientMock.mock.calls[0]
+    const [, key, opts] = createClientMock.mock.calls[0] as [
+      unknown,
+      string,
+      { auth: { persistSession: boolean } },
+    ]
     expect(key).toBe('service-role-key')
     expect(opts.auth.persistSession).toBe(false)
   })
