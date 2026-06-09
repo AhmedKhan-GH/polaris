@@ -1,79 +1,98 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
-const signIn = vi.fn()
-const signOut = vi.fn()
-const auth = vi.fn()
+const {
+  signInMock,
+  signOutMock,
+  getUserMock,
+  getServerSupabaseMock,
+  redirectMock,
+  insertMock,
+  valuesMock,
+  infoMock,
+  warnMock,
+  errorMock,
+} = vi.hoisted(() => {
+  const valuesMock = vi.fn().mockResolvedValue(undefined)
+  return {
+    signInMock: vi.fn(),
+    signOutMock: vi.fn(),
+    getUserMock: vi.fn(),
+    getServerSupabaseMock: vi.fn(),
+    redirectMock: vi.fn(),
+    insertMock: vi.fn(() => ({ values: valuesMock })),
+    valuesMock,
+    infoMock: vi.fn(),
+    warnMock: vi.fn(),
+    errorMock: vi.fn(),
+  }
+})
 
-vi.mock('@/lib/auth', () => ({
-  signIn: (...args: unknown[]) => signIn(...args),
-  signOut: (...args: unknown[]) => signOut(...args),
-  auth: (...args: unknown[]) => auth(...args),
+vi.mock('@/lib/supabase/server', () => ({
+  getServerSupabase: getServerSupabaseMock,
+  getServiceRoleSupabase: vi.fn(),
 }))
-
-const redirect = vi.fn()
-vi.mock('next/navigation', () => ({
-  redirect: (...args: unknown[]) => redirect(...args),
+vi.mock('@/lib/logger', () => ({
+  logger: { info: infoMock, warn: warnMock, error: errorMock },
 }))
-
-const hdrs = vi.hoisted(() => ({ map: new Map<string, string>() }))
-vi.mock('next/headers', () => ({ headers: async () => hdrs.map }))
-
-vi.mock('@/lib/env/auth', () => ({
-  authEnv: {
-    AUTH_KEYCLOAK_ID: 'polaris-web',
-    AUTH_KEYCLOAK_SECRET: 'secret',
-    AUTH_KEYCLOAK_ISSUER: 'http://localhost:8080/realms/polaris',
-    AUTH_SECRET: 'auth-secret',
-  },
-}))
+vi.mock('@/lib/db/client', () => ({ db: { insert: insertMock } }))
+vi.mock('next/navigation', () => ({ redirect: redirectMock }))
 
 import { signInAction, signOutAction } from './actions'
 
+function fd(email: string, password: string) {
+  const f = new FormData()
+  f.set('email', email)
+  f.set('password', password)
+  return f
+}
+
 beforeEach(() => {
   vi.clearAllMocks()
-  hdrs.map = new Map([
-    ['host', 'localhost:3000'],
-    ['x-forwarded-proto', 'http'],
-  ])
+  getServerSupabaseMock.mockResolvedValue({
+    auth: {
+      signInWithPassword: signInMock,
+      signOut: signOutMock,
+      getUser: getUserMock,
+    },
+  })
 })
 
 describe('signInAction', () => {
-  test('starts Keycloak sign-in and redirects to /dashboard', async () => {
-    await signInAction()
+  test('valid credentials: logs sign-in, writes sign_in_log, redirects /dashboard', async () => {
+    signInMock.mockResolvedValue({
+      data: { user: { id: 'u1', email: 'a@b.com' } },
+      error: null,
+    })
+    await signInAction({}, fd('a@b.com', 'pw'))
+    expect(signInMock).toHaveBeenCalledWith({ email: 'a@b.com', password: 'pw' })
+    expect(valuesMock).toHaveBeenCalledWith({ userId: 'u1', email: 'a@b.com' })
+    expect(redirectMock).toHaveBeenCalledWith('/dashboard')
+    expect(warnMock).not.toHaveBeenCalled()
+  })
 
-    expect(signIn).toHaveBeenCalledWith('keycloak', { redirectTo: '/dashboard' })
+  test('bad credentials: returns error state, no redirect', async () => {
+    signInMock.mockResolvedValue({
+      data: { user: null },
+      error: { message: 'Invalid login credentials' },
+    })
+    const r = await signInAction({}, fd('a@b.com', 'x'))
+    expect(r).toEqual({ error: 'Invalid login credentials' })
+    expect(redirectMock).not.toHaveBeenCalled()
+    expect(warnMock).toHaveBeenCalled()
+  })
+
+  test('invalid input: returns a validation error without calling Supabase', async () => {
+    const r = await signInAction({}, fd('not-an-email', ''))
+    expect(r.error).toBeTruthy()
+    expect(signInMock).not.toHaveBeenCalled()
   })
 })
 
 describe('signOutAction', () => {
-  test('clears the app session and redirects through the Keycloak end-session endpoint', async () => {
-    auth.mockResolvedValueOnce({ idToken: 'id-tok-123' })
-
+  test('signs out and redirects to / with no Keycloak end-session', async () => {
+    getUserMock.mockResolvedValue({ data: { user: { id: 'u1', email: 'a@b.com' } } })
     await signOutAction()
-
-    expect(signOut).toHaveBeenCalledWith({ redirect: false })
-
-    const url = redirect.mock.calls[0]?.[0] as string
-    expect(url).toContain(
-      'http://localhost:8080/realms/polaris/protocol/openid-connect/logout',
-    )
-    expect(url).toContain('id_token_hint=id-tok-123')
-    expect(url).toContain('post_logout_redirect_uri=')
-  })
-
-  test('constrains the redirect-origin scheme (a forged proto cannot inject javascript:)', async () => {
-    auth.mockResolvedValueOnce({ idToken: 't' })
-    hdrs.map = new Map([
-      ['host', 'evil.example'],
-      ['x-forwarded-proto', 'javascript'],
-    ])
-
-    await signOutAction()
-
-    const url = redirect.mock.calls[0]?.[0] as string
-    const redirectUri =
-      new URL(url).searchParams.get('post_logout_redirect_uri') ?? ''
-    expect(redirectUri.startsWith('http://')).toBe(true)
-    expect(redirectUri).not.toContain('javascript:')
+    expect(signOutMock).toHaveBeenCalled()
+    expect(redirectMock).toHaveBeenCalledWith('/')
   })
 })

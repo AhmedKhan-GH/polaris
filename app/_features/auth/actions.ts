@@ -1,43 +1,106 @@
 'use server'
 
 import { z } from 'zod'
-import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
-import { auth, signIn, signOut } from '@/lib/auth'
-import { authEnv } from '@/lib/env/auth'
+import { getServerSupabase, getServiceRoleSupabase } from '@/lib/supabase/server'
+import { db } from '@/lib/db/client'
+import { profiles, signInLog } from '@/lib/db/schema'
+import { logger } from '@/lib/logger'
 
-// Validate the request headers used to build the post-logout redirect origin.
-// `.catch` keeps logout resilient while constraining the scheme — a forged
-// x-forwarded-proto can't inject javascript:/data: into the redirect URL.
-const OriginHeaders = z.object({
-  proto: z.enum(['http', 'https']).catch('http'),
-  host: z.string().min(1).catch('localhost:3000'),
+export interface LoginState {
+  error?: string
+}
+
+const signInSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(1),
 })
 
-export async function signInAction() {
-  await signIn('keycloak', { redirectTo: '/dashboard' })
+const registerSchema = z
+  .object({
+    email: z.string().email(),
+    password: z.string().min(6),
+    confirm: z.string().min(6),
+  })
+  .refine((d) => d.password === d.confirm, {
+    message: 'Passwords do not match.',
+    path: ['confirm'],
+  })
+
+function toObject(formData: FormData): Record<string, string> {
+  const o: Record<string, string> = {}
+  formData.forEach((v, k) => (o[k] = String(v)))
+  return o
+}
+
+export async function signInAction(
+  _prev: LoginState,
+  formData: FormData,
+): Promise<LoginState> {
+  const parsed = signInSchema.safeParse(toObject(formData))
+  if (!parsed.success) return { error: parsed.error.issues[0].message }
+
+  const { email, password } = parsed.data
+  const supabase = await getServerSupabase()
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+  if (error) {
+    logger.warn({ email, reason: error.message }, 'login failed')
+    return { error: error.message }
+  }
+
+  // Best-effort sign-in record (former recordSignIn). A DB outage must never
+  // block login, so failures are swallowed.
+  try {
+    await db.insert(signInLog).values({ userId: data.user?.id ?? null, email })
+  } catch (err) {
+    logger.warn({ email, err }, 'failed to write sign_in_log')
+  }
+
+  logger.info({ email, userId: data.user?.id }, 'login succeeded')
+  redirect('/dashboard')
+}
+
+export async function registerAction(
+  _prev: LoginState,
+  formData: FormData,
+): Promise<LoginState> {
+  const parsed = registerSchema.safeParse(toObject(formData))
+  if (!parsed.success) return { error: parsed.error.issues[0].message }
+
+  const { email, password } = parsed.data
+  const admin = getServiceRoleSupabase()
+  const { data, error } = await admin.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,
+  })
+  if (error) {
+    logger.warn({ email, reason: error.message }, 'registration failed')
+    return { error: error.message }
+  }
+
+  await db.insert(profiles).values({ id: data.user.id, email, role: 'member' })
+
+  const supabase = await getServerSupabase()
+  const { error: signInError } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  })
+  if (signInError) {
+    logger.error({ email, reason: signInError.message }, 'post-register sign-in failed')
+    return { error: 'Account created but sign-in failed. Try signing in.' }
+  }
+
+  logger.info({ email, userId: data.user.id }, 'member account registered')
+  redirect('/dashboard')
 }
 
 export async function signOutAction() {
-  const session = await auth()
-  const idToken = session?.idToken
-
-  const headerList = await headers()
-  const { proto, host } = OriginHeaders.parse({
-    proto: headerList.get('x-forwarded-proto'),
-    host: headerList.get('host'),
-  })
-  const origin = `${proto}://${host}`
-
-  // Clear the app session, then end the Keycloak SSO session so a later
-  // login requires credentials again (signOut alone leaves Keycloak logged in).
-  await signOut({ redirect: false })
-
-  const endSession = new URL(
-    `${authEnv.AUTH_KEYCLOAK_ISSUER}/protocol/openid-connect/logout`,
-  )
-  if (idToken) endSession.searchParams.set('id_token_hint', idToken)
-  endSession.searchParams.set('post_logout_redirect_uri', `${origin}/`)
-
-  redirect(endSession.toString())
+  const supabase = await getServerSupabase()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  await supabase.auth.signOut()
+  if (user) logger.info({ email: user.email, userId: user.id }, 'logout succeeded')
+  redirect('/')
 }
