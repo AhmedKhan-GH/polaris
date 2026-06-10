@@ -1,11 +1,15 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import pg from 'pg'
+import { liveDbGate } from './live-db'
 
 // profiles RLS uses auth.uid() and the `authenticated` role — both Supabase-only,
 // absent from the plain-Postgres testcontainer harness. So this suite runs
 // against the live local Supabase DB and self-skips if it isn't reachable
-// (same contract as main's realtime E2E). Run `supabase start` first.
+// (same contract as main's realtime E2E). Run `supabase start` first. In CI the
+// e2e job sets CI_REQUIRE_LIVE_DB so an unreachable DB is a hard failure, not a
+// silent skip (this is the only coverage of the auth.uid() RLS path).
 const LIVE_DB = 'postgresql://postgres:postgres@127.0.0.1:54322/postgres'
+const REQUIRE_LIVE = !!process.env.CI_REQUIRE_LIVE_DB
 
 const MEMBER_A = '1a000000-0000-4000-8000-000000000001'
 const MEMBER_B = '1b000000-0000-4000-8000-000000000002'
@@ -38,15 +42,18 @@ describe('profiles RLS (self OR owner)', () => {
     try {
       await admin.query('select 1')
       reachable = true
-      await admin.query(
-        `insert into profiles (id, email, role) values
-           ($1,'a@x.com','member'), ($2,'b@x.com','member'), ($3,'o@x.com','owner')
-         on conflict (id) do update set role = excluded.role`,
-        [MEMBER_A, MEMBER_B, OWNER],
-      )
     } catch {
       reachable = false
     }
+    // Hard-fail in CI (CI_REQUIRE_LIVE_DB) instead of silently skipping; only
+    // seed when we are actually going to run.
+    if (liveDbGate(reachable, REQUIRE_LIVE) === 'skip') return
+    await admin.query(
+      `insert into profiles (id, email, role) values
+         ($1,'a@x.com','member'), ($2,'b@x.com','member'), ($3,'o@x.com','owner')
+       on conflict (id) do update set role = excluded.role`,
+      [MEMBER_A, MEMBER_B, OWNER],
+    )
   }, 60_000)
 
   afterAll(async () => {
