@@ -101,3 +101,65 @@ describe('migration M1: profiles role source of truth', () => {
     expect(rows).toEqual([]);
   });
 });
+
+/**
+ * Migration M2 smoke. The `sign_in_log` audit table must materialise with
+ * exactly its four columns (in order) and have row-level security on. Unlike
+ * profiles' M1, the owner-read POLICY is UNGUARDED — it targets `app_user` and
+ * the `app.user_roles` GUC, which exist on BOTH the vanilla container and the
+ * live stack — so `sign_in_log_owner_read` MUST be present here. We also assert,
+ * explicitly, that there is NO `success` column: every row is a successful
+ * sign-in by construction, so recording success would be redundant (and inviting
+ * failure rows into an append-only success log is a deliberate non-goal).
+ */
+describe('migration M2: sign_in_log audit table', () => {
+  let db: Awaited<ReturnType<typeof startRlsTestDb>>;
+
+  beforeAll(async () => {
+    db = await startRlsTestDb();
+  });
+
+  afterAll(async () => {
+    await db.cleanup();
+  });
+
+  it('creates sign_in_log with exactly (id uuid, user_id uuid, email text, created_at timestamptz) in order', async () => {
+    const { rows } = await db.admin.query(
+      `select column_name, data_type
+         from information_schema.columns
+        where table_schema = 'public' and table_name = 'sign_in_log'
+        order by ordinal_position`,
+    );
+    expect(rows).toEqual([
+      { column_name: 'id', data_type: 'uuid' },
+      { column_name: 'user_id', data_type: 'uuid' },
+      { column_name: 'email', data_type: 'text' },
+      { column_name: 'created_at', data_type: 'timestamp with time zone' },
+    ]);
+  });
+
+  it('has no column named success', async () => {
+    const { rows } = await db.admin.query(
+      `select 1 from information_schema.columns
+        where table_schema = 'public'
+          and table_name = 'sign_in_log'
+          and column_name = 'success'`,
+    );
+    expect(rows).toEqual([]);
+  });
+
+  it('enables row level security on sign_in_log', async () => {
+    const { rows } = await db.admin.query(
+      "select relrowsecurity from pg_class where relname = 'sign_in_log'",
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0].relrowsecurity).toBe(true);
+  });
+
+  it('creates the unguarded sign_in_log_owner_read policy on a vanilla container', async () => {
+    const { rows } = await db.admin.query(
+      "select policyname from pg_policies where tablename = 'sign_in_log'",
+    );
+    expect(rows).toEqual([{ policyname: 'sign_in_log_owner_read' }]);
+  });
+});
