@@ -66,9 +66,9 @@ export default async function globalSetup(): Promise<void> {
       `ALTER ROLE "${username}" WITH LOGIN PASSWORD '${password}'`,
     );
 
-    // 3. Reset only the test-owned table. auth.users + profiles persist (they
-    //    are reconciled by seedUser), so we never truncate them here.
-    await pool.query('TRUNCATE sign_in_log');
+    // 3. Reset the test-owned tables. auth.users + profiles persist (they are
+    //    reconciled by seedUser), so we never truncate them here.
+    await pool.query('TRUNCATE notes, sign_in_log');
   } finally {
     await pool.end();
   }

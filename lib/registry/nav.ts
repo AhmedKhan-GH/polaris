@@ -14,6 +14,7 @@
 // *type*, an erased edge that creates no runtime cycle.
 
 import { activityNav } from '@/app/_features/activity/nav';
+import { notesNav } from '@/app/_features/notes/nav';
 
 /** A single dashboard navigation entry. `permission`, when present, gates it. */
 export type NavItem = {
@@ -22,4 +23,4 @@ export type NavItem = {
   permission?: { action: string; subject: string };
 };
 
-export const navItems: NavItem[] = [activityNav];
+export const navItems: NavItem[] = [activityNav, notesNav];
