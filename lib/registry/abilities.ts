@@ -11,6 +11,7 @@
 // `permissions` manifests will be imported here too; the Rule-C scanner permits
 // registry → feature `permissions`/`schema`/`nav` imports for exactly that.
 
+import { activityAbilities } from '@/app/_features/activity/permissions';
 import type { AbilityContributor } from '@/lib/permissions/ability';
 
-export const abilityContributors: AbilityContributor[] = [];
+export const abilityContributors: AbilityContributor[] = [activityAbilities];

@@ -67,18 +67,21 @@ describe('lib/permissions ability — composes contributors', () => {
 describe('lib/permissions ability — default contributors come from the registry', () => {
   afterEach(() => {
     // Undo the per-test doMock and drop the dynamically imported copies so the
-    // static top-level import above keeps using the REAL (empty) registry.
+    // static top-level import above keeps using the REAL registry.
     vi.doUnmock('@/lib/registry/abilities');
     vi.resetModules();
   });
 
-  it('grants nothing when called without an explicit list (real empty registry)', () => {
-    // No second argument => the default parameter consults the production
-    // registry, which is empty => fail closed.
-    const ability = buildAbility({ roles: ['owner'] });
-
-    expect(ability.can('read', 'SignInLog')).toBe(false);
-    expect(ability.can('create', 'Note')).toBe(false);
+  it('applies the real registry when called without an explicit list', () => {
+    // No second argument => the default parameter consults the PRODUCTION
+    // registry. As of the activity feature that registry contains the owner-only
+    // `read SignInLog` contributor, so the default-bound ability reflects it:
+    // an owner is granted, while role-gated subjects still fail closed for
+    // everyone else and no unrelated subject leaks in.
+    expect(buildAbility({ roles: ['owner'] }).can('read', 'SignInLog')).toBe(true);
+    expect(buildAbility({ roles: ['member'] }).can('read', 'SignInLog')).toBe(false);
+    expect(buildAbility({ roles: [] }).can('read', 'SignInLog')).toBe(false);
+    expect(buildAbility({ roles: ['owner'] }).can('create', 'Note')).toBe(false);
   });
 
   it('consults the registry for the default list (proven by mocking it)', async () => {

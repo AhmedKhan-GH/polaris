@@ -8,9 +8,12 @@
 // a feature adds a line here, the dashboard shows zero feature links.
 //
 // NOTE: lives under lib/registry/ so it stays importable by both the foundation
-// and feature code without crossing the lib -> app boundary. When features
-// exist, their `nav` manifests will be spread in here (the Rule-C scanner
-// permits registry -> feature `nav` imports for exactly this).
+// and feature code without crossing the lib -> app boundary. Feature `nav`
+// manifests are imported here (the Rule-C scanner permits registry -> feature
+// `nav` imports for exactly this); each manifest imports back only the `NavItem`
+// *type*, an erased edge that creates no runtime cycle.
+
+import { activityNav } from '@/app/_features/activity/nav';
 
 /** A single dashboard navigation entry. `permission`, when present, gates it. */
 export type NavItem = {
@@ -19,4 +22,4 @@ export type NavItem = {
   permission?: { action: string; subject: string };
 };
 
-export const navItems: NavItem[] = [];
+export const navItems: NavItem[] = [activityNav];
