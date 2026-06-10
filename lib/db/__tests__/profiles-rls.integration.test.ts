@@ -85,4 +85,40 @@ describe('profiles RLS (self OR owner)', () => {
     expect(seen).not.toContain(MEMBER_A)
     expect(seen).not.toContain(MEMBER_B)
   })
+
+  // Attempt to self-escalate role as the `authenticated` role with auth.uid() =
+  // sub, inside a rolled-back transaction.
+  async function escalateOwnRoleAs(admin: pg.Pool, sub: string): Promise<void> {
+    const client = await admin.connect()
+    try {
+      await client.query('begin')
+      await client.query(`set local role authenticated`)
+      await client.query(`select set_config('request.jwt.claims', $1, true)`, [
+        JSON.stringify({ sub, role: 'authenticated' }),
+      ])
+      await client.query(`update profiles set role = 'owner' where id = $1`, [sub])
+    } finally {
+      await client.query('rollback').catch(() => {})
+      client.release()
+    }
+  }
+
+  // Defense in depth. profiles.role is the source of the app role (getSessionUser
+  // → CASL → app.user_roles GUC → owner powers over orders/sign_in_log). RLS
+  // already denies cross-row reads, but the table-level GRANT still let
+  // `authenticated` issue an UPDATE — which silently affected 0 rows rather than
+  // erroring, leaving RLS as the SOLE, untested barrier to role self-escalation.
+  // Least-privilege REVOKE makes the write itself fail, so a future permissive
+  // profiles policy can't silently open escalation.
+  it('a member cannot escalate their own role via the data API (write denied)', async ({
+    skip,
+  }) => {
+    if (!reachable) return skip()
+    await expect(escalateOwnRoleAs(admin, MEMBER_A)).rejects.toThrow(/permission denied/i)
+    const { rows } = await admin.query<{ role: string }>(
+      `select role from profiles where id = $1`,
+      [MEMBER_A],
+    )
+    expect(rows[0].role).toBe('member')
+  })
 })
