@@ -25,4 +25,52 @@ Every production-code commit follows strict red→green→refactor micro-cycles.
 
 ## Deletion-rehearsal record
 
-*Pending — appended at Task 30 (feature-confinement check): delete the `notes` exemplar + its registry lines + its migrations in a scratch worktree; the foundation must stay fully green. Result recorded here.*
+**Date:** 2026-06-10 · **Base:** `clean-rewrite-2` @ `5bc576c` · **Where:** a throwaway
+`git worktree` (`../polaris-rehearsal`, detached), `npm ci` fresh — the trunk was
+never touched.
+
+To prove the `notes` exemplar is the *disposable* feature the Domain Charter §4
+claims, it was deleted whole and the foundation re-gated. Deleted: `app/_features/notes/`,
+`app/(dashboard)/notes/`, `e2e/notes.spec.ts`, `e2e/realtime-notes.spec.ts`, migrations
+`0003_*`/`0004_*` (+ their `drizzle/meta` snapshots and `_journal.json` entries). Edited
+back to a no-feature state: the three composition roots (`lib/registry/{abilities,nav,schema}.ts`),
+`e2e/global-setup.ts` (TRUNCATE → `sign_in_log` only), and two exemplar-coupled
+verification controls — `lib/permissions/ability.test.ts` (the registry-default
+assertions reverted to the activity-only registry; `create Note` folded back into the
+"unregistered subject fails closed" check) and `lib/db/__tests__/migrations.integration.test.ts`
+(its M3 `notes` describe-block removed, since that block is migration-content verification
+that ships and dies with the migrations).
+
+**Gates, feature present → feature gone:**
+
+| Gate | Before | After |
+| --- | --- | --- |
+| `npm run lint` | pass | pass |
+| `npx tsc --noEmit` | pass | pass |
+| `npm test` (unit) | 109 / 30 files | 96 / 25 files |
+| `npm run test:integration` | 34 / 8 files | 20 / 5 files |
+| `npm run test:e2e` | 17 | 12 |
+
+The drops are exactly the deleted suites: unit −13 (the 5 notes unit files: NotesLive,
+use-notes-realtime, nav, permissions, actions = 2+2+2+3+4); integration −14 (the 3 notes
+integration files = 4+5+2, plus the migrations M3 block = 3); e2e −5 (notes.spec ×3 +
+realtime-notes.spec ×2). Nothing else moved.
+
+**Surprises / findings:**
+- *No foundation breakage.* Every remaining gate was green with the feature gone —
+  the composition roots absorbed the removal as single deleted lines, exactly as designed.
+- *Two `notes` strings legitimately survive.* After the full deletion, a tree-wide
+  scan for `notes` (any case) returned ONLY `lib/realtime/topics.test.ts` and
+  `lib/realtime/use-topic.test.tsx`. These exercise the *generic* realtime primitives
+  (`topicFor`/`topicAll`/`useTopic`) using `'notes'`/`'notes:u1'` as an arbitrary example
+  domain; they are not exemplar references and were untouched by the rehearsal. They are
+  recorded as known generic fixtures on the continuous confinement test's allowlist
+  (`lib/verification/feature-confinement.test.ts`) so the rehearsal and the test agree.
+- *One transient integration flake.* On the first full integration run,
+  `with-user-context.integration.test.ts` failed; it passed in isolation and on the
+  immediate full re-run — Docker/testcontainer resource contention under `workers`, not a
+  deletion regression (consistent with the known dev-DB quirks).
+- *`drizzle/meta/*` is JSON, hence outside the confinement scan's ts/tsx/sql/yml scope;*
+  it is allowlisted for the record but never actually visited by the scanner.
+
+The scratch worktree was removed (`git worktree remove --force`); trunk stayed at `5bc576c`.
