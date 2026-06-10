@@ -12,6 +12,10 @@
 // registry → feature `permissions`/`schema`/`nav` imports for exactly that.
 
 import { activityAbilities } from '@/app/_features/activity/permissions';
+import { notesAbilities } from '@/app/_features/notes/permissions';
 import type { AbilityContributor } from '@/lib/permissions/ability';
 
-export const abilityContributors: AbilityContributor[] = [activityAbilities];
+export const abilityContributors: AbilityContributor[] = [
+  activityAbilities,
+  notesAbilities,
+];

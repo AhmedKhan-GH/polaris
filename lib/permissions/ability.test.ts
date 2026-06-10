@@ -74,14 +74,17 @@ describe('lib/permissions ability — default contributors come from the registr
 
   it('applies the real registry when called without an explicit list', () => {
     // No second argument => the default parameter consults the PRODUCTION
-    // registry. As of the activity feature that registry contains the owner-only
-    // `read SignInLog` contributor, so the default-bound ability reflects it:
-    // an owner is granted, while role-gated subjects still fail closed for
-    // everyone else and no unrelated subject leaks in.
+    // registry. That registry now contains the activity contributor (owner-only
+    // `read SignInLog`) AND the notes contributor (`create Note` for anyone), so
+    // the default-bound ability reflects both: an owner is granted SignInLog,
+    // anyone is granted `create Note`, role-gated subjects still fail closed for
+    // everyone else, and a subject NO feature has registered never leaks in.
     expect(buildAbility({ roles: ['owner'] }).can('read', 'SignInLog')).toBe(true);
     expect(buildAbility({ roles: ['member'] }).can('read', 'SignInLog')).toBe(false);
     expect(buildAbility({ roles: [] }).can('read', 'SignInLog')).toBe(false);
-    expect(buildAbility({ roles: ['owner'] }).can('create', 'Note')).toBe(false);
+    expect(buildAbility({ roles: [] }).can('create', 'Note')).toBe(true);
+    // `Order` is owned by no registered contributor → still fail-closed.
+    expect(buildAbility({ roles: ['owner'] }).can('create', 'Order')).toBe(false);
   });
 
   it('consults the registry for the default list (proven by mocking it)', async () => {
