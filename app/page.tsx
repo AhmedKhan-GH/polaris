@@ -1,11 +1,25 @@
-export default function Home() {
+import { getSessionUser } from "@/lib/auth/session";
+
+import { LandingPage } from "./_features/landing/LandingPage";
+import { PageHeader } from "./_features/shell/PageHeader";
+
+/**
+ * Public landing route. Resolves the session here (server side) and hands the
+ * presentational pieces a minimal `AuthUser` (or `null` when anonymous), so they
+ * stay free of auth-provider details.
+ *
+ * The route is the composition seam: it wires the `shell` chrome (PageHeader)
+ * around the `landing` hero. Features may not import each other (Charter §1.1),
+ * but a route file (outside `app/_features`) is the sanctioned place to compose
+ * them.
+ */
+export default async function Home() {
+  const session = await getSessionUser();
+  const user = session ? { email: session.email } : null;
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-center py-32 px-16 bg-white dark:bg-black">
-        <h1 className="text-3xl font-semibold tracking-tight text-black dark:text-zinc-50">
-          Zeefoods
-        </h1>
-      </main>
-    </div>
+    <>
+      <PageHeader user={user} />
+      <LandingPage user={user} />
+    </>
   );
 }
