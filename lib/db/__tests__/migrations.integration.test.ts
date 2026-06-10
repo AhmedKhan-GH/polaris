@@ -163,3 +163,52 @@ describe('migration M2: sign_in_log audit table', () => {
     expect(rows).toEqual([{ policyname: 'sign_in_log_owner_read' }]);
   });
 });
+
+/**
+ * Migration M3 smoke. The `notes` DISPOSABLE EXEMPLAR table (Charter §4) must
+ * materialise with exactly its four columns (in order) and RLS on. Like
+ * sign_in_log's M2, its ownership POLICY is UNGUARDED — it targets `app_user`
+ * and the `app.user_id`/`app.user_roles` GUCs, present on BOTH the vanilla
+ * container and the live stack — so `notes_owner_or_self` MUST be present here.
+ */
+describe('migration M3: notes exemplar table', () => {
+  let db: Awaited<ReturnType<typeof startRlsTestDb>>;
+
+  beforeAll(async () => {
+    db = await startRlsTestDb();
+  });
+
+  afterAll(async () => {
+    await db.cleanup();
+  });
+
+  it('creates notes with exactly (id uuid, created_by uuid, body text, created_at timestamptz) in order', async () => {
+    const { rows } = await db.admin.query(
+      `select column_name, data_type
+         from information_schema.columns
+        where table_schema = 'public' and table_name = 'notes'
+        order by ordinal_position`,
+    );
+    expect(rows).toEqual([
+      { column_name: 'id', data_type: 'uuid' },
+      { column_name: 'created_by', data_type: 'uuid' },
+      { column_name: 'body', data_type: 'text' },
+      { column_name: 'created_at', data_type: 'timestamp with time zone' },
+    ]);
+  });
+
+  it('enables row level security on notes', async () => {
+    const { rows } = await db.admin.query(
+      "select relrowsecurity from pg_class where relname = 'notes'",
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0].relrowsecurity).toBe(true);
+  });
+
+  it('creates the unguarded notes_owner_or_self policy on a vanilla container', async () => {
+    const { rows } = await db.admin.query(
+      "select policyname from pg_policies where tablename = 'notes'",
+    );
+    expect(rows).toEqual([{ policyname: 'notes_owner_or_self' }]);
+  });
+});
