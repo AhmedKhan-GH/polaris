@@ -3,6 +3,8 @@ import { Geist, Geist_Mono } from "next/font/google";
 
 import { branding } from "@/lib/branding";
 
+import { ChunkErrorReloader } from "./_features/shell/ChunkErrorReloader";
+
 import "./globals.css";
 
 const geistSans = Geist({
@@ -32,7 +34,10 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <ChunkErrorReloader />
+        {children}
+      </body>
     </html>
   );
 }
