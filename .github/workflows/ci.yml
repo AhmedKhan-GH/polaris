@@ -58,3 +58,80 @@ jobs:
         run: npm run build
         env:
           SKIP_ENV_VALIDATION: '1'
+
+  e2e:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgresql://app_user:apppw@127.0.0.1:54322/postgres
+      MIGRATE_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install (fresh clone)
+        run: npm ci
+
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - name: Install Playwright (browser + OS deps)
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+
+      - name: Install Playwright OS deps (cached browser)
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
+
+      - name: Cache Supabase Docker images
+        id: supabase-images
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/supabase-images.tar
+          key: supabase-images-${{ runner.os }}-${{ hashFiles('supabase/config.toml') }}
+
+      - name: Load cached Supabase images
+        if: steps.supabase-images.outputs.cache-hit == 'true'
+        run: docker load -i ~/.cache/supabase-images.tar
+
+      - name: Start Supabase (trimmed services)
+        run: npx supabase start -x studio,imgproxy,inbucket,edge-runtime,functions,vector,analytics,meta,storage
+
+      - name: Save Supabase images
+        if: steps.supabase-images.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/.cache
+          docker save -o ~/.cache/supabase-images.tar $(docker images --format '{{.Repository}}:{{.Tag}}' | grep -vi '<none>')
+
+      - name: Run migrations
+        run: npm run db:migrate
+
+      - name: Integration suites incl. live-Supabase RLS (hard-fail, never skip)
+        # Full suite, deliberately unfiltered: naming feature suites here would couple
+        # foundation CI to features (Charter §4 confinement). Testcontainer suites run
+        # twice across jobs; the live suites run HERE with skipping forbidden.
+        run: npm run test:integration
+        env:
+          CI_REQUIRE_LIVE_DB: '1'
+
+      - name: Generate .env.test from supabase status
+        run: |
+          rm -f .env.test
+          echo "TEST_USER_EMAIL=owner@example.com" >> .env.test
+          echo "TEST_USER_PASSWORD=test-password-123" >> .env.test
+          echo "DATABASE_URL=postgresql://app_user:apppw@127.0.0.1:54322/postgres" >> .env.test
+          echo "MIGRATE_DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres" >> .env.test
+          echo "NEXT_PUBLIC_SUPABASE_URL=$(npx supabase status -o env | sed -n 's/^API_URL=\"\?\([^\"]*\)\"\?/\1/p')" >> .env.test
+          echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=$(npx supabase status -o env | sed -n 's/^ANON_KEY=\"\?\([^\"]*\)\"\?/\1/p')" >> .env.test
+          echo "SUPABASE_SERVICE_ROLE_KEY=$(npx supabase status -o env | sed -n 's/^SERVICE_ROLE_KEY=\"\?\([^\"]*\)\"\?/\1/p')" >> .env.test
+
+      - name: Run E2E
+        run: npm run test:e2e
