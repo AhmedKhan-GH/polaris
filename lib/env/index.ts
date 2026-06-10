@@ -18,10 +18,18 @@ export const env = createEnv({
     // (Charter D1 build-time exception), never by running application code.
     DATABASE_URL: z.string().min(1),
   },
-  client: {},
+  client: {
+    // Browser-exposed Supabase project endpoint and anon key. Both are required
+    // for the SSR/browser clients to construct; an invalid URL or empty key
+    // fails closed at import time (same fail-closed contract as the server vars).
+    NEXT_PUBLIC_SUPABASE_URL: z.string().url(),
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
+  },
   runtimeEnv: {
     LOG_LEVEL: process.env.LOG_LEVEL,
     DATABASE_URL: process.env.DATABASE_URL,
+    NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
   },
   emptyStringAsUndefined: true,
   skipValidation: !!process.env.SKIP_ENV_VALIDATION,

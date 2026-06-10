@@ -16,9 +16,11 @@ afterEach(() => {
 
 beforeEach(() => {
   vi.resetModules();
-  // Baseline for the now-required server vars so each cycle exercises only the
-  // variable under test. Cases that probe a specific var override or delete it.
+  // Baseline for the now-required vars so each cycle exercises only the variable
+  // under test. Cases that probe a specific var override or delete it.
   process.env.DATABASE_URL = 'postgres://x';
+  process.env.NEXT_PUBLIC_SUPABASE_URL = 'http://127.0.0.1:54321';
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'anon-key';
 });
 
 describe('lib/env', () => {
@@ -60,5 +62,16 @@ describe('lib/env', () => {
   it('fails closed when DATABASE_URL is missing', async () => {
     delete process.env.DATABASE_URL;
     await expect(import('./index')).rejects.toThrow();
+  });
+
+  it('fails closed on a malformed NEXT_PUBLIC_SUPABASE_URL', async () => {
+    process.env.NEXT_PUBLIC_SUPABASE_URL = 'not-a-url';
+    await expect(import('./index')).rejects.toThrow();
+  });
+
+  it('exposes the Supabase URL and anon key', async () => {
+    const { env } = await import('./index');
+    expect(env.NEXT_PUBLIC_SUPABASE_URL).toBe('http://127.0.0.1:54321');
+    expect(env.NEXT_PUBLIC_SUPABASE_ANON_KEY).toBe('anon-key');
   });
 });
