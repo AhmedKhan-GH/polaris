@@ -16,6 +16,9 @@ afterEach(() => {
 
 beforeEach(() => {
   vi.resetModules();
+  // Baseline for the now-required server vars so each cycle exercises only the
+  // variable under test. Cases that probe a specific var override or delete it.
+  process.env.DATABASE_URL = 'postgres://x';
 });
 
 describe('lib/env', () => {
@@ -23,6 +26,12 @@ describe('lib/env', () => {
     delete process.env.LOG_LEVEL;
     const { env } = await import('./index');
     expect(env.LOG_LEVEL).toBeUndefined();
+  });
+
+  it('exposes a valid DATABASE_URL value', async () => {
+    process.env.DATABASE_URL = 'postgres://x';
+    const { env } = await import('./index');
+    expect(env.DATABASE_URL).toBe('postgres://x');
   });
 
   it('exposes a valid LOG_LEVEL value', async () => {
@@ -46,5 +55,10 @@ describe('lib/env', () => {
     process.env.SKIP_ENV_VALIDATION = '1';
     process.env.LOG_LEVEL = 'banana';
     await expect(import('./index')).resolves.toBeDefined();
+  });
+
+  it('fails closed when DATABASE_URL is missing', async () => {
+    delete process.env.DATABASE_URL;
+    await expect(import('./index')).rejects.toThrow();
   });
 });

@@ -9,13 +9,17 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:integration": "vitest run --config vitest.integration.config.mts"
+    "test:integration": "vitest run --config vitest.integration.config.mts",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:studio": "drizzle-kit studio"
   },
   "engines": {
     "node": ">=24"
   },
   "dependencies": {
     "@t3-oss/env-nextjs": "^0.13.11",
+    "drizzle-orm": "^0.45.2",
     "next": "^16.2.6",
     "pino": "^10.3.1",
     "react": "^19.2.0",
@@ -32,6 +36,8 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^6.0.2",
+    "dotenv": "^17.4.2",
+    "drizzle-kit": "^0.31.10",
     "eslint": "^9",
     "eslint-config-next": "^16",
     "eslint-plugin-import-x": "^4.16.2",

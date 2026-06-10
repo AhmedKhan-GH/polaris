@@ -12,10 +12,16 @@ export const env = createEnv({
     LOG_LEVEL: z
       .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace'])
       .optional(),
+    // Runtime connection string for the non-superuser app role. Required: the
+    // app cannot start without a database. `MIGRATE_DATABASE_URL` is deliberately
+    // NOT validated here — it is consumed only by drizzle.config.ts at CLI time
+    // (Charter D1 build-time exception), never by running application code.
+    DATABASE_URL: z.string().min(1),
   },
   client: {},
   runtimeEnv: {
     LOG_LEVEL: process.env.LOG_LEVEL,
+    DATABASE_URL: process.env.DATABASE_URL,
   },
   emptyStringAsUndefined: true,
   skipValidation: !!process.env.SKIP_ENV_VALIDATION,
