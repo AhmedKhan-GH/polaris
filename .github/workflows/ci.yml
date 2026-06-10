@@ -34,6 +34,26 @@ jobs:
       - name: Test
         run: npm test --if-present
 
+      - name: Cache Testcontainers images
+        id: tc-images
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/tc-images.tar
+          key: tc-images-${{ runner.os }}-postgres17-ryuk
+
+      - name: Load cached Testcontainers images
+        if: steps.tc-images.outputs.cache-hit == 'true'
+        run: docker load -i ~/.cache/tc-images.tar
+
+      - name: Integration test
+        run: npm run test:integration
+
+      - name: Save Testcontainers images
+        if: steps.tc-images.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/.cache
+          docker save -o ~/.cache/tc-images.tar $(docker images --format '{{.Repository}}:{{.Tag}}' | grep -vi '<none>')
+
       - name: Build
         run: npm run build
         env:
