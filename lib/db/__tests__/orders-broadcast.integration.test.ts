@@ -1,10 +1,13 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import pg from 'pg'
+import { liveDbGate } from './live-db'
 
 // The broadcast trigger + realtime.messages policy are Supabase-only (realtime
 // schema). Runs against the live local Supabase DB, self-skips if unreachable.
-// Run `supabase start` first.
+// Run `supabase start` first. In CI the e2e job sets CI_REQUIRE_LIVE_DB so an
+// unreachable DB hard-fails instead of skipping the per-topic isolation check.
 const LIVE_DB = 'postgresql://postgres:postgres@127.0.0.1:54322/postgres'
+const REQUIRE_LIVE = !!process.env.CI_REQUIRE_LIVE_DB
 
 const OWNER = '0a000000-0000-4000-8000-00000000aa01'
 
@@ -21,6 +24,8 @@ describe('orders broadcast trigger', () => {
     } catch {
       reachable = false
     }
+    // Hard-fail in CI (CI_REQUIRE_LIVE_DB) instead of silently skipping.
+    liveDbGate(reachable, REQUIRE_LIVE)
   }, 60_000)
 
   afterAll(async () => {

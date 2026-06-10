@@ -78,6 +78,13 @@
       "when": 1781000051171,
       "tag": "0010_realtime_messages_policy",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1781045702106,
+      "tag": "0011_revoke_profiles_write_from_authenticated",
+      "breakpoints": true
     }
   ]
 }

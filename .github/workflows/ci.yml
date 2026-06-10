@@ -150,6 +150,18 @@ jobs:
       - name: Run database migrations
         run: npm run db:migrate
 
+      # The auth.uid()/`authenticated` RLS path — profiles self-read isolation and
+      # the realtime per-topic deny — can only be exercised against real Supabase,
+      # which lives in THIS job. These two suites self-skip when the DB is
+      # unreachable (so a local `npm test` stays green); CI_REQUIRE_LIVE_DB turns
+      # that skip into a hard failure here, so a policy regression can't ship green.
+      # The build job runs the full integration suite, where these two intentionally
+      # skip (no Supabase there) and the testcontainer RLS suites run instead.
+      - name: Integration test (live Supabase RLS path)
+        run: npm run test:integration -- profiles-rls orders-broadcast
+        env:
+          CI_REQUIRE_LIVE_DB: '1'
+
       - name: Create .env.test
         run: |
           {

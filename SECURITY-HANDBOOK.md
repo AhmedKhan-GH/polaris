@@ -67,7 +67,7 @@ The layers the IAM project touches are in **bold**.
 | # | Layer (what *good* looks like) | Polaris realization | Status |
 |---|---|---|---|
 | 1 | **Authentication** — delegate to a managed auth service | Supabase Auth (GoTrue) via `@supabase/ssr`; app-hosted login (no public registration — provisioning → F9); `getSessionUser` resolver | ✅ |
-| 2 | **Session integrity** — signed, validated | Supabase JWT in httpOnly cookies, verified by `@supabase/ssr`; refreshed in `proxy.ts`; role from `profiles` | ✅ |
+| 2 | **Session integrity** — signed, validated | Supabase JWT cookie (`sameSite=lax`, secure-on-HTTPS; **not** httpOnly — the browser client reads it for Realtime auth), re-validated **server-side** by `@supabase/ssr` `getUser()`; refreshed in `proxy.ts`; role from `profiles` | ✅ |
 | 3 | **Authorization (coarse) — CASL** — roles/actions, fail-closed, logged | CASL `withPermission` (requires session, throws, Pino denial log). **You add `defineOrgAbilityFor`.** | ✅ |
 | 4 | **Data isolation (fine) — RLS** — which rows, at the DB | RLS, two paths: app/Drizzle via `app.user_id` GUC (`orders` ownership, `sign_in_log` role); Supabase/`auth.uid()` (`profiles` self-read, `realtime.messages` channel auth). **You add `app.org_id` org-scoping.** | ✅ |
 | 5 | **Least-privilege data access — `app_user`** | Non-superuser `app_user`; migrations privileged. **Never grant `BYPASSRLS`.** | ✅ |
@@ -156,7 +156,12 @@ injects test client values (no `.env` loading there).
 
 ### Authentication (Supabase Auth)
 Login is **app-hosted** (`/login` → `signInAction` → `signInWithPassword`); the session is a
-Supabase JWT in httpOnly cookies, refreshed in `proxy.ts` and verified by `@supabase/ssr`.
+Supabase JWT cookie — `sameSite=lax`, secure-on-HTTPS, **intentionally not httpOnly** (the
+`@supabase/ssr` browser client reads the token from `document.cookie` for Realtime channel
+auth). It is refreshed in `proxy.ts` and verified **server-side** by `@supabase/ssr`
+`getUser()`, which re-validates the JWT against GoTrue every request — a forged or tampered
+cookie fails before our code runs. Because the token is JS-readable, XSS-exfiltration is
+defended at **layer 8** (CSP enforce + nonce, 🔒 deploy), not by httpOnly.
 `userId` = `auth.users.id`; the app **role** comes from the `profiles` table (not a JWT
 claim). **No registration in the app at all** — no `/register`, no `registerAction`. Accounts
 are created out-of-band (Supabase Studio/CLI: an `auth.users` user **and** a matching
@@ -169,7 +174,7 @@ sequenceDiagram
   participant SA as Supabase Auth / GoTrue
   U->>App: visit /login, submit email + password (signInAction)
   App->>SA: signInWithPassword(email, password)
-  SA-->>App: session (JWT) set as httpOnly cookie, or error
+  SA-->>App: session (JWT) set as sameSite=lax cookie (not httpOnly — see above), or error
   App->>App: on success write sign_in_log best-effort, else return an inline error
   App-->>U: redirect to /dashboard, proxy refreshes the session each request
 ```
@@ -344,6 +349,7 @@ it is not done.**
 | Identity → DB context + RLS GUCs | `lib/db/with-user-context.ts` |
 | **Org context + `app.org_id` GUC (you build)** | `lib/db/with-org-context.ts` |
 | Schema + RLS policies (incl. `profiles`, `realtime.messages`) | `lib/db/schema.ts`, `drizzle/*.sql` |
+| `profiles` write-lock (grant REVOKE — least-privilege on the role source-of-truth) | `drizzle/0011_revoke_profiles_write_from_authenticated.sql` |
 | Realtime broadcast trigger | `drizzle/0009_orders_broadcast_trigger.sql` |
 | Live orders island | `app/_features/orders/{useOrdersRealtime.ts,OrdersLive.tsx}` |
 | Non-superuser connection (never touch) | `lib/db/client.ts` |
@@ -352,6 +358,7 @@ it is not done.**
 | Security headers / CSP | `next.config.ts` |
 | Stale-chunk recovery | `app/_features/shell/ChunkErrorReloader.tsx` |
 | RLS integration tests (every table) | `lib/db/__tests__/*-rls.integration.test.ts` |
+| Live-Supabase RLS suites (auth.uid() path) + CI hard-fail gate | `lib/db/__tests__/{profiles-rls,orders-broadcast}.integration.test.ts`, `lib/db/__tests__/live-db.ts`, e2e job in `.github/workflows/ci.yml` (`CI_REQUIRE_LIVE_DB`) |
 | Dependency monitoring | `.github/dependabot.yml`, `.github/workflows/ci.yml` |
 | Logging | `lib/logger.ts` |
 
@@ -373,6 +380,14 @@ it is not done.**
    RLS can't be honored by the Realtime authorizer (the `0021` scar).
 6. **`profiles` self-read RLS only** (owner-reads-all removed — it self-references `profiles`
    → infinite recursion; revisit non-recursively at F9).
+7. **`profiles` is write-locked at the grant layer (2026-06-09).** `profiles.role` is the
+   app-role source of truth, so Supabase's default `GRANT ALL TO anon, authenticated` is
+   revoked down to `SELECT` (`drizzle/0011`). A logged-in user therefore cannot
+   `UPDATE … SET role='owner'` even though no RLS *write* policy exists — and the write now
+   fails **loudly** (privilege denied) instead of silently affecting 0 rows. Pinned by a
+   negative integration test (`profiles-rls.integration.test.ts`). Any future `profiles`
+   write policy (F9 user management) must re-scope writes deliberately; provisioning writes
+   run as the privileged role (`service_role`/`postgres`), which is untouched.
 
 ---
 
