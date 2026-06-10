@@ -13,6 +13,7 @@ export default defineConfig({
     testTimeout: 60_000,
     hookTimeout: 60_000,
     passWithNoTests: true,
+    // DATABASE_URL deliberately absent: integration tests set process.env.DATABASE_URL (testcontainer/live) BEFORE dynamically importing '@/lib/db/client'.
     env: {
       NEXT_PUBLIC_SUPABASE_URL: 'http://127.0.0.1:54321',
       NEXT_PUBLIC_SUPABASE_ANON_KEY: 'test-anon-key',

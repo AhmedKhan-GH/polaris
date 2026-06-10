@@ -2,3 +2,4 @@
 // drizzle-kit and the client see one aggregated namespace. Grows as later slices
 // (tables, policies) are added.
 export * from './roles';
+export * from './identity';

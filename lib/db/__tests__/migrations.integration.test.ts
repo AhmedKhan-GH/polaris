@@ -50,3 +50,54 @@ describe('migration M0: app_user runtime role', () => {
     }
   });
 });
+
+/**
+ * Migration M1 smoke. The `profiles` table must materialise with exactly its
+ * four columns (in order) and have row-level security switched on. Crucially,
+ * this runs on a VANILLA Postgres container with no `auth` schema: the policy
+ * and grant/revoke live behind `IF EXISTS (... schema_name = 'auth')` guards, so
+ * here they must no-op — the absence of a `profiles_select_self` policy row is
+ * the proof the guard actually fired (rather than erroring on the missing
+ * `auth.uid()`), keeping the migration portable to plain Postgres.
+ */
+describe('migration M1: profiles role source of truth', () => {
+  let db: Awaited<ReturnType<typeof startRlsTestDb>>;
+
+  beforeAll(async () => {
+    db = await startRlsTestDb();
+  });
+
+  afterAll(async () => {
+    await db.cleanup();
+  });
+
+  it('creates profiles with exactly (id uuid, email text, role text, created_at timestamptz) in order', async () => {
+    const { rows } = await db.admin.query(
+      `select column_name, data_type
+         from information_schema.columns
+        where table_schema = 'public' and table_name = 'profiles'
+        order by ordinal_position`,
+    );
+    expect(rows).toEqual([
+      { column_name: 'id', data_type: 'uuid' },
+      { column_name: 'email', data_type: 'text' },
+      { column_name: 'role', data_type: 'text' },
+      { column_name: 'created_at', data_type: 'timestamp with time zone' },
+    ]);
+  });
+
+  it('enables row level security on profiles', async () => {
+    const { rows } = await db.admin.query(
+      "select relrowsecurity from pg_class where relname = 'profiles'",
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0].relrowsecurity).toBe(true);
+  });
+
+  it('no-ops the auth-guarded blocks: no profiles_select_self policy on a vanilla container', async () => {
+    const { rows } = await db.admin.query(
+      "select policyname from pg_policies where tablename = 'profiles'",
+    );
+    expect(rows).toEqual([]);
+  });
+});
