@@ -1,0 +1,41 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; }
+html { font-size: 100%; }
+body {
+  font-family: var(--font-sans); font-size: var(--text-base);
+  line-height: var(--leading-body); color: var(--ink);
+  background: var(--paper); -webkit-font-smoothing: antialiased;
+}
+h1, h2, h3 { line-height: var(--leading-display); letter-spacing: -0.015em; }
+h1 { font-size: var(--text-3xl); font-weight: 700; }
+h2 { font-size: var(--text-2xl); font-weight: 700; }
+h3 { font-size: var(--text-xl);  font-weight: 600; }
+p  { max-width: 65ch; }
+.muted { color: var(--ink-muted); }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+.wrap { max-width: var(--content-max); margin-inline: auto;
+        padding-inline: var(--space-6); }
+.prose { max-width: var(--prose-max); }
+section { padding-block: var(--space-16); }
+.hero { padding-block: var(--space-24) var(--space-16); text-align: left; }
+.hero h1 { font-size: var(--text-4xl); max-width: 18ch; }
+.hero .lead { font-size: var(--text-lg); color: var(--ink-muted);
+              margin-top: var(--space-4); max-width: 50ch; }
+.grid-3 { display: grid; gap: var(--space-6);
+          grid-template-columns: repeat(3, 1fr); }
+.card { background: var(--paper-alt); border-radius: var(--radius-card);
+        padding: var(--space-8); }
+.card h3 { margin-bottom: var(--space-2); }
+.btn { display: inline-block; background: var(--accent); color: var(--paper);
+       font-size: var(--text-base); font-weight: 600;
+       padding: var(--space-3) var(--space-6); border-radius: var(--radius-pill);
+       margin-top: var(--space-8); min-height: var(--tap-min); }
+.btn:hover { text-decoration: none; opacity: .92; }
+footer { border-top: 1px solid var(--hairline);
+         padding-block: var(--space-8); color: var(--ink-muted);
+         font-size: var(--text-sm); }
+@media (max-width: 700px) {
+  .grid-3 { grid-template-columns: 1fr; }
+  .hero h1 { font-size: var(--text-3xl); }
+  section { padding-block: var(--space-12); }
+}
