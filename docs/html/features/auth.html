@@ -46,28 +46,66 @@
        var(--space-2) 0; border-bottom: 1px solid var(--ink); }
   td { padding: var(--space-3) var(--space-4) var(--space-3) 0;
        border-bottom: 1px solid var(--hairline); vertical-align: top; }
-  .hero { padding-block: var(--space-16) var(--space-8); }
+  .hero { padding-block: var(--space-12) var(--space-8);
+          border-bottom: 1px solid var(--hairline); }
+  .featnav { display: flex; flex-wrap: wrap; gap: var(--space-2);
+             margin-top: var(--space-6); }
+  .featnav-item { display: inline-block; font-size: var(--text-sm);
+       font-weight: 600; padding: var(--space-1) var(--space-4);
+       border-radius: var(--radius-pill); border: 1px solid var(--hairline);
+       color: var(--ink-muted); }
+  a.featnav-item:hover { text-decoration: none; color: var(--ink);
+       border-color: var(--ink-muted); }
+  .featnav-item.current { background: var(--accent); color: var(--paper);
+       border-color: var(--accent); }
+  .glance { display: grid; gap: var(--space-6);
+            grid-template-columns: repeat(3, 1fr);
+            margin-top: var(--space-8); }
+  .glance .card h3 { font-size: var(--text-2xl); font-weight: 700;
+                     margin-bottom: var(--space-1); }
+  .glance .card p { font-size: var(--text-sm); color: var(--ink-muted); }
+  .pill { display: inline-block; font-size: var(--text-xs); font-weight: 600;
+          padding: 2px var(--space-3); border-radius: var(--radius-pill);
+          background: var(--paper-alt); border: 1px solid var(--hairline);
+          color: var(--ink-muted); white-space: nowrap; }
+  @media (max-width: 700px) { .glance { grid-template-columns: 1fr; } }
 </style>
 </head>
 <body>
 
 <header class="hero wrap prose">
   <p class="kicker"><a href="../add-a-feature.html">Polaris · Developer Handbook</a> · feature</p>
-  <h1 style="font-size: var(--text-3xl); margin-top: var(--space-2)">auth</h1>
+  <h1 style="font-size: var(--text-4xl); margin-top: var(--space-2)">auth</h1>
   <p class="lead">Auth dev API (Iron Rule 8, ADR-0005).</p>
-  <p class="muted" style="font-size: var(--text-sm); margin-top: var(--space-4)">
-  Generated from <code>app/_features/auth/index.ts</code> —
-  the code is the source of truth.</p>
+  <nav class="featnav" aria-label="Features">
+    <a class="featnav-item" href="activity.html">activity</a>
+    <span class="featnav-item current">auth</span>
+    <a class="featnav-item" href="landing.html">landing</a>
+    <a class="featnav-item" href="notes.html">notes</a>
+    <a class="featnav-item" href="shell.html">shell</a>
+  </nav>
 </header>
+
+<section class="doc wrap prose">
+  <h2>At a glance</h2>
+  <div class="glance">
+    <div class="card"><h3>2</h3><p>public exports — the entire dev API</p></div>
+    <div class="card"><h3>0</h3><p>manifests on the registry seam</p></div>
+    <div class="card"><h3>0</h3><p>private internals — unreachable from outside</p></div>
+  </div>
+  <p class="muted" style="font-size: var(--text-sm); margin-top: var(--space-6)">
+  Generated from <code>app/_features/auth/index.ts</code> by
+  <code>npm run docs:surfaces</code> — the code is the source of truth.</p>
+</section>
 
 <section class="doc wrap prose">
   <h2>Dev API</h2>
   <p>What outsiders may import from <code>@/app/_features/auth</code>.
   Everything else in the folder is private (boundary rule D).</p>
   <table>
-    <tr><th>Export</th><th>Source module</th></tr>
-      <tr><td><code>LoginForm</code></td><td><code>./LoginForm</code></td></tr>
-      <tr><td><code>signOutAction</code></td><td><code>./actions</code></td></tr>
+    <tr><th>Export</th><th>Kind</th><th>Source module</th></tr>
+      <tr><td><code>LoginForm</code></td><td><span class="pill">component</span></td><td><code>./LoginForm</code></td></tr>
+      <tr><td><code>signOutAction</code></td><td><span class="pill">server action</span></td><td><code>./actions</code></td></tr>
   </table>
 </section>
 

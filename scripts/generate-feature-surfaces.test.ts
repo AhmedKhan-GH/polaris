@@ -160,6 +160,26 @@ describe('renderFeaturePageHtml', () => {
     // And it links back to the guide.
     expect(html).toContain('href="../add-a-feature.html"');
   });
+
+  it('labels each export with its kind (component / server action / type)', () => {
+    const html = renderFeaturePageHtml(surface, INDEX_SOURCE);
+    // NotesLive: capitalized, .tsx-style component module -> component.
+    expect(html).toMatch(/NotesLive[\s\S]*?component/);
+    // getNotes comes from './actions' -> server action.
+    expect(html).toMatch(/getNotes[\s\S]*?server action/);
+  });
+
+  it('cross-links sibling feature pages when given the full feature list', () => {
+    const html = renderFeaturePageHtml(surface, INDEX_SOURCE, [
+      'auth',
+      'notes',
+      'shell',
+    ]);
+    expect(html).toContain('href="auth.html"');
+    expect(html).toContain('href="shell.html"');
+    // The current feature is shown as the active item, not a self-link.
+    expect(html).not.toContain('href="notes.html"');
+  });
 });
 
 describe('injectBetweenMarkers', () => {
