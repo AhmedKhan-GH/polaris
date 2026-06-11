@@ -1,7 +1,7 @@
 import { getSessionUser } from "@/lib/auth/session";
 
 import { LandingPage } from "./_features/landing/LandingPage";
-import { PageHeader } from "./_features/shell/PageHeader";
+import { PageHeader } from "./_features/shell";
 
 /**
  * Public landing route. Resolves the session here (server side) and hands the

@@ -1,6 +1,6 @@
 import { getSessionUser } from "@/lib/auth/session";
 
-import { PageHeader } from "../_features/shell/PageHeader";
+import { PageHeader } from "../_features/shell";
 
 /**
  * Shared chrome for the authenticated dashboard segment: the page header over
