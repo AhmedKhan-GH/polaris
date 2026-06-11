@@ -68,6 +68,16 @@
         top: 0; font-size: var(--text-lg); font-weight: 700;
         color: var(--accent); width: var(--space-8); text-align: right; }
   .steps h3 { margin-top: 0; font-size: var(--text-lg); }
+  .featnav { display: flex; flex-wrap: wrap; gap: var(--space-2);
+             margin-top: var(--space-6); }
+  .featnav-item { display: inline-block; font-size: var(--text-sm);
+       font-weight: 600; padding: var(--space-1) var(--space-4);
+       border-radius: var(--radius-pill); border: 1px solid var(--hairline);
+       color: var(--ink-muted); }
+  a.featnav-item:hover { text-decoration: none; color: var(--ink);
+       border-color: var(--ink-muted); }
+  .featnav-item.current { background: var(--accent); color: var(--paper);
+       border-color: var(--accent); }
   .note { border-left: 3px solid var(--accent); background: var(--paper-alt);
           border-radius: 0 var(--radius-card) var(--radius-card) 0;
           padding: var(--space-4) var(--space-6); margin-top: var(--space-6);
@@ -156,6 +166,14 @@ export { getNotes, createNote } from './actions';
   generated from it (<code>npm run docs:surfaces</code>). Anything in the
   private column is provably unreferenced by outsiders.</p>
 <!-- BEGIN GENERATED feature-surfaces (npm run docs:surfaces) -->
+  <nav class="featnav" aria-label="Documentation pages">
+    <span class="featnav-item current">guide</span>
+    <a class="featnav-item" href="features/activity.html">activity</a>
+    <a class="featnav-item" href="features/auth.html">auth</a>
+    <a class="featnav-item" href="features/landing.html">landing</a>
+    <a class="featnav-item" href="features/notes.html">notes</a>
+    <a class="featnav-item" href="features/shell.html">shell</a>
+  </nav>
   <div class="table-scroll"><table>
     <tr><th>Feature</th><th>Dev API (<code>index.ts</code> exports)</th><th>Manifests (registry seam)</th><th>Private internals</th></tr>
     <tr>

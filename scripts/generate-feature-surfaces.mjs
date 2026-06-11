@@ -80,6 +80,27 @@ export function parseIndexDocLead(source) {
 }
 
 /**
+ * The one nav component every docs page shares: a guide pill plus one pill
+ * per feature, current page highlighted. `hrefs` maps item key -> href;
+ * the current key renders as a non-link.
+ */
+function renderFeatureNav(items, current) {
+  const pills = items
+    .map(({ key, href }) =>
+      key === current
+        ? `<span class="featnav-item current">${escapeHtml(key)}</span>`
+        : `<a class="featnav-item" href="${escapeHtml(href)}">${escapeHtml(key)}</a>`,
+    )
+    .join('\n    ');
+  return `<nav class="featnav" aria-label="Documentation pages">\n    ${pills}\n  </nav>`;
+}
+
+const navItems = (features, { guideHref, featureHref }) => [
+  { key: 'guide', href: guideHref },
+  ...features.map((f) => ({ key: f, href: featureHref(f) })),
+];
+
+/**
  * Render the surfaces table. One row per feature: dev API exports (grouped
  * by source module), manifests, private internals.
  */
@@ -109,7 +130,15 @@ export function renderSurfacesHtml(surfaces) {
       ].join('\n');
     })
     .join('\n');
+  const nav = renderFeatureNav(
+    navItems(surfaces.map((s) => s.feature), {
+      guideHref: '#',
+      featureHref: (f) => `features/${f}.html`,
+    }),
+    'guide',
+  );
   return [
+    `  ${nav}`,
     '  <div class="table-scroll"><table>',
     '    <tr><th>Feature</th><th>Dev API (<code>index.ts</code> exports)</th><th>Manifests (registry seam)</th><th>Private internals</th></tr>',
     rows,
@@ -210,13 +239,13 @@ export function renderFeaturePageHtml(
     .join('\n');
   const fileList = (files) =>
     files.map((f) => `<code>${escapeHtml(f)}</code>`).join(' · ');
-  const featNav = allFeatures
-    .map((f) =>
-      f === feature
-        ? `<span class="featnav-item current">${escapeHtml(f)}</span>`
-        : `<a class="featnav-item" href="${escapeHtml(f)}.html">${escapeHtml(f)}</a>`,
-    )
-    .join('\n    ');
+  const featNav = renderFeatureNav(
+    navItems(allFeatures, {
+      guideHref: '../add-a-feature.html',
+      featureHref: (f) => `${f}.html`,
+    }),
+    feature,
+  );
 
   // Stat cards adapt to the feature: zero counts are noise, not signal.
   const cards = [
@@ -359,9 +388,7 @@ ${inlineCss}
   <p class="kicker"><a href="../add-a-feature.html">Polaris · Developer Handbook</a> · feature</p>
   <h1 style="font-size: var(--text-4xl); margin-top: var(--space-2)">${escapeHtml(feature)}</h1>
   <p class="lead">${escapeHtml(lead)}</p>
-  <nav class="featnav" aria-label="Features">
-    ${featNav}
-  </nav>
+  ${featNav}
 </header>
 
 <section class="doc wrap prose">

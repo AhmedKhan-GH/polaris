@@ -109,6 +109,15 @@ describe('renderSurfacesHtml', () => {
     ]);
     expect(html).toContain('href="features/notes.html"');
   });
+
+  it('renders the same pill nav as leaf pages, with the guide as current', () => {
+    const html = renderSurfacesHtml([
+      { feature: 'notes', publicExports: [], manifests: [], privateFiles: [] },
+    ]);
+    expect(html).toContain('class="featnav"');
+    expect(html).toContain('featnav-item current">guide<');
+    expect(html).toContain('class="featnav-item" href="features/notes.html"');
+  });
 });
 
 describe('parseIndexDocLead', () => {
@@ -188,6 +197,13 @@ describe('renderFeaturePageHtml', () => {
     expect(html).toContain('href="shell.html"');
     // The current feature is shown as the active item, not a self-link.
     expect(html).not.toContain('href="notes.html"');
+  });
+
+  it('starts the leaf pill nav with a guide pill back to the main page', () => {
+    const html = renderFeaturePageHtml(surface, INDEX_SOURCE, ['notes']);
+    expect(html).toContain(
+      'class="featnav-item" href="../add-a-feature.html">guide<',
+    );
   });
 });
 
