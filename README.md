@@ -51,13 +51,12 @@ Prerequisites: Node 24 (`.nvmrc`), Docker, the Supabase CLI.
 npm ci
 npx supabase start -x studio,imgproxy,inbucket,edge-runtime,functions,vector,analytics,meta,storage
 cp .env.test .env.local   # local demo keys + dev DB URLs (never production values)
-npm run db:setup          # migrations + app_user login on the local stack; self-verifying, idempotent
-npm run dev               # http://localhost:3000
+npm run db:setup          # migrations + app_user login + demo users; self-verifying, idempotent
+npm run dev               # http://localhost:3000 — log in: owner@example.com / test-password-123
 ```
 
-There is no sign-up page (by design). To get users:
+There is no sign-up page (by design). `db:setup` already seeded two demo accounts — `owner@example.com` and `member@example.com`, both with password `test-password-123`. For anything else:
 
-- **Fastest:** `npm run test:e2e` once — it seeds `owner@example.com` and `member@example.com`, both with password `test-password-123`.
 - **Custom user:** create it via the GoTrue admin API, then give it a role in `profiles` as a privileged DB role (the write-lock prevents any logged-in user from touching roles — that's the point):
 
 ```bash
