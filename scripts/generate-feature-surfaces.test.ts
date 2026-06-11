@@ -170,6 +170,14 @@ describe('renderFeaturePageHtml', () => {
     expect(html).toMatch(/getNotes[\s\S]*?server action/);
   });
 
+  it('is fully self-contained: inlines CSS, references no external stylesheets', () => {
+    const html = renderFeaturePageHtml(surface, INDEX_SOURCE, [], {
+      inlineCss: ':root{--accent:#0066CC}',
+    });
+    expect(html).not.toContain('<link rel="stylesheet"');
+    expect(html).toContain(':root{--accent:#0066CC}');
+  });
+
   it('cross-links sibling feature pages when given the full feature list', () => {
     const html = renderFeaturePageHtml(surface, INDEX_SOURCE, [
       'auth',

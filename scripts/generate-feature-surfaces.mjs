@@ -194,7 +194,12 @@ export function exportKind(entry) {
  * across sibling features. Mirrors the guide's look (same tokens/base CSS,
  * dark code figures) and links back to it.
  */
-export function renderFeaturePageHtml(surface, indexSource, allFeatures = []) {
+export function renderFeaturePageHtml(
+  surface,
+  indexSource,
+  allFeatures = [],
+  { inlineCss = '' } = {},
+) {
   const { feature, publicExports, manifests, privateFiles, usedBy = [] } = surface;
   const lead = parseIndexDocLead(indexSource);
   const exportRows = publicExports
@@ -279,8 +284,11 @@ ${seamsParts.join('\n')}
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Polaris — ${escapeHtml(feature)} dev API</title>
-<link rel="stylesheet" href="../tokens.css">
-<link rel="stylesheet" href="../base.css">
+<style>
+/* Inlined design system (tokens.css + base.css) — generated pages are fully
+   self-contained so they render identically from any location or server. */
+${inlineCss}
+</style>
 <style>
   :root { --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo,
                        Consolas, monospace;
@@ -452,10 +460,13 @@ function main() {
   const featurePagesDir = join(repoRoot, 'docs', 'html', 'features');
   mkdirSync(featurePagesDir, { recursive: true });
   const featureNames = surfaces.map((s) => s.feature);
+  const inlineCss = ['tokens.css', 'base.css']
+    .map((f) => readFileSync(join(repoRoot, 'docs', 'html', f), 'utf8'))
+    .join('\n');
   for (const s of surfaces) {
     writeFileSync(
       join(featurePagesDir, `${s.feature}.html`),
-      renderFeaturePageHtml(s, s.indexSource, featureNames),
+      renderFeaturePageHtml(s, s.indexSource, featureNames, { inlineCss }),
     );
   }
   console.log(
