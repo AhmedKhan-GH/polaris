@@ -186,13 +186,20 @@ async function seedUser(
   }
 }
 
-// Entry detection without `import.meta` (ESM-only syntax would force Node's
-// native ESM loader onto a file Playwright transpiles to CJS for the e2e
-// global-setup import — the two regimes conflict). argv[1] is this file only
-// when run via `npm run db:setup`; under vitest/playwright it is their binary.
-const isCliEntry = process.argv[1]?.endsWith('scripts/db-setup.ts') ?? false;
+/**
+ * Entry detection without `import.meta` (ESM-only syntax would force Node's
+ * native ESM loader onto a file Playwright transpiles to CJS for the e2e
+ * global-setup import — the two regimes conflict). argv[1] is this file only
+ * when run via `npm run db:setup`; under vitest/playwright it is their binary.
+ */
+export function isDbSetupCliEntry(argv1: string | undefined): boolean {
+  // Windows argv carries backslashes; normalize so one suffix check serves
+  // both platforms (a backslashed path once made this false and db:setup
+  // exited 0 having provisioned nothing).
+  return argv1?.replaceAll('\\', '/').endsWith('scripts/db-setup.ts') ?? false;
+}
 
-if (isCliEntry) {
+if (isDbSetupCliEntry(process.argv[1])) {
   cli().catch((err: unknown) => {
     console.error(err);
     process.exitCode = 1;
