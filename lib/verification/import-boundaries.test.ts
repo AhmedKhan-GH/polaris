@@ -15,6 +15,12 @@
 // Rule C: a file under `lib/registry/` may import from `app/_features/*/` ONLY
 //         when the imported module's basename is `schema`, `permissions`, or
 //         `nav` (feature manifests only).
+// Rule D: outsiders import a feature ONLY via its dev API — the bare folder
+//         specifier (`@/app/_features/<name>`, which is `<name>/index.ts`) —
+//         never a file inside it (Iron Rule 8, ADR-0005). Exemptions: imports
+//         from inside the same feature, and registry -> manifest edges (rule
+//         C's seam). The sanctioned shell -> auth edge (rule B) is NOT exempt
+//         here: it must travel through auth's index like any outsider.
 
 import { type Dirent, readdirSync, readFileSync } from 'node:fs';
 import { join, dirname, relative, resolve, posix, sep } from 'node:path';
@@ -22,8 +28,12 @@ import { describe, expect, it } from 'vitest';
 
 const REPO_ROOT = resolve(__dirname, '..', '..');
 
-/** Roots to scan, relative to the repo root. May not all exist yet. */
-const SCAN_ROOTS = ['lib', join('app', '_features')];
+/**
+ * Roots to scan, relative to the repo root. May not all exist yet. `app` is
+ * scanned WHOLE (not just `_features`): rule D regulates route files as
+ * importers, so pages/layouts must appear in the edge set.
+ */
+const SCAN_ROOTS = ['lib', 'app'];
 
 /** A single resolved import edge, in repo-relative POSIX form. */
 interface ImportEdge {
@@ -209,6 +219,29 @@ describe('import-boundary law', () => {
     expect(
       violations.length,
       `Registry may import only feature manifests (schema/permissions/nav):\n${formatViolations('C', violations)}`,
+    ).toBe(0);
+  });
+
+  it("Rule D: outsiders import a feature only via its dev API (the feature's index)", () => {
+    const violations = ALL_EDGES.filter((e) => {
+      if (e.target === null || !isUnder(e.target, FEATURES_ROOT)) return false;
+      const toFeature = featureOf(`${e.target}/`);
+      if (toFeature === null) return false; // the _features root itself
+      if (featureOf(e.importer) === toFeature) return false; // intra-feature ok
+      // Registry -> manifest is rule C's seam, not the dev API.
+      if (
+        isUnder(e.importer, REGISTRY_ROOT) &&
+        MANIFEST_BASENAMES.has(specifierBasename(e.specifier))
+      ) {
+        return false;
+      }
+      // The bare feature folder IS the index import — the dev API.
+      if (e.target === `${FEATURES_ROOT}/${toFeature}`) return false;
+      return true;
+    });
+    expect(
+      violations.length,
+      `Outsiders import a feature only via its index.ts dev API (Iron Rule 8, ADR-0005):\n${formatViolations('D', violations)}`,
     ).toBe(0);
   });
 });
