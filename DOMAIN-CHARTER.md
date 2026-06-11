@@ -28,8 +28,9 @@ The rules:
 5. **Server actions self-guard.** Next 16 `proxy.ts` matchers do not see Server Action POSTs to excluded paths; the proxy is route hygiene, never an authorization layer. Every action wraps `withPermission` (D4) and reaches data only through `withUserContext` (D2).
 6. **Two RLS identity paths, never mixed.** Tables read via Drizzle/`app_user` get GUC policies (`app.user_id` / `app.user_roles`); tables read via the Supabase client get `auth.uid()` policies. A policy written for one path is blind to the other (see SECURITY-HANDBOOK §5).
 7. **Streamed data is gated at the channel layer.** Never row-RLS on the streamed table for delivery filtering — the 0021 scar (SECURITY-HANDBOOK §9; realtime identity context cannot see app GUCs and does not reliably resolve `auth.uid()` row-by-row).
+8. **Features expose a dev API.** Outsiders import `app/_features/<name>` (the feature's `index.ts`) and nothing deeper; anything not exported from the index is private to the feature. The index never re-exports manifests — manifests remain the registry-only seam (rule 3). Exemptions: intra-feature imports, registry→manifest edges. "Dev API" is the TypeScript import surface, not a web API (ADR-0005).
 
-**Enforcement is mechanical, not cultural:** ESLint import-boundary zones encode rules 1–3, and a Verification-domain test (D9) walks the import graph and fails on violations. The exemplar's feature-confinement test (§4) proves rule 1 continuously.
+**Enforcement is mechanical, not cultural:** the ESLint import-boundary zone encodes rule 1 as editor-time feedback; the Verification-domain test (D9) walks the import graph (all of `app/` and `lib/`) and fails on violations of rules 1–3 and 8. The exemplar's feature-confinement test (§4) proves rule 1 continuously.
 
 ---
 
@@ -138,7 +139,8 @@ Adding a feature touches exactly these files plus the feature's own folder — n
 3. **Actions** (`actions.ts`): `withPermission` → rate limiter (its own instance from D6's factory) → Zod input validation → `withUserContext`.
 4. **Realtime** (`use-notes-realtime.ts` + live island): broadcast trigger + `realtime.messages` policy from D7's templates; topics `notes:{userId}` / `notes:all`.
 5. **Nav registration** (`nav.ts`) and a `(dashboard)/notes` page.
-6. **All three test tiers**: unit (mocked), integration (RLS under real `app_user`; topic isolation on live Supabase), E2E (create, isolation between member A/B, owner sees all, live update delivery).
+6. **Dev API** (`index.ts`): the declared import surface (Iron Rule 8) — exports exactly what the route page consumes; internals like `use-notes-realtime.ts` stay private.
+7. **All three test tiers**: unit (mocked), integration (RLS under real `app_user`; topic isolation on live Supabase), E2E (create, isolation between member A/B, owner sees all, live update delivery).
 
 **Disposability is an acceptance criterion:** delete `app/_features/notes/`, remove its lines from the §3 roots, drop its migrations — the foundation must build green with the full suite passing. Enforced two ways: a one-time deletion rehearsal during construction (recorded in ADR-0004), and a continuous **feature-confinement test** (D9) asserting `notes` is referenced only in its own folder, the §3 registry lines, and its migrations.
 
@@ -147,7 +149,7 @@ Adding a feature touches exactly these files plus the feature's own folder — n
 ## 5. Adding a feature (the playbook interns/agents follow)
 
 1. Read this charter and the exemplar.
-2. Copy `app/_features/notes/` → `app/_features/<name>/`; rename subjects, tables, topics.
+2. Copy `app/_features/notes/` → `app/_features/<name>/`; rename subjects, tables, topics — and the exports in `index.ts`, your dev API (outsiders import nothing else; Iron Rule 8).
 3. Write the failing test first — every commit on the branch is red → green → commit.
 4. Register manifests in the §3 roots (the only foundation files you touch).
 5. Tables via D2 conventions (`db:generate`, hand-edit only for guards/casts, `--custom` for triggers); policies on the correct identity path (Iron Rule 6).
