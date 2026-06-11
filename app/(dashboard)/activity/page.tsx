@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 
-import { getSignInLog } from '@/app/_features/activity/getSignInLog';
+import { getSignInLog } from '@/app/_features/activity';
 import { getSessionUser } from '@/lib/auth/session';
 import { buildAbility } from '@/lib/permissions/ability';
 
