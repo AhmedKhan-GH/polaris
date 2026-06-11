@@ -111,8 +111,10 @@ jobs:
           mkdir -p ~/.cache
           docker save -o ~/.cache/supabase-images.tar $(docker images --format '{{.Repository}}:{{.Tag}}' | grep -vi '<none>')
 
-      - name: Run migrations
-        run: npm run db:migrate
+      - name: Provision DB — migrations + app_user login, self-verifying
+        # db:setup's final probe connects through DATABASE_URL itself: if the
+        # fresh-clone provisioning path ever breaks again, THIS step fails.
+        run: npm run db:setup
 
       - name: Integration suites incl. live-Supabase RLS (hard-fail, never skip)
         # Full suite, deliberately unfiltered: naming feature suites here would couple
