@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
-import { LoginForm } from '@/app/_features/auth/LoginForm';
+import { LoginForm } from '@/app/_features/auth';
 import { getServerSupabase } from '@/lib/supabase/server';
 
 /**
