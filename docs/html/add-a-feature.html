@@ -1,0 +1,423 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Polaris — Adding a Feature</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="base.css">
+<style>
+  /* Page-specific, token-derived. Mono stack is a recorded deviation:
+     tokens.md defines no monospace; code samples require one. */
+  :root { --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo,
+                       Consolas, monospace;
+          /* Dark code-figure palette (GitHub Dark). Code blocks are framed
+             dark figures on the light page; all token colors ≥4.5:1 on
+             --code-bg. */
+          --code-bg: #0D1117; --code-bg-alt: #161B22;
+          --code-ink: #E6EDF3; --code-muted: #8B949E;
+          --code-line: #30363D; }
+  .doc { padding-block: var(--space-12); }
+  .doc + .doc { border-top: 1px solid var(--hairline); }
+  .kicker { font-size: var(--text-sm); font-weight: 600; letter-spacing: .08em;
+            text-transform: uppercase; color: var(--ink-muted); }
+  code { font-family: var(--font-mono); font-size: 0.875em;
+         background: var(--paper-alt); border-radius: 4px;
+         padding: 1px var(--space-1); }
+  pre  { font-family: var(--font-mono); font-size: var(--text-sm);
+         line-height: 1.6; background: var(--code-bg); color: var(--code-ink);
+         border: 1px solid var(--code-line); border-radius: var(--radius-card);
+         padding: var(--space-4) var(--space-6); overflow-x: auto;
+         margin-top: var(--space-4); }
+  pre code { background: none; padding: 0; font-size: inherit; }
+  figure.snippet { margin: var(--space-4) 0 0; }
+  .snippet figcaption { font-family: var(--font-mono); font-size: var(--text-xs);
+        color: var(--code-muted); background: var(--code-bg-alt);
+        border: 1px solid var(--code-line); border-bottom: 0;
+        border-radius: var(--radius-card) var(--radius-card) 0 0;
+        padding: var(--space-2) var(--space-6); }
+  .snippet pre { margin-top: 0; border-top: 1px solid var(--code-line);
+        border-radius: 0 0 var(--radius-card) var(--radius-card); }
+  /* Syntax tokens — semantic color inside dark code figures only (GitHub
+     Dark palette). Recorded deviation from the one-accent rule: the dark
+     figure frames code as a separate medium; hue quantities stay small
+     against neutral --code-ink, and comments keep italic as the redundant
+     non-color cue. Worst contrast on --code-bg: comment #8B949E ≈ 5.6:1. */
+  .tok-c { color: var(--code-muted); font-style: italic; }
+  .tok-k { color: #FF7B72; }   /* keywords, operators */
+  .tok-s { color: #A5D6FF; }   /* strings, template literals */
+  .tok-f { color: #D2A8FF; }   /* function / method calls */
+  .tok-t { color: #FFA657; }   /* types, components, casts */
+  .tok-n { color: #79C0FF; }   /* numbers, constants, builtins */
+  .doc h2 { margin-bottom: var(--space-4); }
+  .doc h3 { margin-top: var(--space-8); margin-bottom: var(--space-2); }
+  .doc p + p { margin-top: var(--space-3); }
+  table { border-collapse: collapse; width: 100%; margin-top: var(--space-4);
+          font-size: var(--text-sm); }
+  th { text-align: left; font-weight: 600; padding: var(--space-2) var(--space-4)
+       var(--space-2) 0; border-bottom: 1px solid var(--ink); }
+  td { padding: var(--space-3) var(--space-4) var(--space-3) 0;
+       border-bottom: 1px solid var(--hairline); vertical-align: top; }
+  .steps { list-style: none; counter-reset: step; padding: 0;
+           margin-top: var(--space-6); }
+  .steps > li { counter-increment: step; position: relative;
+                padding-left: var(--space-12); }
+  .steps > li + li { margin-top: var(--space-8); }
+  .steps > li::before { content: counter(step); position: absolute; left: 0;
+        top: 0; font-size: var(--text-lg); font-weight: 700;
+        color: var(--accent); width: var(--space-8); text-align: right; }
+  .steps h3 { margin-top: 0; font-size: var(--text-lg); }
+  .note { border-left: 3px solid var(--accent); background: var(--paper-alt);
+          border-radius: 0 var(--radius-card) var(--radius-card) 0;
+          padding: var(--space-4) var(--space-6); margin-top: var(--space-6);
+          font-size: var(--text-sm); color: var(--ink-muted); max-width: 65ch; }
+  .note strong { color: var(--ink); }
+  .hero { padding-block: var(--space-16) var(--space-8); }
+  .hero .lead { max-width: 60ch; }
+  ul { padding-left: var(--space-6); }
+  li + li { margin-top: var(--space-2); }
+  li { max-width: 65ch; }
+  @media (max-width: 700px) {
+    .table-scroll { overflow-x: auto; }
+    .table-scroll table { min-width: 560px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="hero wrap prose">
+  <p class="kicker">Polaris · Developer Handbook</p>
+  <h1 style="font-size: var(--text-3xl); margin-top: var(--space-2)">Adding a feature &amp; integrating its dev&nbsp;API</h1>
+  <p class="lead">Every Polaris feature is a self-contained folder with one
+  public import surface. This page walks the playbook end to end: copy the
+  exemplar, build under TDD, and publish exactly what outsiders may import.</p>
+  <p class="muted" style="font-size: var(--text-sm); margin-top: var(--space-4)">
+  Companion to <code>CONTRIBUTING.md</code> — the tracked markdown
+  (<code>DOMAIN-CHARTER.md</code> → <code>HANDBOOK.md</code> →
+  <code>CONTRIBUTING.md</code>) remains the source of truth.</p>
+</header>
+
+<section class="doc wrap prose">
+  <h2>The mental model</h2>
+  <p>The foundation (<code>lib/**</code>) never imports features. Features
+  (<code>app/_features/&lt;name&gt;/**</code>) never import each other. The
+  only foundation files a feature PR touches are the three composition roots
+  in <code>lib/registry/</code>. These are Iron Rules — enforced by a
+  verification test that walks the import graph and fails the build on
+  violations, not by convention.</p>
+  <p>Each feature exposes two distinct seams, for two distinct consumers:</p>
+  <div class="table-scroll"><table>
+    <tr><th>Seam</th><th>File(s)</th><th>Consumer</th><th>May contain</th></tr>
+    <tr>
+      <td><strong>Dev&nbsp;API</strong></td>
+      <td><code>index.ts</code></td>
+      <td>Route pages and layouts</td>
+      <td>Components, server actions, types — the supported surface</td>
+    </tr>
+    <tr>
+      <td><strong>Manifests</strong></td>
+      <td><code>schema.ts</code> · <code>permissions.ts</code> · <code>nav.ts</code></td>
+      <td><code>lib/registry/*</code> only</td>
+      <td>Table slice, ability contributor, nav entry — wiring, never logic</td>
+    </tr>
+  </table></div>
+  <p style="margin-top: var(--space-4)">The two never mix: the index must not
+  re-export manifests, and registries import manifests by name and nothing
+  else. Anything a feature does not export from <code>index.ts</code> is
+  private — free to rename, split, or delete without consulting anyone.</p>
+  <div class="note"><strong>Dev API means import surface.</strong> This is a
+  build-time contract between developers, not a web API — no HTTP endpoints,
+  no runtime change. Pages call server actions exported from the index; those
+  actions self-guard (permission → rate limit → validation → user context).</div>
+</section>
+
+<section class="doc wrap prose">
+  <h2>The dev API contract</h2>
+  <p>Outsiders import the bare feature folder — never a file inside it:</p>
+  <figure class="snippet"><figcaption>app/(dashboard)/notes/page.tsx</figcaption>
+  <pre><code>import { NotesLive, getNotes, createNote } from '@/app/_features/notes';</code></pre></figure>
+  <p style="margin-top: var(--space-4)">The index declares the surface, one
+  deliberate export per line:</p>
+  <figure class="snippet"><figcaption>app/_features/notes/index.ts — the feature's dev API</figcaption>
+  <pre><code>export { NotesLive } from './NotesLive';
+export { getNotes, createNote } from './actions';
+// use-notes-realtime.ts is NOT exported: it is private plumbing.</code></pre></figure>
+  <p>A deep import such as <code>'@/app/_features/notes/actions'</code> from
+  outside the folder fails the boundary test with the offending file and
+  specifier named. Inside your own folder, import freely — encapsulation
+  binds outsiders, not you.</p>
+</section>
+
+<section class="doc wrap prose">
+  <h2>The playbook</h2>
+  <p>Nine steps, in order. Every behavior starts as a failing test; every
+  commit is small, green, and self-contained. Every code fragment below is
+  taken verbatim from the <code>notes</code> exemplar in this repo (trims
+  marked with <code>…</code>) — what you write is the renamed twin of what
+  you see.</p>
+  <ol class="steps">
+    <li>
+      <h3>Branch off the trunk</h3>
+      <p><code>feature/&lt;name&gt;</code>, Conventional Commits
+      (<code>feat(orders): …</code>), rebase + fast-forward merge when green.</p>
+    </li>
+    <li>
+      <h3>Copy the exemplar</h3>
+      <p><code>cp -r app/_features/notes app/_features/&lt;name&gt;</code> —
+      then rename: table, CASL subject (singular, <code>'Order'</code>),
+      topics (<code>&lt;name&gt;:{userId}</code> / <code>&lt;name&gt;:all</code>),
+      limiter key, policy names, trigger names — and the exports in
+      <code>index.ts</code>, which is now your dev API.</p>
+    </li>
+    <li>
+      <h3>TDD, no exceptions</h3>
+      <p>Red for the right reason → minimal green → refactor. A test that
+      passes before its implementation lands belongs to an earlier commit or
+      is redundant. Unit tests mock every foundation seam and assert the
+      <em>contract</em> — here, pipeline order:</p>
+      <figure class="snippet"><figcaption>app/_features/notes/actions.test.ts</figcaption>
+      <pre><code>it('rejects an empty body … but only AFTER consulting the limiter', async () =&gt; {
+  await expect(createNote(fd(''))).rejects.toThrow('Note body is required');
+
+  expect(fake.insertValues).not.toHaveBeenCalled();
+  expect(fake.revalidatePath).not.toHaveBeenCalled();
+  // Order proof: guard and limiter were both entered before validation
+  // threw, so abusive invalid spam still consumes the throttle budget.
+  expect(fake.calls).toEqual(['guard', 'limiter']);
+});</code></pre></figure>
+    </li>
+    <li>
+      <h3>Schema slice + RLS</h3>
+      <p>The table lives in your <code>schema.ts</code> with RLS enabled so it
+      travels with the schema:</p>
+      <figure class="snippet"><figcaption>app/_features/notes/schema.ts</figcaption>
+      <pre><code>export const notes = pgTable('notes', {
+  id: uuid('id').primaryKey().notNull().default(sql`gen_random_uuid()`),
+  createdBy: uuid('created_by').notNull(),
+  body: text('body').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true })
+    .notNull().default(sql`now()`),
+}).enableRLS();</code></pre></figure>
+      <p style="margin-top: var(--space-4)">Policies and grants are
+      hand-written in the migration (<code>npm run db:generate</code>, then
+      append). Pick the correct identity path: app-path tables use GUC
+      policies, Supabase-path tables use <code>auth.uid()</code> — never mix
+      the two on one table:</p>
+      <figure class="snippet"><figcaption>drizzle/0003_*.sql — hand-appended after db:generate</figcaption>
+      <pre><code>CREATE POLICY "notes_owner_or_self" ON "notes" AS PERMISSIVE FOR ALL TO "app_user"
+  USING (
+    "notes"."created_by" = current_setting('app.user_id', true)::uuid
+    OR coalesce(nullif(current_setting('app.user_roles', true), '')::jsonb
+         @&gt; '["owner"]'::jsonb, false)
+  )
+  WITH CHECK (
+    "notes"."created_by" = current_setting('app.user_id', true)::uuid
+  );
+--&gt; statement-breakpoint
+GRANT SELECT, INSERT, UPDATE, DELETE ON "notes" TO "app_user";</code></pre></figure>
+    </li>
+    <li>
+      <h3>Register the manifests</h3>
+      <p>One line each in the three composition roots — the only foundation
+      files you touch. Flat lists, zero logic; removing a feature is deleting
+      its lines:</p>
+      <figure class="snippet"><figcaption>lib/registry/schema.ts · abilities.ts · nav.ts — one line in each</figcaption>
+      <pre><code>export * from '@/app/_features/notes/schema';            // schema.ts
+
+import { notesAbilities } from '@/app/_features/notes/permissions';
+export const abilityContributors: AbilityContributor[] = [
+  activityAbilities,
+  notesAbilities,                                          // abilities.ts
+];
+
+import { notesNav } from '@/app/_features/notes/nav';      // nav.ts</code></pre></figure>
+      <p style="margin-top: var(--space-4)">The manifests themselves stay in
+      your folder — e.g. the ability contributor:</p>
+      <figure class="snippet"><figcaption>app/_features/notes/permissions.ts</figcaption>
+      <pre><code>export const notesAbilities: AbilityContributor = (can, identity) =&gt; {
+  can('create', 'Note');
+  can('read', 'Note', { createdBy: identity.userId });
+  if (identity.roles.includes('owner')) can('read', 'Note');
+};</code></pre></figure>
+    </li>
+    <li>
+      <h3>Actions self-guard</h3>
+      <p>The pipeline order is contractual: guard → limiter → validate →
+      context, and revalidate only after the whole chain resolves. The proxy
+      is route hygiene, never an authorization layer.</p>
+      <figure class="snippet"><figcaption>app/_features/notes/actions.ts</figcaption>
+      <pre><code>'use server';
+// …
+const notesWriteLimiter = createRateLimiter({ points: 30, duration: 60 });
+const bodySchema = z.string()
+  .min(1, 'Note body is required').max(2000, 'Note body too long');
+
+export async function createNote(formData: FormData): Promise&lt;void&gt; {
+  await withPermission('create', 'Note', (ctx) =&gt;
+    withRateLimit(notesWriteLimiter, `notes:create:${ctx.userId}`, async () =&gt; {
+      const body = bodySchema.parse(String(formData.get('body') ?? ''));
+      await withUserContext(ctx, (tx) =&gt;
+        tx.insert(notes).values({ createdBy: ctx.userId, body }),
+      );
+    }),
+  );
+
+  revalidatePath('/notes');
+}</code></pre></figure>
+    </li>
+    <li>
+      <h3>Realtime via the templates</h3>
+      <p>Broadcast trigger + channel policy copied from
+      <code>lib/realtime/templates/</code> into a <code>--custom</code>
+      migration. Delivery is gated at the channel: a subscriber reads their
+      own topic, an owner additionally reads the firehose. Never row-RLS the
+      streamed table for delivery filtering.</p>
+      <figure class="snippet"><figcaption>drizzle/0004_*.sql — channel policy from the D7 template</figcaption>
+      <pre><code>CREATE POLICY "notes_read_own_topic" ON "realtime"."messages"
+  AS PERMISSIVE FOR SELECT TO "authenticated" USING (
+    realtime.topic() = 'notes:' || (select auth.uid())::text
+    OR (
+      realtime.topic() = 'notes:all'
+      AND EXISTS (SELECT 1 FROM public.profiles
+                  WHERE profiles.id = (select auth.uid())
+                    AND profiles.role = 'owner')
+    )
+  );</code></pre></figure>
+    </li>
+    <li>
+      <h3>Publish the dev API</h3>
+      <p>Curate <code>index.ts</code> to exactly what your route page needs —
+      components and actions outsiders consume. Everything unexported stays
+      private. Then wire the page through it:</p>
+      <figure class="snippet"><figcaption>app/(dashboard)/notes/page.tsx</figcaption>
+      <pre><code>import { createNote, getNotes, NotesLive } from '@/app/_features/notes';
+import { getSessionUser } from '@/lib/auth/session';
+
+export default async function NotesPage() {
+  const session = await getSessionUser();
+  // dates serialize to ISO here, at the RSC boundary
+  const rows = (await getNotes()).map((n) =&gt; ({
+    id: n.id,
+    createdBy: n.createdBy,
+    body: n.body,
+    createdAt: n.createdAt.toISOString(),
+  }));
+
+  return (
+    &lt;div className="flex flex-col gap-6"&gt;
+      &lt;h1 …&gt;Notes&lt;/h1&gt;
+      &lt;form action={createNote} …&gt;
+        &lt;input name="body" required aria-label="Note body" … /&gt;
+        &lt;button type="submit" …&gt;New note&lt;/button&gt;
+      &lt;/form&gt;
+      &lt;NotesLive userId={session!.userId} initial={rows} /&gt;
+    &lt;/div&gt;
+  );
+}</code></pre></figure>
+    </li>
+    <li>
+      <h3>Test all three tiers, run the gates</h3>
+      <p>Unit (mocked collaborators), integration (real <code>app_user</code>
+      through RLS), E2E journeys (seeded owner/member). Then the gates below —
+      every commit.</p>
+    </li>
+  </ol>
+  <div class="note"><strong>If you need to change <code>lib/**</code> outside
+  the registries: stop.</strong> That is a charter conversation requiring an
+  ADR, not a feature PR.</div>
+</section>
+
+<section class="doc wrap prose">
+  <h2>Evolving a dev API</h2>
+  <h3>Publishing a new symbol</h3>
+  <p>Adding an export line to your feature's <code>index.ts</code> <em>is</em>
+  the act of publishing. The failing test that justifies it is the consumer's:
+  a page test imports <code>archiveOrder</code> from
+  <code>'@/app/_features/orders'</code> and fails; one export line makes it
+  green. Feature-owned file — always a feature PR, never a charter
+  conversation.</p>
+  <h3>Keeping things private</h3>
+  <p>Hooks, row mappers, limiter instances, anything only your own files use:
+  leave it out of the index. The boundary test proves no outsider depends on
+  it, so internal refactors carry zero blast radius.</p>
+  <h3>Wanting another feature's API</h3>
+  <p>Forbidden, index or not — features never import each other. If two
+  domains genuinely need to talk, that is a charter conversation, like the
+  single sanctioned shell → auth edge.</p>
+</section>
+
+<section class="doc wrap prose">
+  <h2>The gates</h2>
+  <p>Run what exists, every commit:</p>
+  <pre><code>npm run lint &amp;&amp; npx tsc --noEmit &amp;&amp; npm test   # always
+npm run test:integration                         # Docker required
+npm run test:e2e                                 # local `supabase start` required
+SKIP_ENV_VALIDATION=1 npm run build              # when routes/components changed</code></pre>
+  <p>Live suites self-skip without the local stack; CI runs them with
+  <code>CI_REQUIRE_LIVE_DB=1</code>, where skipping is a hard failure.</p>
+</section>
+
+<footer>
+  <div class="wrap prose">
+    Polaris developer handbook · hand-authored companion to the tracked
+    markdown · dev-API rule per ADR-0005 ·
+    <a href="../../CONTRIBUTING.md">CONTRIBUTING.md</a>
+  </div>
+</footer>
+
+<script>
+/* Zero-dependency highlighter so the page stays self-contained and offline-
+   readable. Regex tokenizer, leftmost-first: comment > string > keyword. */
+(function () {
+  const esc = (t) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;')
+                      .replace(/>/g, '&gt;');
+  const LANGS = {
+    ts: { flags: 'g', parts: [
+      { re: String.raw`\/\/[^\n]*|\/\*[\s\S]*?\*\/`, c: 'c' },
+      { re: String.raw`'(?:\\.|[^'\\\n])*'|"(?:\\.|[^"\\\n])*"|\x60(?:\\.|[^\x60\\])*\x60`, c: 's' },
+      { re: String.raw`(?<!\.)\b(?:import|export|from|const|let|var|function|async|await|return|if|else|interface|new|default|extends|typeof|as|type|of|in|class|throw|try|catch|finally|void|readonly|satisfies)\b|=>`, c: 'k' },
+      { re: String.raw`\b(?:true|false|null|undefined|this)\b|\b\d[\d_]*(?:\.\d+)?\b`, c: 'n' },
+      { re: String.raw`\b[A-Za-z_$][\w$]*(?=\s*\()`, c: 'f' },
+      { re: String.raw`\b[A-Z][A-Za-z0-9_]*\b`, c: 't' },
+    ]},
+    sql: { flags: 'gi', parts: [
+      { re: String.raw`--[^\n]*`, c: 'c' },
+      { re: String.raw`'(?:''|[^'\n])*'`, c: 's' },
+      { re: String.raw`\b(?:create|policy|on|as|permissive|for|all|select|to|using|with|check|grant|insert|update|delete|or|and|exists|from|where|not|null|table|enable|row|level|security|true|false)\b`, c: 'k' },
+      { re: String.raw`::\w+`, c: 't' },
+      { re: String.raw`\b[a-z_][\w.]*(?=\s*\()`, c: 'f' },
+      { re: String.raw`\b\d+\b`, c: 'n' },
+    ]},
+    shell: { flags: 'g', parts: [
+      { re: String.raw`#[^\n]*`, c: 'c' },
+      { re: String.raw`\x60[^\x60\n]*\x60`, c: 's' },
+      { re: String.raw`&&|\|\|`, c: 'k' },
+      { re: String.raw`\b[A-Z][A-Z_]+=\w*`, c: 'n' },
+      { re: String.raw`\b(?:npm|npx|cp|git|supabase|tsc)\b`, c: 'f' },
+    ]},
+  };
+  function paint(text, lang) {
+    const { flags, parts } = LANGS[lang];
+    const re = new RegExp(parts.map((p) => `(${p.re})`).join('|'), flags);
+    let out = '', last = 0, m;
+    while ((m = re.exec(text))) {
+      out += esc(text.slice(last, m.index));
+      const gi = m.slice(1).findIndex((g) => g !== undefined);
+      out += `<span class="tok-${parts[gi].c}">${esc(m[0])}</span>`;
+      last = m.index + m[0].length;
+    }
+    return out + esc(text.slice(last));
+  }
+  document.querySelectorAll('pre code').forEach((el) => {
+    const cap = el.closest('figure')
+      ?.querySelector('figcaption')?.textContent ?? '';
+    const lang = /\.sql\b/.test(cap) ? 'sql'
+               : /\.tsx?\b/.test(cap) ? 'ts'
+               : 'shell';
+    el.innerHTML = paint(el.textContent, lang);
+  });
+})();
+</script>
+
+</body>
+</html>

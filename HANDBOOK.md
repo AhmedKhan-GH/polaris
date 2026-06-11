@@ -80,6 +80,7 @@ The `notes` exemplar is **disposable by contract** (Charter §4): delete it + it
 | [0002](docs/adr/0002-channel-layer-realtime.md) | Channel-layer realtime gating (the 0021 scar) |
 | [0003](docs/adr/0003-login-only-provisioning.md) | Login-only; provisioning out-of-band until F9 |
 | [0004](docs/adr/0004-fresh-derivation.md) | Fresh TDD derivation; deletion-rehearsal record |
+| [0005](docs/adr/0005-feature-dev-api.md) | Features expose a dev API via `index.ts` (Iron Rule 8); outsiders import only the index |
 
 ## 8. Known follow-ups (quality-review minors, deliberately deferred)
 

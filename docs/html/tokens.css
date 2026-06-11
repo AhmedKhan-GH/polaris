@@ -1,0 +1,21 @@
+:root {
+  /* type — modular scale 1.25 */
+  --text-xs: 0.64rem;  --text-sm: 0.8rem;   --text-base: 1rem;
+  --text-lg: 1.25rem;  --text-xl: 1.563rem; --text-2xl: 1.953rem;
+  --text-3xl: 2.441rem;--text-4xl: 3.052rem;--text-5xl: 3.815rem;
+  --leading-body: 1.5; --leading-display: 1.15;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+               Helvetica, Arial, sans-serif;
+  /* spacing — 4px base */
+  --space-1: 4px;  --space-2: 8px;   --space-3: 12px; --space-4: 16px;
+  --space-6: 24px; --space-8: 32px;  --space-12: 48px;
+  --space-16: 64px;--space-24: 96px; --space-32: 128px;
+  /* color */
+  --ink: #1D1D1F; --ink-muted: #6E6E73; --hairline: #D2D2D7;
+  --paper: #FFFFFF; --paper-alt: #F5F5F7;
+  --accent: #0066CC; /* exactly one accent per artifact */
+  /* shape & interaction */
+  --radius-card: 12px; --radius-pill: 980px; --tap-min: 44px;
+  /* layout */
+  --content-max: 1080px; --prose-max: 720px; --breakpoint-narrow: 700px;
+}
