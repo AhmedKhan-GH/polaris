@@ -11,7 +11,9 @@ import { describe, expect, it } from 'vitest';
 import {
   classifyFeatureFiles,
   injectBetweenMarkers,
+  parseIndexDocLead,
   parseIndexExports,
+  renderFeaturePageHtml,
   renderSurfacesHtml,
 } from './generate-feature-surfaces.mjs';
 
@@ -93,6 +95,70 @@ describe('renderSurfacesHtml', () => {
     expect(html).toContain('NotesLive');
     expect(html).toContain('schema.ts');
     expect(html).toContain('use-notes-realtime.ts');
+  });
+
+  it('links each feature name to its generated per-feature page', () => {
+    const html = renderSurfacesHtml([
+      {
+        feature: 'notes',
+        publicExports: [],
+        manifests: [],
+        privateFiles: [],
+      },
+    ]);
+    expect(html).toContain('href="features/notes.html"');
+  });
+});
+
+describe('parseIndexDocLead', () => {
+  it('extracts the first line of the leading doc comment', () => {
+    expect(parseIndexDocLead(INDEX_SOURCE)).toBe(
+      'Notes dev API (Iron Rule 8, ADR-0005).',
+    );
+  });
+
+  it('returns empty string when there is no doc comment', () => {
+    expect(parseIndexDocLead("export { A } from './A';\n")).toBe('');
+  });
+
+  it('returns the whole first sentence even when it wraps across lines', () => {
+    const src = `/**
+ * Auth dev API — the ONLY surface outsiders
+ * may import; deeper imports fail. Second sentence is dropped.
+ */
+export { LoginForm } from './LoginForm';
+`;
+    expect(parseIndexDocLead(src)).toBe(
+      'Auth dev API — the ONLY surface outsiders may import; deeper imports fail.',
+    );
+  });
+});
+
+describe('renderFeaturePageHtml', () => {
+  const surface = {
+    feature: 'notes',
+    publicExports: [
+      { name: 'NotesLive', from: './NotesLive', typeOnly: false },
+      { name: 'getNotes', from: './actions', typeOnly: false },
+    ],
+    manifests: ['schema.ts'],
+    privateFiles: ['use-notes-realtime.ts'],
+  };
+
+  it('renders a complete standalone page for the feature', () => {
+    const html = renderFeaturePageHtml(surface, INDEX_SOURCE);
+    expect(html).toContain('<!doctype html>');
+    expect(html).toContain('<title>');
+    expect(html).toContain('notes');
+    expect(html).toContain('NotesLive');
+    expect(html).toContain('./actions');
+    expect(html).toContain('use-notes-realtime.ts');
+    // The index source is embedded as the contract, highlighted at
+    // generation time (no client JS in generated pages).
+    expect(html).toContain('tok-k');
+    expect(html).toContain("'./NotesLive'");
+    // And it links back to the guide.
+    expect(html).toContain('href="../add-a-feature.html"');
   });
 });
 
