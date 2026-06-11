@@ -3,7 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 
 import { branding } from "@/lib/branding";
 
-import { ChunkErrorReloader } from "./_features/shell/ChunkErrorReloader";
+import { ChunkErrorReloader } from "./_features/shell";
 
 import "./globals.css";
 

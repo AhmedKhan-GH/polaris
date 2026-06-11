@@ -2,7 +2,7 @@ import { getSessionUser } from "@/lib/auth/session";
 import { buildAbility } from "@/lib/permissions/ability";
 import { navItems } from "@/lib/registry/nav";
 
-import { DashboardNav } from "../../_features/shell/DashboardNav";
+import { DashboardNav } from "../../_features/shell";
 
 /**
  * The dashboard home. Resolves the caller's identity, builds their ability from

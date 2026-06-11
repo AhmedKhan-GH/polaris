@@ -3,7 +3,7 @@ import Link from 'next/link';
 import type { AuthUser } from '@/lib/auth/user';
 import { branding } from '@/lib/branding';
 
-import { signOutAction } from '../auth/actions';
+import { signOutAction } from '../auth';
 
 /**
  * The shared top-of-page chrome: a brand home link plus an auth affordance.
