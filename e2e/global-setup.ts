@@ -1,7 +1,6 @@
-import { createClient } from '@supabase/supabase-js';
 import pg from 'pg';
 
-import { setupDb } from '../scripts/db-setup';
+import { seedDemoUsers, setupDb } from '../scripts/db-setup';
 
 /**
  * One-time setup for the whole E2E run, against the LIVE local Supabase stack
@@ -13,9 +12,10 @@ import { setupDb } from '../scripts/db-setup';
  *      then LOGIN + password for `app_user` parsed from the app URL.
  *   2. Truncate only the test-owned tables (`notes`, `sign_in_log`);
  *      auth.users + profiles persist across runs and are reconciled by
- *      `seedUser` below.
- *   3./4. Seed the two GoTrue users (owner, member) and mirror their roles into
- *      `profiles`.
+ *      `seedDemoUsers` below.
+ *   3. Seed the two demo fixtures (owner, member) through `seedDemoUsers` —
+ *      the same accounts a clean build gets, so the specs log in with exactly
+ *      what the Quickstart produces.
  *
  * Every required env var is asserted up front with a clear message so a missing
  * `.env.test` fails loudly rather than deep inside a pg/GoTrue call.
@@ -25,6 +25,7 @@ export default async function globalSetup(): Promise<void> {
   const appUrl = process.env.DATABASE_URL;
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const testPassword = process.env.TEST_USER_PASSWORD;
 
   if (!adminUrl) {
     throw new Error(
@@ -50,6 +51,12 @@ export default async function globalSetup(): Promise<void> {
         'service-role key to seed auth users (check .env.test).',
     );
   }
+  if (!testPassword) {
+    throw new Error(
+      'TEST_USER_PASSWORD is not set — E2E global-setup needs the demo ' +
+        'password to seed the login fixtures (check .env.test).',
+    );
+  }
 
   // 1. Schema + app_user login through the one provisioning verb. Keeping this
   //    the same code path as `npm run db:setup` means E2E exercises exactly
@@ -59,80 +66,18 @@ export default async function globalSetup(): Promise<void> {
   const pool = new pg.Pool({ connectionString: adminUrl });
   try {
     // 2. Reset the test-owned tables. auth.users + profiles persist (they are
-    //    reconciled by seedUser), so we never truncate them here.
+    //    reconciled by seedDemoUsers), so we never truncate them here.
     await pool.query('TRUNCATE notes, sign_in_log');
   } finally {
     await pool.end();
   }
 
-  // 3. GoTrue admin client. No session persistence/refresh — this is a one-shot
-  //    admin client, not a logged-in user.
-  const admin = createSupabaseAdmin(supabaseUrl, serviceKey);
-
-  // 4. Seed both fixtures. Roles are mirrored into `profiles` (the app's role
-  //    source of truth) keyed by the GoTrue user id.
-  await seedUser(admin, adminUrl, 'owner@example.com', 'owner');
-  await seedUser(admin, adminUrl, 'member@example.com', 'member');
-}
-
-/**
- * The service-role GoTrue client used for seeding. Built through one factory so
- * its (heavily generic) type flows to `seedUser` by inference — re-deriving it
- * via a bare `ReturnType<typeof createClient>` would default the schema generics
- * to `never` and not match this configured instance.
- */
-function createSupabaseAdmin(url: string, serviceKey: string) {
-  return createClient(url, serviceKey, {
-    auth: { autoRefreshToken: false, persistSession: false },
+  // 3. Seed both demo fixtures — owner/member in GoTrue, roles mirrored into
+  //    `profiles` (the app's role source of truth) keyed by the GoTrue user id.
+  await seedDemoUsers({
+    adminUrl,
+    supabaseUrl,
+    serviceKey,
+    password: testPassword,
   });
-}
-type SupabaseAdmin = ReturnType<typeof createSupabaseAdmin>;
-
-/**
- * Create (or reconcile) a single GoTrue user and mirror its role into
- * `profiles`. Idempotent across runs:
- *  - createUser tolerates an already-registered email (any other error rethrows);
- *  - the user id is resolved via `listUsers()` when createUser does not return it
- *    (i.e. the user already existed);
- *  - the profile row is upserted, refreshing the role on conflict.
- */
-async function seedUser(
-  admin: SupabaseAdmin,
-  adminUrl: string,
-  email: string,
-  role: string,
-): Promise<void> {
-  const password = process.env.TEST_USER_PASSWORD!;
-
-  const { data, error } = await admin.auth.admin.createUser({
-    email,
-    password,
-    email_confirm: true,
-  });
-  if (error && !/already.*registered|exists/i.test(error.message)) {
-    throw error;
-  }
-
-  let userId = data?.user?.id ?? null;
-  if (!userId) {
-    // Already existed: resolve the id by listing users and matching the email.
-    const { data: list, error: listError } =
-      await admin.auth.admin.listUsers();
-    if (listError) throw listError;
-    userId = list.users.find((u) => u.email === email)?.id ?? null;
-  }
-  if (!userId) {
-    throw new Error(`Could not resolve a GoTrue user id for ${email}`);
-  }
-
-  const pool = new pg.Pool({ connectionString: adminUrl });
-  try {
-    await pool.query(
-      `insert into profiles (id, email, role) values ($1, $2, $3)
-         on conflict (id) do update set role = excluded.role`,
-      [userId, email, role],
-    );
-  } finally {
-    await pool.end();
-  }
 }
