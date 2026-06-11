@@ -9,7 +9,11 @@ config({ path: '.env.local' });
 
 export default defineConfig({
   dialect: 'postgresql',
-  schema: ['./lib/db/schema/*.ts', './app/_features/*/schema.ts'],
+  schema: [
+    './lib/db/schema/*.ts',
+    './app/_features/*/schema.ts',
+    './app/customer/schema.ts',
+  ],
   out: './drizzle',
   dbCredentials: {
     url: process.env.MIGRATE_DATABASE_URL ?? process.env.DATABASE_URL!,
