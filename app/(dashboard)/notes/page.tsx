@@ -1,5 +1,4 @@
-import { createNote, getNotes } from '@/app/_features/notes/actions';
-import { NotesLive } from '@/app/_features/notes/NotesLive';
+import { createNote, getNotes, NotesLive } from '@/app/_features/notes';
 import { getSessionUser } from '@/lib/auth/session';
 
 /**
