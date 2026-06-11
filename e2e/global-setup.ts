@@ -1,19 +1,20 @@
 import { createClient } from '@supabase/supabase-js';
-import { drizzle } from 'drizzle-orm/node-postgres';
-import { migrate } from 'drizzle-orm/node-postgres/migrator';
 import pg from 'pg';
+
+import { setupDb } from '../scripts/db-setup';
 
 /**
  * One-time setup for the whole E2E run, against the LIVE local Supabase stack
  * (not a throwaway container). It is idempotent: safe to re-run between sessions.
  *
  * Sequence:
- *   1. Apply Drizzle migrations under the privileged migrate role.
- *   2. Make `app_user` loginable on this DB (LOGIN + password) — the app connects
- *      as that non-superuser role, so it must be able to authenticate.
- *   3. Truncate only the test-owned table (`sign_in_log`); auth.users + profiles
- *      persist across runs and are reconciled by `seedUser` below.
- *   4./5. Seed the two GoTrue users (owner, member) and mirror their roles into
+ *   1. Provision via `setupDb` — the same verb the Quickstart and CI run
+ *      (`npm run db:setup`): Drizzle migrations under the privileged role,
+ *      then LOGIN + password for `app_user` parsed from the app URL.
+ *   2. Truncate only the test-owned tables (`notes`, `sign_in_log`);
+ *      auth.users + profiles persist across runs and are reconciled by
+ *      `seedUser` below.
+ *   3./4. Seed the two GoTrue users (owner, member) and mirror their roles into
  *      `profiles`.
  *
  * Every required env var is asserted up front with a clear message so a missing
@@ -50,34 +51,25 @@ export default async function globalSetup(): Promise<void> {
     );
   }
 
+  // 1. Schema + app_user login through the one provisioning verb. Keeping this
+  //    the same code path as `npm run db:setup` means E2E exercises exactly
+  //    what a fresh clone runs.
+  await setupDb(adminUrl, appUrl);
+
   const pool = new pg.Pool({ connectionString: adminUrl });
   try {
-    // 1. Apply migrations programmatically (same path the integration harness
-    //    uses): the privileged role can CREATE ROLE / GRANT / define policies.
-    await migrate(drizzle(pool), { migrationsFolder: './drizzle' });
-
-    // 2. LOGIN + password for app_user is environment, not schema, so it lives
-    //    here rather than in a migration. Parse the app URL to recover the role
-    //    name and password the app will actually use.
-    const parsed = new URL(appUrl);
-    const username = decodeURIComponent(parsed.username);
-    const password = decodeURIComponent(parsed.password);
-    await pool.query(
-      `ALTER ROLE "${username}" WITH LOGIN PASSWORD '${password}'`,
-    );
-
-    // 3. Reset the test-owned tables. auth.users + profiles persist (they are
+    // 2. Reset the test-owned tables. auth.users + profiles persist (they are
     //    reconciled by seedUser), so we never truncate them here.
     await pool.query('TRUNCATE notes, sign_in_log');
   } finally {
     await pool.end();
   }
 
-  // 4. GoTrue admin client. No session persistence/refresh — this is a one-shot
+  // 3. GoTrue admin client. No session persistence/refresh — this is a one-shot
   //    admin client, not a logged-in user.
   const admin = createSupabaseAdmin(supabaseUrl, serviceKey);
 
-  // 5. Seed both fixtures. Roles are mirrored into `profiles` (the app's role
+  // 4. Seed both fixtures. Roles are mirrored into `profiles` (the app's role
   //    source of truth) keyed by the GoTrue user id.
   await seedUser(admin, adminUrl, 'owner@example.com', 'owner');
   await seedUser(admin, adminUrl, 'member@example.com', 'member');

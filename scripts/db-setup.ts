@@ -1,5 +1,3 @@
-import { pathToFileURL } from 'node:url';
-
 import { config as loadEnv } from 'dotenv';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { migrate } from 'drizzle-orm/node-postgres/migrator';
@@ -39,11 +37,12 @@ export async function setupDb(adminUrl: string, appUrl: string): Promise<void> {
   }
 }
 
-const isCliEntry =
-  process.argv[1] !== undefined &&
-  import.meta.url === pathToFileURL(process.argv[1]).href;
-
-if (isCliEntry) {
+/**
+ * CLI body, kept out of module top level: top-level await would make this an
+ * ESM-with-TLA graph, which Playwright's CJS transpilation of the e2e
+ * global-setup (an importer of `setupDb`) cannot `require()`.
+ */
+async function cli(): Promise<void> {
   // CLI-only env handling (Charter D1 exception, same class as
   // drizzle.config.ts): `.env.local` first — dotenv never overwrites, so dev
   // overrides win — then the committed `.env.test` so a fresh clone works
@@ -85,4 +84,17 @@ if (isCliEntry) {
   } finally {
     await probe.end();
   }
+}
+
+// Entry detection without `import.meta` (ESM-only syntax would force Node's
+// native ESM loader onto a file Playwright transpiles to CJS for the e2e
+// global-setup import — the two regimes conflict). argv[1] is this file only
+// when run via `npm run db:setup`; under vitest/playwright it is their binary.
+const isCliEntry = process.argv[1]?.endsWith('scripts/db-setup.ts') ?? false;
+
+if (isCliEntry) {
+  cli().catch((err: unknown) => {
+    console.error(err);
+    process.exitCode = 1;
+  });
 }
