@@ -10,6 +10,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   classifyFeatureFiles,
+  findImporters,
   injectBetweenMarkers,
   parseIndexDocLead,
   parseIndexExports,
@@ -179,6 +180,61 @@ describe('renderFeaturePageHtml', () => {
     expect(html).toContain('href="shell.html"');
     // The current feature is shown as the active item, not a self-link.
     expect(html).not.toContain('href="notes.html"');
+  });
+});
+
+describe('findImporters', () => {
+  const files = [
+    {
+      path: 'app/page.tsx',
+      source: `import { LandingPage } from "./_features/landing";\nimport { PageHeader } from "./_features/shell";\n`,
+    },
+    {
+      path: 'app/login/page.tsx',
+      source: `import { LoginForm } from '@/app/_features/auth';\n`,
+    },
+  ];
+
+  it('finds alias and relative bare-folder imports with their names', () => {
+    expect(findImporters(files, 'landing')).toEqual([
+      { path: 'app/page.tsx', names: ['LandingPage'] },
+    ]);
+    expect(findImporters(files, 'auth')).toEqual([
+      { path: 'app/login/page.tsx', names: ['LoginForm'] },
+    ]);
+  });
+
+  it('returns [] for a feature nobody imports', () => {
+    expect(findImporters(files, 'activity')).toEqual([]);
+  });
+});
+
+describe('renderFeaturePageHtml — sparse features', () => {
+  const sparse = {
+    feature: 'landing',
+    publicExports: [
+      { name: 'LandingPage', from: './LandingPage', typeOnly: false },
+    ],
+    manifests: [],
+    privateFiles: [],
+    usedBy: [{ path: 'app/page.tsx', names: ['LandingPage'] }],
+  };
+  const src = `/** Landing dev API. */\nexport { LandingPage } from './LandingPage';\n`;
+
+  it('omits the Other seams section when there is nothing to list', () => {
+    const html = renderFeaturePageHtml(sparse, src);
+    expect(html).not.toContain('Other seams');
+  });
+
+  it('never renders a zero stat card', () => {
+    const html = renderFeaturePageHtml(sparse, src);
+    expect(html).not.toMatch(/<h3>0<\/h3>/);
+  });
+
+  it('renders a Used by section naming each importing file', () => {
+    const html = renderFeaturePageHtml(sparse, src);
+    expect(html).toContain('Used by');
+    expect(html).toContain('app/page.tsx');
   });
 });
 

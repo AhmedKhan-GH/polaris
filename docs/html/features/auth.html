@@ -59,7 +59,7 @@
   .featnav-item.current { background: var(--accent); color: var(--paper);
        border-color: var(--accent); }
   .glance { display: grid; gap: var(--space-6);
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
             margin-top: var(--space-8); }
   .glance .card h3 { font-size: var(--text-2xl); font-weight: 700;
                      margin-bottom: var(--space-1); }
@@ -90,8 +90,7 @@
   <h2>At a glance</h2>
   <div class="glance">
     <div class="card"><h3>2</h3><p>public exports — the entire dev API</p></div>
-    <div class="card"><h3>0</h3><p>manifests on the registry seam</p></div>
-    <div class="card"><h3>0</h3><p>private internals — unreachable from outside</p></div>
+    <div class="card"><h3>1</h3><p>consumer in app routes</p></div>
   </div>
   <p class="muted" style="font-size: var(--text-sm); margin-top: var(--space-6)">
   Generated from <code>app/_features/auth/index.ts</code> by
@@ -110,10 +109,15 @@
 </section>
 
 <section class="doc wrap prose">
-  <h2>Other seams</h2>
-  <p><strong>Manifests</strong> (registry-only, rule C): <span class="muted">none</span></p>
-  <p><strong>Private internals</strong> (unreachable from outside): <span class="muted">none</span></p>
+  <h2>Used by</h2>
+  <p>Every place in the app that consumes this dev API today — found by
+  scanning the route tree's imports.</p>
+  <table>
+    <tr><th>Importing file</th><th>Imports</th></tr>
+      <tr><td><code>app/login/page.tsx</code></td><td><code>LoginForm</code></td></tr>
+  </table>
 </section>
+
 
 <section class="doc wrap prose">
   <h2>The contract, verbatim</h2>

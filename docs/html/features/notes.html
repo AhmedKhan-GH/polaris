@@ -59,7 +59,7 @@
   .featnav-item.current { background: var(--accent); color: var(--paper);
        border-color: var(--accent); }
   .glance { display: grid; gap: var(--space-6);
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
             margin-top: var(--space-8); }
   .glance .card h3 { font-size: var(--text-2xl); font-weight: 700;
                      margin-bottom: var(--space-1); }
@@ -90,6 +90,7 @@
   <h2>At a glance</h2>
   <div class="glance">
     <div class="card"><h3>3</h3><p>public exports — the entire dev API</p></div>
+    <div class="card"><h3>1</h3><p>consumer in app routes</p></div>
     <div class="card"><h3>3</h3><p>manifests on the registry seam</p></div>
     <div class="card"><h3>1</h3><p>private internal — unreachable from outside</p></div>
   </div>
@@ -111,10 +112,21 @@
 </section>
 
 <section class="doc wrap prose">
+  <h2>Used by</h2>
+  <p>Every place in the app that consumes this dev API today — found by
+  scanning the route tree's imports.</p>
+  <table>
+    <tr><th>Importing file</th><th>Imports</th></tr>
+      <tr><td><code>app/(dashboard)/notes/page.tsx</code></td><td><code>createNote</code>, <code>getNotes</code>, <code>NotesLive</code></td></tr>
+  </table>
+</section>
+
+<section class="doc wrap prose">
   <h2>Other seams</h2>
   <p><strong>Manifests</strong> (registry-only, rule C): <code>nav.ts</code> · <code>permissions.ts</code> · <code>schema.ts</code></p>
   <p><strong>Private internals</strong> (unreachable from outside): <code>use-notes-realtime.ts</code></p>
 </section>
+
 
 <section class="doc wrap prose">
   <h2>The contract, verbatim</h2>
