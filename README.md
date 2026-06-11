@@ -50,8 +50,8 @@ Prerequisites: Node 24 (`.nvmrc`), Docker, the Supabase CLI.
 ```bash
 npm ci
 npx supabase start -x studio,imgproxy,inbucket,edge-runtime,functions,vector,analytics,meta,storage
-npm run db:migrate        # applies drizzle/ to the local stack (privileged role)
 cp .env.test .env.local   # local demo keys + dev DB URLs (never production values)
+npm run db:setup          # migrations + app_user login on the local stack; self-verifying, idempotent
 npm run dev               # http://localhost:3000
 ```
 
