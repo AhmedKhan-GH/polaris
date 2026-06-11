@@ -42,7 +42,8 @@
      Dark palette). Recorded deviation from the one-accent rule: the dark
      figure frames code as a separate medium; hue quantities stay small
      against neutral --code-ink, and comments keep italic as the redundant
-     non-color cue. Worst contrast on --code-bg: comment #8B949E ≈ 5.6:1. */
+     non-color cue. Measured worst pair: caption #8B949E on #161B22 = 5.6:1;
+     all token colors on --code-bg ≥ 6.1:1. */
   .tok-c { color: var(--code-muted); font-style: italic; }
   .tok-k { color: #FF7B72; }   /* keywords, operators */
   .tok-s { color: #A5D6FF; }   /* strings, template literals */
@@ -146,6 +147,49 @@ export { getNotes, createNote } from './actions';
   outside the folder fails the boundary test with the offending file and
   specifier named. Inside your own folder, import freely — encapsulation
   binds outsiders, not you.</p>
+</section>
+
+<section class="doc wrap prose">
+  <h2>Current feature surfaces</h2>
+  <p>The complete dev API of the system today, projected from the five
+  <code>index.ts</code> files — the code is the source of truth, this table is
+  generated from it (<code>npm run docs:surfaces</code>). Anything in the
+  private column is provably unreferenced by outsiders.</p>
+<!-- BEGIN GENERATED feature-surfaces (npm run docs:surfaces) -->
+  <div class="table-scroll"><table>
+    <tr><th>Feature</th><th>Dev API (<code>index.ts</code> exports)</th><th>Manifests (registry seam)</th><th>Private internals</th></tr>
+    <tr>
+      <td><strong>activity</strong></td>
+      <td><code>getSignInLog</code></td>
+      <td><code>nav.ts</code> · <code>permissions.ts</code></td>
+      <td><span class="muted">—</span></td>
+    </tr>
+    <tr>
+      <td><strong>auth</strong></td>
+      <td><code>LoginForm</code>, <code>signOutAction</code></td>
+      <td><span class="muted">—</span></td>
+      <td><span class="muted">—</span></td>
+    </tr>
+    <tr>
+      <td><strong>landing</strong></td>
+      <td><code>LandingPage</code></td>
+      <td><span class="muted">—</span></td>
+      <td><span class="muted">—</span></td>
+    </tr>
+    <tr>
+      <td><strong>notes</strong></td>
+      <td><code>NotesLive</code>, <code>getNotes</code>, <code>createNote</code></td>
+      <td><code>nav.ts</code> · <code>permissions.ts</code> · <code>schema.ts</code></td>
+      <td><code>use-notes-realtime.ts</code></td>
+    </tr>
+    <tr>
+      <td><strong>shell</strong></td>
+      <td><code>ChunkErrorReloader</code>, <code>DashboardNav</code>, <code>PageHeader</code></td>
+      <td><span class="muted">—</span></td>
+      <td><span class="muted">—</span></td>
+    </tr>
+  </table></div>
+<!-- END GENERATED feature-surfaces -->
 </section>
 
 <section class="doc wrap prose">
@@ -367,7 +411,8 @@ SKIP_ENV_VALIDATION=1 npm run build              # when routes/components change
 
 <script>
 /* Zero-dependency highlighter so the page stays self-contained and offline-
-   readable. Regex tokenizer, leftmost-first: comment > string > keyword. */
+   readable. Regex tokenizer, leftmost-first; at equal positions the earlier
+   part wins: comment > string > keyword > constant > function > type. */
 (function () {
   const esc = (t) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;')
                       .replace(/>/g, '&gt;');
@@ -375,7 +420,7 @@ SKIP_ENV_VALIDATION=1 npm run build              # when routes/components change
     ts: { flags: 'g', parts: [
       { re: String.raw`\/\/[^\n]*|\/\*[\s\S]*?\*\/`, c: 'c' },
       { re: String.raw`'(?:\\.|[^'\\\n])*'|"(?:\\.|[^"\\\n])*"|\x60(?:\\.|[^\x60\\])*\x60`, c: 's' },
-      { re: String.raw`(?<!\.)\b(?:import|export|from|const|let|var|function|async|await|return|if|else|interface|new|default|extends|typeof|as|type|of|in|class|throw|try|catch|finally|void|readonly|satisfies)\b|=>`, c: 'k' },
+      { re: String.raw`(?<!\.)\b(?:import|export|from|const|let|var|function|async|await|return|if|else|interface|new|default|extends|typeof|as|type|of|in|class|throw|try|catch|finally|void|readonly|satisfies)\b(?!=)|=>`, c: 'k' },
       { re: String.raw`\b(?:true|false|null|undefined|this)\b|\b\d[\d_]*(?:\.\d+)?\b`, c: 'n' },
       { re: String.raw`\b[A-Za-z_$][\w$]*(?=\s*\()`, c: 'f' },
       { re: String.raw`\b[A-Z][A-Za-z0-9_]*\b`, c: 't' },
