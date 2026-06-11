@@ -1,6 +1,6 @@
 import { getSessionUser } from "@/lib/auth/session";
 
-import { LandingPage } from "./_features/landing/LandingPage";
+import { LandingPage } from "./_features/landing";
 import { PageHeader } from "./_features/shell";
 
 /**
