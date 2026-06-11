@@ -13,6 +13,7 @@
     "test:e2e": "playwright test",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
+    "db:reset": "npx supabase db reset && npm run db:setup",
     "db:setup": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/db-setup.ts",
     "db:studio": "drizzle-kit studio",
     "docs:surfaces": "node scripts/generate-feature-surfaces.mjs"

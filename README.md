@@ -55,6 +55,8 @@ npm run db:setup          # migrations + app_user login + demo users; self-verif
 npm run dev               # http://localhost:3000 — log in: owner@example.com / test-password-123
 ```
 
+Broke your local data? `npm run db:reset` wipes the database and re-provisions it end to end (schema, `app_user` login, demo users) — never run a bare `supabase db reset`, which leaves the DB unprovisioned.
+
 There is no sign-up page (by design). `db:setup` already seeded two demo accounts — `owner@example.com` and `member@example.com`, both with password `test-password-123`. For anything else:
 
 - **Custom user:** create it via the GoTrue admin API, then give it a role in `profiles` as a privileged DB role (the write-lock prevents any logged-in user from touching roles — that's the point):
