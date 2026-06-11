@@ -2,9 +2,10 @@
 //
 // Unit contract for the feature-surfaces docs generator (scripts/). The
 // generator reads each feature's index.ts (the dev API, Iron Rule 8) and
-// rewrites the generated section of docs/html/add-a-feature.html between
-// markers. Pure functions are tested here; the CLI shell around them is a
-// thin readdir/readFile/writeFile pass.
+// rewrites the two generated regions of docs/html/add-a-feature.html
+// (feature sections + TOC sub-items) between markers. Pure functions are
+// tested here; the CLI shell around them is a thin readdir/readFile/
+// writeFile pass.
 
 import { describe, expect, it } from 'vitest';
 
@@ -12,10 +13,10 @@ import {
   classifyFeatureFiles,
   findImporters,
   injectBetweenMarkers,
-  parseIndexDocLead,
+  parseIndexDoc,
   parseIndexExports,
-  renderFeaturePageHtml,
   renderSurfacesHtml,
+  renderTocHtml,
 } from './generate-feature-surfaces.mjs';
 
 const INDEX_SOURCE = `/**
@@ -26,18 +27,44 @@ export { getNotes, createNote } from './actions';
 export type { NoteRow } from './actions';
 `;
 
+const DOCUMENTED_SOURCE = `/**
+ * Notes dev API (Iron Rule 8, ADR-0005).
+ */
+/** Live notes list, realtime-updating. */
+export { NotesLive } from './NotesLive';
+/** Server actions: read and create. */
+export { getNotes, createNote } from './actions';
+export type { NoteRow } from './actions';
+`;
+
 describe('parseIndexExports', () => {
   it('flattens multi-name export lines into {name, from} entries', () => {
     expect(parseIndexExports(INDEX_SOURCE)).toEqual([
-      { name: 'NotesLive', from: './NotesLive', typeOnly: false },
-      { name: 'getNotes', from: './actions', typeOnly: false },
-      { name: 'createNote', from: './actions', typeOnly: false },
-      { name: 'NoteRow', from: './actions', typeOnly: true },
+      { name: 'NotesLive', from: './NotesLive', typeOnly: false, description: '' },
+      { name: 'getNotes', from: './actions', typeOnly: false, description: '' },
+      { name: 'createNote', from: './actions', typeOnly: false, description: '' },
+      { name: 'NoteRow', from: './actions', typeOnly: true, description: '' },
     ]);
   });
 
   it('returns [] for an index with no re-exports', () => {
     expect(parseIndexExports('// nothing here\n')).toEqual([]);
+  });
+
+  it('captures a doc comment above an export as its description', () => {
+    expect(parseIndexExports(DOCUMENTED_SOURCE)).toEqual([
+      { name: 'NotesLive', from: './NotesLive', typeOnly: false,
+        description: 'Live notes list, realtime-updating.' },
+      { name: 'getNotes', from: './actions', typeOnly: false,
+        description: 'Server actions: read and create.' },
+      { name: 'createNote', from: './actions', typeOnly: false,
+        description: 'Server actions: read and create.' },
+      { name: 'NoteRow', from: './actions', typeOnly: true, description: '' },
+    ]);
+  });
+
+  it('never mistakes the module doc comment for the first export description', () => {
+    expect(parseIndexExports(INDEX_SOURCE)[0].description).toBe('');
   });
 });
 
@@ -80,130 +107,107 @@ describe('classifyFeatureFiles', () => {
   });
 });
 
-describe('renderSurfacesHtml', () => {
-  it('renders one row per feature with exports, manifests, and privates', () => {
-    const html = renderSurfacesHtml([
-      {
-        feature: 'notes',
-        publicExports: [
-          { name: 'NotesLive', from: './NotesLive', typeOnly: false },
-        ],
-        manifests: ['schema.ts'],
-        privateFiles: ['use-notes-realtime.ts'],
-      },
+describe('parseIndexDoc', () => {
+  it('returns the whole module doc comment as paragraph strings', () => {
+    const src = `/**
+ * Notes dev API (Iron Rule 8) — the ONLY surface outsiders
+ * may import.
+ *
+ * NOT exported on purpose: private plumbing and manifests.
+ */
+export { NotesLive } from './NotesLive';
+`;
+    expect(parseIndexDoc(src)).toEqual([
+      'Notes dev API (Iron Rule 8) — the ONLY surface outsiders may import.',
+      'NOT exported on purpose: private plumbing and manifests.',
     ]);
-    expect(html).toContain('notes');
-    expect(html).toContain('NotesLive');
-    expect(html).toContain('schema.ts');
-    expect(html).toContain('use-notes-realtime.ts');
   });
 
-  it('links each feature name to its generated per-feature page', () => {
-    const html = renderSurfacesHtml([
-      {
-        feature: 'notes',
-        publicExports: [],
-        manifests: [],
-        privateFiles: [],
-      },
+  it('returns a single paragraph when the comment has no blank line', () => {
+    expect(parseIndexDoc(INDEX_SOURCE)).toEqual([
+      'Notes dev API (Iron Rule 8, ADR-0005).',
     ]);
-    expect(html).toContain('href="features/notes.html"');
   });
 
-  it('renders the same pill nav as leaf pages, with the guide as current', () => {
-    const html = renderSurfacesHtml([
-      { feature: 'notes', publicExports: [], manifests: [], privateFiles: [] },
-    ]);
-    expect(html).toContain('class="featnav"');
-    expect(html).toContain('featnav-item current">guide<');
-    expect(html).toContain('class="featnav-item" href="features/notes.html"');
+  it('returns [] when there is no module doc comment', () => {
+    expect(parseIndexDoc("export { A } from './A';\n")).toEqual([]);
   });
 });
 
-describe('parseIndexDocLead', () => {
-  it('extracts the first line of the leading doc comment', () => {
-    expect(parseIndexDocLead(INDEX_SOURCE)).toBe(
+describe('renderSurfacesHtml — inline feature sections', () => {
+  const surfaces = [
+    {
+      feature: 'notes',
+      indexSource: DOCUMENTED_SOURCE,
+      publicExports: parseIndexExports(DOCUMENTED_SOURCE),
+      manifests: ['schema.ts'],
+      privateFiles: ['use-notes-realtime.ts'],
+      usedBy: [
+        { path: 'app/(dashboard)/notes/page.tsx', names: ['getNotes', 'NotesLive'] },
+      ],
+    },
+    {
+      feature: 'auth',
+      indexSource: `/** Auth dev API. */\nexport { LoginForm } from './LoginForm';\n`,
+      publicExports: [
+        { name: 'LoginForm', from: './LoginForm', typeOnly: false, description: '' },
+      ],
+      manifests: [],
+      privateFiles: [],
+      usedBy: [],
+    },
+  ];
+
+  it('renders one addressable section per feature, no tabs, no pill nav', () => {
+    const html = renderSurfacesHtml(surfaces);
+    expect(html.match(/class="featdoc"/g)).toHaveLength(2);
+    expect(html).toContain('id="notes"');
+    expect(html).toContain('id="auth"');
+    expect(html).not.toContain('feattabs');
+    expect(html).not.toContain('featnav');
+    expect(html).not.toContain('featpanel');
+  });
+
+  it('renders the full module doc comment as the section intro', () => {
+    expect(renderSurfacesHtml(surfaces)).toContain(
       'Notes dev API (Iron Rule 8, ADR-0005).',
     );
   });
 
-  it('returns empty string when there is no doc comment', () => {
-    expect(parseIndexDocLead("export { A } from './A';\n")).toBe('');
+  it('renders a Description column fed by per-export doc comments', () => {
+    const html = renderSurfacesHtml(surfaces);
+    expect(html).toContain('<th>Description</th>');
+    expect(html).toContain('Live notes list, realtime-updating.');
+    expect(html).toContain('Server actions: read and create.');
   });
 
-  it('returns the whole first sentence even when it wraps across lines', () => {
-    const src = `/**
- * Auth dev API — the ONLY surface outsiders
- * may import; deeper imports fail. Second sentence is dropped.
- */
-export { LoginForm } from './LoginForm';
-`;
-    expect(parseIndexDocLead(src)).toBe(
-      'Auth dev API — the ONLY surface outsiders may import; deeper imports fail.',
-    );
+  it('keeps the dev API essentials: exports, used-by, seams', () => {
+    const html = renderSurfacesHtml(surfaces);
+    expect(html).toContain('NotesLive');
+    expect(html).toContain('app/(dashboard)/notes/page.tsx');
+    expect(html).toContain('schema.ts');
+    expect(html).toContain('use-notes-realtime.ts');
+  });
+
+  it('embeds the verbatim contract, highlighted, in a collapsed details', () => {
+    const html = renderSurfacesHtml(surfaces);
+    expect(html).toContain('<details class="contract">');
+    expect(html).toContain('tok-k');
+    expect(html).toContain("'./NotesLive'");
+  });
+
+  it('links to no standalone pages anywhere', () => {
+    expect(renderSurfacesHtml(surfaces)).not.toContain('.html');
   });
 });
 
-describe('renderFeaturePageHtml', () => {
-  const surface = {
-    feature: 'notes',
-    publicExports: [
-      { name: 'NotesLive', from: './NotesLive', typeOnly: false },
-      { name: 'getNotes', from: './actions', typeOnly: false },
-    ],
-    manifests: ['schema.ts'],
-    privateFiles: ['use-notes-realtime.ts'],
-  };
-
-  it('renders a complete standalone page for the feature', () => {
-    const html = renderFeaturePageHtml(surface, INDEX_SOURCE);
-    expect(html).toContain('<!doctype html>');
-    expect(html).toContain('<title>');
-    expect(html).toContain('notes');
-    expect(html).toContain('NotesLive');
-    expect(html).toContain('./actions');
-    expect(html).toContain('use-notes-realtime.ts');
-    // The index source is embedded as the contract, highlighted at
-    // generation time (no client JS in generated pages).
-    expect(html).toContain('tok-k');
-    expect(html).toContain("'./NotesLive'");
-    // And it links back to the guide.
-    expect(html).toContain('href="../add-a-feature.html"');
-  });
-
-  it('labels each export with its kind (component / server action / type)', () => {
-    const html = renderFeaturePageHtml(surface, INDEX_SOURCE);
-    // NotesLive: capitalized, .tsx-style component module -> component.
-    expect(html).toMatch(/NotesLive[\s\S]*?component/);
-    // getNotes comes from './actions' -> server action.
-    expect(html).toMatch(/getNotes[\s\S]*?server action/);
-  });
-
-  it('is fully self-contained: inlines CSS, references no external stylesheets', () => {
-    const html = renderFeaturePageHtml(surface, INDEX_SOURCE, [], {
-      inlineCss: ':root{--accent:#0066CC}',
-    });
-    expect(html).not.toContain('<link rel="stylesheet"');
-    expect(html).toContain(':root{--accent:#0066CC}');
-  });
-
-  it('cross-links sibling feature pages when given the full feature list', () => {
-    const html = renderFeaturePageHtml(surface, INDEX_SOURCE, [
-      'auth',
-      'notes',
-      'shell',
-    ]);
-    expect(html).toContain('href="auth.html"');
-    expect(html).toContain('href="shell.html"');
-    // The current feature is shown as the active item, not a self-link.
-    expect(html).not.toContain('href="notes.html"');
-  });
-
-  it('starts the leaf pill nav with a guide pill back to the main page', () => {
-    const html = renderFeaturePageHtml(surface, INDEX_SOURCE, ['notes']);
-    expect(html).toContain(
-      'class="featnav-item" href="../add-a-feature.html">guide<',
-    );
+describe('renderTocHtml', () => {
+  it('renders one anchor sub-item per feature, in order', () => {
+    const html = renderTocHtml(['auth', 'notes']);
+    expect(html).toContain('href="#auth"');
+    expect(html).toContain('href="#notes"');
+    expect(html.indexOf('#auth')).toBeLessThan(html.indexOf('#notes'));
+    expect(html).not.toContain('.html');
   });
 });
 
@@ -233,35 +237,6 @@ describe('findImporters', () => {
   });
 });
 
-describe('renderFeaturePageHtml — sparse features', () => {
-  const sparse = {
-    feature: 'landing',
-    publicExports: [
-      { name: 'LandingPage', from: './LandingPage', typeOnly: false },
-    ],
-    manifests: [],
-    privateFiles: [],
-    usedBy: [{ path: 'app/page.tsx', names: ['LandingPage'] }],
-  };
-  const src = `/** Landing dev API. */\nexport { LandingPage } from './LandingPage';\n`;
-
-  it('omits the Other seams section when there is nothing to list', () => {
-    const html = renderFeaturePageHtml(sparse, src);
-    expect(html).not.toContain('Other seams');
-  });
-
-  it('never renders a zero stat card', () => {
-    const html = renderFeaturePageHtml(sparse, src);
-    expect(html).not.toMatch(/<h3>0<\/h3>/);
-  });
-
-  it('renders a Used by section naming each importing file', () => {
-    const html = renderFeaturePageHtml(sparse, src);
-    expect(html).toContain('Used by');
-    expect(html).toContain('app/page.tsx');
-  });
-});
-
 describe('injectBetweenMarkers', () => {
   const page = [
     '<p>before</p>',
@@ -277,6 +252,19 @@ describe('injectBetweenMarkers', () => {
     expect(out).toContain('<p>fresh</p>');
     expect(out).toContain('<p>after</p>');
     expect(out).not.toContain('<p>stale</p>');
+  });
+
+  it('injects into a named marker pair', () => {
+    const tocPage = [
+      '<ul>',
+      '<!-- BEGIN GENERATED feature-toc (npm run docs:surfaces) -->',
+      '<li>stale</li>',
+      '<!-- END GENERATED feature-toc -->',
+      '</ul>',
+    ].join('\n');
+    const out = injectBetweenMarkers(tocPage, '<li>fresh</li>', 'feature-toc');
+    expect(out).toContain('<li>fresh</li>');
+    expect(out).not.toContain('stale');
   });
 
   it('throws when the markers are missing', () => {
