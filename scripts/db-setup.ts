@@ -1,3 +1,4 @@
+import { createClient } from '@supabase/supabase-js';
 import { config as loadEnv } from 'dotenv';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { migrate } from 'drizzle-orm/node-postgres/migrator';
@@ -83,6 +84,105 @@ async function cli(): Promise<void> {
     console.log(`db:setup ✓ migrations applied; ${expected} loginable`);
   } finally {
     await probe.end();
+  }
+
+  // Demo accounts: a clean build must end with someone to log in as (no
+  // sign-up page by design, ADR-0003). Seed when the GoTrue env is present —
+  // the committed .env.test always carries it locally and in CI; skip loudly
+  // otherwise so pointing db:setup at a bare Postgres still provisions.
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const password = process.env.TEST_USER_PASSWORD;
+  if (supabaseUrl && serviceKey && password) {
+    await seedDemoUsers({ adminUrl, supabaseUrl, serviceKey, password });
+    console.log(
+      'db:setup ✓ demo users seeded: owner@example.com, member@example.com (password: TEST_USER_PASSWORD)',
+    );
+  } else {
+    console.log(
+      'db:setup — GoTrue env absent; demo-user seeding skipped (needs ' +
+        'NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, TEST_USER_PASSWORD)',
+    );
+  }
+}
+
+/**
+ * Seeds the two canonical demo accounts a clean build can log in with —
+ * owner@example.com (role `owner`) and member@example.com (role `member`) —
+ * and mirrors their roles into `profiles` (the app's role source of truth).
+ * Idempotent: an existing user is reconciled, never duplicated. There is no
+ * sign-up page by design (ADR-0003), so without this a fresh stack has nobody
+ * to log in as.
+ */
+export async function seedDemoUsers(opts: {
+  adminUrl: string;
+  supabaseUrl: string;
+  serviceKey: string;
+  password: string;
+}): Promise<void> {
+  const admin = createSupabaseAdmin(opts.supabaseUrl, opts.serviceKey);
+  await seedUser(admin, opts.adminUrl, opts.password, 'owner@example.com', 'owner');
+  await seedUser(admin, opts.adminUrl, opts.password, 'member@example.com', 'member');
+}
+
+/**
+ * The service-role GoTrue client used for seeding. Built through one factory so
+ * its (heavily generic) type flows to `seedUser` by inference — re-deriving it
+ * via a bare `ReturnType<typeof createClient>` would default the schema generics
+ * to `never` and not match this configured instance.
+ */
+function createSupabaseAdmin(url: string, serviceKey: string) {
+  return createClient(url, serviceKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+}
+type SupabaseAdmin = ReturnType<typeof createSupabaseAdmin>;
+
+/**
+ * Create (or reconcile) a single GoTrue user and mirror its role into
+ * `profiles`. Idempotent across runs:
+ *  - createUser tolerates an already-registered email (any other error rethrows);
+ *  - the user id is resolved via `listUsers()` when createUser does not return it
+ *    (i.e. the user already existed);
+ *  - the profile row is upserted, refreshing the role on conflict.
+ */
+async function seedUser(
+  admin: SupabaseAdmin,
+  adminUrl: string,
+  password: string,
+  email: string,
+  role: string,
+): Promise<void> {
+  const { data, error } = await admin.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,
+  });
+  if (error && !/already.*registered|exists/i.test(error.message)) {
+    throw error;
+  }
+
+  let userId = data?.user?.id ?? null;
+  if (!userId) {
+    // Already existed: resolve the id by listing users and matching the email.
+    const { data: list, error: listError } =
+      await admin.auth.admin.listUsers();
+    if (listError) throw listError;
+    userId = list.users.find((u) => u.email === email)?.id ?? null;
+  }
+  if (!userId) {
+    throw new Error(`Could not resolve a GoTrue user id for ${email}`);
+  }
+
+  const pool = new pg.Pool({ connectionString: adminUrl });
+  try {
+    await pool.query(
+      `insert into profiles (id, email, role) values ($1, $2, $3)
+         on conflict (id) do update set role = excluded.role`,
+      [userId, email, role],
+    );
+  } finally {
+    await pool.end();
   }
 }
 
