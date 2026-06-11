@@ -59,17 +59,10 @@ Broke your local data? `npm run db:reset` wipes the database and re-provisions i
 
 There is no sign-up page (by design). `db:setup` already seeded two demo accounts — `owner@example.com` and `member@example.com`, both with password `test-password-123`. For anything else:
 
-- **Custom user:** create it via the GoTrue admin API, then give it a role in `profiles` as a privileged DB role (the write-lock prevents any logged-in user from touching roles — that's the point):
+- **Custom user:** `db:create-user` does both halves in one verb — mints the GoTrue account via the admin API and assigns its role in `profiles` as a privileged DB role (the write-lock prevents any logged-in user from touching roles — that's the point). `--role` defaults to `member`; it reads the same `.env.local` / `.env.test` as `db:setup`, so no exporting keys by hand:
 
 ```bash
-export $(grep SUPABASE_SERVICE_ROLE_KEY .env.test)
-curl -s -X POST "http://127.0.0.1:54321/auth/v1/admin/users" \
-  -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"email":"you@example.com","password":"choose-one","email_confirm":true}'
-docker exec supabase_db_polaris psql -U postgres -d postgres -c \
-  "insert into public.profiles (id, email, role) values ('<id from response>', 'you@example.com', 'owner')
-   on conflict (id) do update set role = excluded.role;"
+npm run db:create-user -- --email you@example.com --password choose-one --role owner
 ```
 
 Verification gates (run what your change touches — full list and rules in [CONTRIBUTING.md](CONTRIBUTING.md)):

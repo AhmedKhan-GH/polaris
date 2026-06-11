@@ -126,6 +126,26 @@ export async function seedDemoUsers(opts: {
 }
 
 /**
+ * Create (or reconcile) ONE arbitrary account end to end — the programmatic
+ * equivalent of the README's manual "curl GoTrue admin API, then psql upsert
+ * into profiles" dance, and the core scripts/create-user.ts drives. Builds its
+ * own service-role client (unlike `seedUser`, which shares one across the two
+ * demo accounts) and returns the GoTrue user id. Idempotent for the same reason
+ * `seedUser` is — see its contract.
+ */
+export async function createUser(opts: {
+  adminUrl: string;
+  supabaseUrl: string;
+  serviceKey: string;
+  email: string;
+  password: string;
+  role: string;
+}): Promise<string> {
+  const admin = createSupabaseAdmin(opts.supabaseUrl, opts.serviceKey);
+  return seedUser(admin, opts.adminUrl, opts.password, opts.email, opts.role);
+}
+
+/**
  * The service-role GoTrue client used for seeding. Built through one factory so
  * its (heavily generic) type flows to `seedUser` by inference — re-deriving it
  * via a bare `ReturnType<typeof createClient>` would default the schema generics
@@ -152,7 +172,7 @@ async function seedUser(
   password: string,
   email: string,
   role: string,
-): Promise<void> {
+): Promise<string> {
   const { data, error } = await admin.auth.admin.createUser({
     email,
     password,
@@ -184,6 +204,7 @@ async function seedUser(
   } finally {
     await pool.end();
   }
+  return userId;
 }
 
 /**
