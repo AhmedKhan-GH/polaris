@@ -14,6 +14,8 @@ import {
   findOrderById,
   findOrdersPage,
   findOrdersPageByStatus,
+  InvalidTransitionError,
+  OrderNotFoundError,
   transitionOrderStatus,
   type OrderFilters,
   type OrderStatusCounts,
@@ -214,16 +216,16 @@ export async function transitionOrderAction(args: {
   const { ability, profile } = await getAbility()
   ForbiddenError.from(ability).throwUnlessCan('transition', 'Order')
 
-  const order = await findOrderById(args.orderId)
-  if (!order) throw new Error('Order not found')
-
-  const allowed = getAllowedTransitions(profile.role, order.status)
-  if (!allowed.includes(args.toStatus)) {
-    throw new Error(`Transition to ${args.toStatus} is not allowed`)
-  }
-
   const actor = await getActorId()
   try {
+    const order = await findOrderById(args.orderId)
+    if (!order) throw new OrderNotFoundError(args.orderId)
+
+    const allowed = getAllowedTransitions(profile.role, order.status)
+    if (!allowed.includes(args.toStatus)) {
+      throw new InvalidTransitionError(order.status, args.toStatus)
+    }
+
     return await transitionOrderStatus({
       orderId: args.orderId,
       toStatus: args.toStatus,
@@ -246,16 +248,16 @@ export async function discardDraftOrderAction(args: {
   const { ability, profile } = await getAbility()
   ForbiddenError.from(ability).throwUnlessCan('discard', 'Order')
 
-  const order = await findOrderById(args.orderId)
-  if (!order) throw new Error('Order not found')
-
-  const allowed = getAllowedTransitions(profile.role, order.status)
-  if (!allowed.includes('discarded')) {
-    throw new Error('Discard is not allowed for this order')
-  }
-
   const actor = await getActorId()
   try {
+    const order = await findOrderById(args.orderId)
+    if (!order) throw new OrderNotFoundError(args.orderId)
+
+    const allowed = getAllowedTransitions(profile.role, order.status)
+    if (!allowed.includes('discarded')) {
+      throw new InvalidTransitionError(order.status, 'discarded')
+    }
+
     return await discardDraftOrder({
       orderId: args.orderId,
       changedBy: actor,
@@ -352,6 +354,7 @@ export async function createOrderLineItemAction(args: {
   quantity: number
   unit: string
   unitPrice?: number | null
+  notes?: string | null
 }): Promise<OrderLineItem> {
   const { ability } = await getEditableOrder(args.orderId)
   ForbiddenError.from(ability).throwUnlessCan('create', 'OrderItem')
@@ -361,6 +364,7 @@ export async function createOrderLineItemAction(args: {
     quantity: positiveNumber(args.quantity, 'Quantity'),
     unit: requiredText(args.unit, 'Unit'),
     unitPrice: optionalNonNegativeNumber(args.unitPrice, 'Unit price'),
+    notes: args.notes?.trim() || null,
   })
 }
 
@@ -370,6 +374,7 @@ export async function updateOrderLineItemAction(args: {
   quantity: number
   unit: string
   unitPrice?: number | null
+  notes?: string | null
 }): Promise<OrderLineItem> {
   const { ability } = await getEditableOrder(args.orderId)
   ForbiddenError.from(ability).throwUnlessCan('update', 'OrderItem')
@@ -379,6 +384,7 @@ export async function updateOrderLineItemAction(args: {
     quantity: positiveNumber(args.quantity, 'Quantity'),
     unit: requiredText(args.unit, 'Unit'),
     unitPrice: optionalNonNegativeNumber(args.unitPrice, 'Unit price'),
+    notes: args.notes?.trim() || null,
   })
   if (!updated || updated.orderId !== args.orderId) {
     throw new Error('Order line item not found')

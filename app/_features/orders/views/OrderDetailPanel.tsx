@@ -13,6 +13,8 @@ import {
   STATUS_PANEL_BORDER_TONES,
 } from '../shared/statusTones'
 import { LineItemEditor } from '../line-items/LineItemEditor'
+import { OrderLineItemStats } from '../line-items/OrderLineItemStats'
+import { ShortcutTooltip } from '../shared/ShortcutTooltip'
 
 const ACTION_BUTTON =
   'rounded border px-3 py-2 text-sm font-medium disabled:cursor-wait disabled:opacity-60'
@@ -42,7 +44,15 @@ const ACTION_DESCRIPTIONS: Record<OrderStatus, string> = {
   voided: 'Voiding is for the accountable cancellation of an active invoice.',
 }
 
-export function OrderDetailPanel({ order, role = 'owner' }: { order: Order; role?: UserRole }) {
+export function OrderDetailPanel({
+  order,
+  role = 'owner',
+  onDuplicated,
+}: {
+  order: Order
+  role?: UserRole
+  onDuplicated?: (order: Order) => void
+}) {
   const { timezone, hour12 } = usePreferences()
   const { transition, discardDraft, duplicate, isPending, error } =
     useOrderActions()
@@ -66,7 +76,8 @@ export function OrderDetailPanel({ order, role = 'owner' }: { order: Order; role
     if (!pendingAction) return
     setPendingAction(null)
     if (pendingAction === 'duplicate') {
-      await duplicate({ sourceOrderId: order.id }).catch(() => {})
+      const copy = await duplicate({ sourceOrderId: order.id }).catch(() => null)
+      if (copy) onDuplicated?.(copy)
     } else if (pendingAction === 'discarded') {
       await discardDraft({ orderId: order.id }).catch(() => {})
     } else {
@@ -77,11 +88,14 @@ export function OrderDetailPanel({ order, role = 'owner' }: { order: Order; role
   return (
     <div className="relative flex flex-1 flex-col">
       {/* Header */}
-      <div className="flex items-center gap-3 border-b border-zinc-800 px-6 py-4">
-        <span className="font-mono text-base font-medium text-zinc-50">
-          #{order.orderNumber}
-        </span>
-        <StatusPill status={order.status} />
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-800 px-6 py-4">
+        <div className="flex items-center gap-3">
+          <span className="font-mono text-base font-medium text-zinc-50">
+            #{order.orderNumber}
+          </span>
+          <StatusPill status={order.status} />
+        </div>
+        <OrderLineItemStats orderId={order.id} />
       </div>
 
       {/* Metadata */}
@@ -113,7 +127,7 @@ export function OrderDetailPanel({ order, role = 'owner' }: { order: Order; role
       </div>
 
       {/* Content area */}
-      <div className="flex-1 overflow-y-auto px-6 py-4">
+      <div className="min-h-0 flex-1 overflow-y-auto px-6 py-4">
         {error && (
           <p
             role="alert"
@@ -131,41 +145,53 @@ export function OrderDetailPanel({ order, role = 'owner' }: { order: Order; role
 
       {/* Actions */}
       {(transitions.length > 0 || showDuplicate) && (
-        <div className="flex gap-2 border-t border-zinc-800 bg-zinc-950 px-5 py-4">
+        <div className="flex shrink-0 gap-2 border-t border-zinc-800 bg-zinc-950 px-5 py-4">
           <div className="flex-1">
             {terminalAction && (
-              <button
-                type="button"
-                disabled={isPending}
-                onClick={() => setPendingAction(terminalAction)}
-                className={`${ACTION_BUTTON} w-full ${STATUS_BUTTON_TONES[terminalAction]}`}
+              <ShortcutTooltip
+                label={`${ACTION_LABELS[terminalAction]} order`}
+                className="block"
               >
-                {ACTION_LABELS[terminalAction]}
-              </button>
+                <button
+                  type="button"
+                  disabled={isPending}
+                  onClick={() => setPendingAction(terminalAction)}
+                  className={`${ACTION_BUTTON} w-full ${STATUS_BUTTON_TONES[terminalAction]}`}
+                >
+                  {ACTION_LABELS[terminalAction]}
+                </button>
+              </ShortcutTooltip>
             )}
           </div>
           {showDuplicate && (
             <div className="flex-1">
-              <button
-                type="button"
-                disabled={isPending}
-                onClick={() => setPendingAction('duplicate')}
-                className={`${ACTION_BUTTON} w-full ${STATUS_BUTTON_TONES.drafted}`}
-              >
-                Duplicate
-              </button>
+              <ShortcutTooltip label="Duplicate order" className="block">
+                <button
+                  type="button"
+                  disabled={isPending}
+                  onClick={() => setPendingAction('duplicate')}
+                  className={`${ACTION_BUTTON} w-full ${STATUS_BUTTON_TONES.drafted}`}
+                >
+                  Duplicate
+                </button>
+              </ShortcutTooltip>
             </div>
           )}
           <div className="flex-1">
             {primaryAction && (
-              <button
-                type="button"
-                disabled={isPending}
-                onClick={() => setPendingAction(primaryAction)}
-                className={`${ACTION_BUTTON} w-full ${STATUS_BUTTON_TONES[primaryAction]}`}
+              <ShortcutTooltip
+                label={`${ACTION_LABELS[primaryAction]} order`}
+                className="block"
               >
-                {ACTION_LABELS[primaryAction]}
-              </button>
+                <button
+                  type="button"
+                  disabled={isPending}
+                  onClick={() => setPendingAction(primaryAction)}
+                  className={`${ACTION_BUTTON} w-full ${STATUS_BUTTON_TONES[primaryAction]}`}
+                >
+                  {ACTION_LABELS[primaryAction]}
+                </button>
+              </ShortcutTooltip>
             )}
           </div>
         </div>

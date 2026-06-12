@@ -255,6 +255,29 @@ describe('orders/data/actions (integration)', () => {
   })
 
   describe('transitionOrderAction', () => {
+    test('members can submit drafts but cannot transition after submission', async () => {
+      getProfileMock.mockResolvedValue({
+        id: ACTOR_DEFAULT,
+        email: 'member@example.com',
+        role: 'member',
+        createdAt: Date.now(),
+      })
+      const order = await actions.createOrderAction()
+
+      const submitted = await actions.transitionOrderAction({
+        orderId: order.id,
+        toStatus: 'submitted',
+      })
+
+      expect(submitted.status).toBe('submitted')
+      await expect(
+        actions.transitionOrderAction({
+          orderId: order.id,
+          toStatus: 'invoiced',
+        }),
+      ).rejects.toBeInstanceOf(repo.InvalidTransitionError)
+    })
+
     test('forwards the resolved actor id to the repository history row', async () => {
       getUserMock.mockResolvedValue({ data: { user: { id: ACTOR_TRANSITION } } })
       const order = await actions.createOrderAction()
@@ -387,6 +410,96 @@ describe('orders/data/actions (integration)', () => {
   })
 
   describe('order item and SKU permissions', () => {
+    test('creates, updates, and deletes line items through scoped actions', async () => {
+      const order = await actions.createOrderAction()
+      const { rows } = await pool.query<{ id: string }>(
+        'INSERT INTO skus (sku_number, name, default_unit) VALUES ($1, $2, $3) RETURNING id',
+        ['SKU-ACTIONS', 'Action item', 'case'],
+      )
+
+      const created = await actions.createOrderLineItemAction({
+        orderId: order.id,
+        skuId: rows[0].id,
+        quantity: 2,
+        unit: 'case',
+        unitPrice: 12.5,
+        notes: '  chilled  ',
+      })
+
+      expect(created).toMatchObject({
+        orderId: order.id,
+        skuId: rows[0].id,
+        lineNumber: 1,
+        quantity: 2,
+        unit: 'case',
+        unitPrice: 12.5,
+        notes: 'chilled',
+      })
+
+      const updated = await actions.updateOrderLineItemAction({
+        orderId: order.id,
+        lineItemId: created.id,
+        quantity: 3,
+        unit: 'case',
+        unitPrice: null,
+      })
+      expect(updated).toMatchObject({
+        id: created.id,
+        quantity: 3,
+        unitPrice: null,
+        notes: null,
+      })
+
+      await expect(
+        actions.deleteOrderLineItemAction({
+          orderId: order.id,
+          lineItemId: created.id,
+        }),
+      ).resolves.toEqual({ id: created.id, orderId: order.id })
+      await expect(actions.findOrderLineItemsAction(order.id)).resolves.toEqual([])
+    })
+
+    test('rejects line item edits once the order leaves draft', async () => {
+      const order = await actions.createOrderAction()
+      const { rows } = await pool.query<{ id: string }>(
+        'INSERT INTO skus (sku_number, name, default_unit) VALUES ($1, $2, $3) RETURNING id',
+        ['SKU-SUBMITTED', 'Submitted item', 'case'],
+      )
+      const lineItem = await actions.createOrderLineItemAction({
+        orderId: order.id,
+        skuId: rows[0].id,
+        quantity: 1,
+        unit: 'case',
+      })
+      await actions.transitionOrderAction({
+        orderId: order.id,
+        toStatus: 'submitted',
+      })
+
+      await expect(
+        actions.createOrderLineItemAction({
+          orderId: order.id,
+          skuId: rows[0].id,
+          quantity: 1,
+          unit: 'case',
+        }),
+      ).rejects.toThrow('Line items can only be edited on drafted orders')
+      await expect(
+        actions.updateOrderLineItemAction({
+          orderId: order.id,
+          lineItemId: lineItem.id,
+          quantity: 2,
+          unit: 'case',
+        }),
+      ).rejects.toThrow('Line items can only be edited on drafted orders')
+      await expect(
+        actions.deleteOrderLineItemAction({
+          orderId: order.id,
+          lineItemId: lineItem.id,
+        }),
+      ).rejects.toThrow('Line items can only be edited on drafted orders')
+    })
+
     test('members cannot manage the SKU catalog', async () => {
       getProfileMock.mockResolvedValue({
         id: ACTOR_DEFAULT,
@@ -401,7 +514,7 @@ describe('orders/data/actions (integration)', () => {
           name: 'Sample item',
           defaultUnit: 'case',
         }),
-      ).rejects.toThrow(/cannot execute "manage" on "Sku"/)
+      ).rejects.toThrow(/Cannot execute "manage" on "Sku"/)
     })
 
     test('guests cannot read line items from another user order', async () => {

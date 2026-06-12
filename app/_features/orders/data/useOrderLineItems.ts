@@ -1,21 +1,15 @@
 'use client'
 
-import { useCallback, useEffect } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { getSupabaseClient } from '@/lib/supabase/browser'
 import {
   createOrderLineItemAction,
   createSkuAction,
   deleteOrderLineItemAction,
-  findOrderLineItemsAction,
   findSkuOptionsAction,
   updateOrderLineItemAction,
 } from './actions'
-import {
-  ORDERS_QUERY_KEY,
-  SKU_OPTIONS_QUERY_KEY,
-  orderLineItemsQueryKey,
-} from './queryKeys'
+import { SKU_OPTIONS_QUERY_KEY } from './queryKeys'
+import { useOrderLineItemRows } from './useOrderLineItemRows'
 
 function optionalPrice(value: string): number | null {
   const normalized = value.trim()
@@ -26,57 +20,17 @@ function optionalPrice(value: string): number | null {
 export function useOrderLineItems(orderId: string) {
   const queryClient = useQueryClient()
 
-  const lineItems = useQuery({
-    queryKey: orderLineItemsQueryKey(orderId),
-    queryFn: () => findOrderLineItemsAction(orderId),
-  })
+  const {
+    lineItems,
+    isLoading: lineItemsLoading,
+    error: lineItemsError,
+    refreshLineItems,
+  } = useOrderLineItemRows(orderId)
 
   const skuOptions = useQuery({
     queryKey: SKU_OPTIONS_QUERY_KEY,
     queryFn: () => findSkuOptionsAction(),
   })
-
-  const refreshLineItems = useCallback(() => {
-    void queryClient.invalidateQueries({
-      queryKey: orderLineItemsQueryKey(orderId),
-    })
-    // Order rows carry a compact SKU summary for the list view.
-    void queryClient.invalidateQueries({ queryKey: ORDERS_QUERY_KEY })
-  }, [orderId, queryClient])
-
-  useEffect(() => {
-    const supabase = getSupabaseClient()
-    let cancelled = false
-    let activeChannel: ReturnType<typeof supabase.channel> | null = null
-
-    async function subscribe() {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (cancelled || !session) return
-
-      activeChannel = supabase
-        .channel(`order-line-items:${orderId}`, { config: { private: true } })
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'order_line_items',
-            filter: `order_id=eq.${orderId}`,
-          },
-          () => {
-            refreshLineItems()
-          },
-        )
-        .subscribe()
-    }
-
-    void subscribe()
-
-    return () => {
-      cancelled = true
-      if (activeChannel) void supabase.removeChannel(activeChannel)
-    }
-  }, [orderId, queryClient, refreshLineItems])
 
   const createLineItem = useMutation({
     mutationFn: (args: {
@@ -130,9 +84,9 @@ export function useOrderLineItems(orderId: string) {
   })
 
   return {
-    lineItems: lineItems.data ?? [],
+    lineItems,
     skuOptions: skuOptions.data ?? [],
-    isLoading: lineItems.isLoading || skuOptions.isLoading,
+    isLoading: lineItemsLoading || skuOptions.isLoading,
     createLineItem: createLineItem.mutateAsync,
     updateLineItem: updateLineItem.mutateAsync,
     removeLineItem: removeLineItem.mutateAsync,
@@ -143,7 +97,7 @@ export function useOrderLineItems(orderId: string) {
       removeLineItem.isPending,
     isSkuPending: createSku.isPending,
     error:
-      lineItems.error ??
+      lineItemsError ??
       skuOptions.error ??
       createLineItem.error ??
       updateLineItem.error ??

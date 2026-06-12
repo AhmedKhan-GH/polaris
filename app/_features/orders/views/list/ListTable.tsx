@@ -59,18 +59,13 @@ export function ListTable({
         cell: (info) => info.getValue(),
         meta: { cellClassName: 'truncate font-mono text-zinc-50' },
       }),
-      columnHelper.accessor('skuSummary', {
-        header: 'SKUs',
-        cell: (info) => info.getValue() ?? '-',
-        meta: { cellClassName: 'truncate font-mono text-zinc-300' },
-      }),
       columnHelper.accessor('status', {
         header: 'Status',
         cell: (info) => <StatusPill status={info.getValue()} />,
       }),
       columnHelper.accessor('createdByEmail', {
         header: 'Created by',
-        cell: (info) => info.getValue() ?? '—',
+        cell: (info) => info.getValue() ?? '-',
         meta: { cellClassName: 'truncate text-zinc-400' },
       }),
       columnHelper.accessor('createdAt', {
@@ -191,7 +186,7 @@ export function ListTable({
       className="flex-1 min-h-0 flex flex-col overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900"
     >
       {/* Header sits outside the scroll container so the vertical
-          scrollbar track only spans the body rows. The "↑ N new" pill
+          scrollbar track only spans the body rows. The "N new" pill
           rides inline inside the last (Created) column header with
           justify-between splitting the cell into title-on-left,
           pill-on-right. */}
@@ -221,7 +216,7 @@ export function ListTable({
                     onClick={handleUnseenClick}
                     className="shrink-0 rounded-full bg-blue-500/15 px-2 py-0.5 text-[10px] font-medium normal-case tracking-normal text-blue-300 transition-colors hover:bg-blue-500/25"
                   >
-                    ↑ {unseenCount} new
+                    {unseenCount} new
                   </button>
                 )}
               </div>

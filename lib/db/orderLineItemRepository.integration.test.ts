@@ -124,6 +124,80 @@ describe('orderLineItemRepository (integration)', () => {
     ])
   })
 
+  test('serializes line numbers during concurrent inserts', async () => {
+    const order = await orderRepo.insertOrder()
+    const sku = await lineItemRepo.insertSku({
+      skuNumber: 'SKU-WATER',
+      name: 'Water',
+      defaultUnit: 'case',
+    })
+
+    const created = await Promise.all(
+      Array.from({ length: 5 }, (_, index) =>
+        lineItemRepo.insertOrderLineItem({
+          orderId: order.id,
+          skuId: sku.id,
+          quantity: index + 1,
+          unit: 'case',
+        }),
+      ),
+    )
+
+    expect(created.map((lineItem) => lineItem.lineNumber).sort()).toEqual([
+      1, 2, 3, 4, 5,
+    ])
+    await expect(lineItemRepo.findOrderLineItems(order.id)).resolves.toHaveLength(5)
+  })
+
+  test('rejects invalid line item values at the database boundary', async () => {
+    const order = await orderRepo.insertOrder()
+    const sku = await lineItemRepo.insertSku({
+      skuNumber: 'SKU-INVALID',
+      name: 'Invalid sample',
+      defaultUnit: 'case',
+    })
+
+    await expect(
+      lineItemRepo.insertOrderLineItem({
+        orderId: order.id,
+        skuId: sku.id,
+        quantity: 0,
+        unit: 'case',
+      }),
+    ).rejects.toMatchObject({
+      cause: expect.objectContaining({
+        constraint: 'order_line_items_quantity_positive',
+      }),
+    })
+
+    await expect(
+      lineItemRepo.insertOrderLineItem({
+        orderId: order.id,
+        skuId: sku.id,
+        quantity: 1,
+        unit: '   ',
+      }),
+    ).rejects.toMatchObject({
+      cause: expect.objectContaining({
+        constraint: 'order_line_items_unit_not_blank',
+      }),
+    })
+
+    await expect(
+      lineItemRepo.insertOrderLineItem({
+        orderId: order.id,
+        skuId: sku.id,
+        quantity: 1,
+        unit: 'case',
+        unitPrice: -1,
+      }),
+    ).rejects.toMatchObject({
+      cause: expect.objectContaining({
+        constraint: 'order_line_items_unit_price_non_negative',
+      }),
+    })
+  })
+
   test('updates a line item only through its owning order', async () => {
     const order = await orderRepo.insertOrder()
     const otherOrder = await orderRepo.insertOrder()

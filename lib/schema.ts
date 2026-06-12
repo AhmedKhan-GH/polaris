@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import {
   bigint,
   boolean,
+  check,
   foreignKey,
   index,
   integer,
@@ -11,6 +12,7 @@ import {
   pgTable,
   primaryKey,
   text,
+  unique,
   uuid,
 } from "drizzle-orm/pg-core";
 
@@ -82,6 +84,8 @@ export const skus = pgTable(
   (table) => [
     index("skus_name_idx").on(table.name),
     index("skus_category_idx").on(table.category),
+    check("skus_sku_number_not_blank", sql`length(btrim(${table.skuNumber})) > 0`),
+    check("skus_name_not_blank", sql`length(btrim(${table.name})) > 0`),
   ],
 );
 
@@ -144,11 +148,22 @@ export const orderLineItems = pgTable(
     updatedAt: epochMs("updated_at"),
   },
   (table) => [
+    unique("order_line_items_order_line_unique").on(
+      table.orderId,
+      table.lineNumber,
+    ),
     index("order_line_items_order_id_idx").on(table.orderId),
     index("order_line_items_sku_id_idx").on(table.skuId),
     index("order_line_items_order_line_idx").on(
       table.orderId,
       table.lineNumber,
+    ),
+    check("order_line_items_line_number_positive", sql`${table.lineNumber} > 0`),
+    check("order_line_items_quantity_positive", sql`${table.quantity} > 0`),
+    check("order_line_items_unit_not_blank", sql`length(btrim(${table.unit})) > 0`),
+    check(
+      "order_line_items_unit_price_non_negative",
+      sql`${table.unitPrice} IS NULL OR ${table.unitPrice} >= 0`,
     ),
   ],
 );

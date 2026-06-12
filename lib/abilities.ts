@@ -44,6 +44,7 @@ export function defineAbilityFor(role: UserRole): AppAbility {
       can('read', 'OrderItem')
       can('update', 'OrderItem')
       can('delete', 'OrderItem')
+      can('transition', 'Order')
       can('discard', 'Order')
       can('duplicate', 'Order')
       break
@@ -104,7 +105,7 @@ export function getAllowedTransitions(role: UserRole, status: OrderStatus): read
   return all.filter((toStatus) => {
     if (toStatus === 'discarded') return ability.can('discard', 'Order')
     if (!ability.can('transition', 'Order')) return false
-    if (role === 'guest' && status !== 'drafted') return false
+    if ((role === 'guest' || role === 'member') && status !== 'drafted') return false
     return true
   })
 }

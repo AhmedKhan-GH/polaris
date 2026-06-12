@@ -63,6 +63,7 @@ async function OrdersData({
   statuses: readonly OrderStatus[]
 }) {
   const queryClient = new QueryClient()
+  const ability = defineAbilityFor(role)
 
   await Promise.all([
     // Prefetch the first page of each visible status tab
@@ -90,7 +91,7 @@ async function OrdersData({
     <HydrationBoundary state={dehydrate(queryClient)}>
       <OrdersShell
         statuses={statuses}
-        canCreate={true}
+        canCreate={ability.can('create', 'Order')}
         role={role}
         isGuest={isGuest}
         profileId={profileId}

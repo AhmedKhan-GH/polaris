@@ -219,7 +219,11 @@ function StatusPanel({
       {/* Detail panel */}
       <div className="flex flex-1 flex-col">
         {selectedOrder ? (
-          <OrderDetailPanel order={selectedOrder} role={role} />
+          <OrderDetailPanel
+            order={selectedOrder}
+            role={role}
+            onDuplicated={(copy) => onSelect(copy.id)}
+          />
         ) : (
           <DetailPanelSkeleton />
         )}

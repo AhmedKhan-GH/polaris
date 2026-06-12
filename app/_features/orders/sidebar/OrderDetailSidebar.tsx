@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { ArrowRightIcon } from '@heroicons/react/24/outline'
+import { ArrowRightIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import {
   formatCreatedAt,
   type Order,
@@ -15,8 +15,10 @@ import {
   STATUS_BUTTON_TONES,
   STATUS_PANEL_BORDER_TONES,
 } from '../shared/statusTones'
+import { ShortcutTooltip } from '../shared/ShortcutTooltip'
 import { useOrderActions } from '../data/useOrderActions'
-import { LineItemEditor } from '../line-items/LineItemEditor'
+import { LineItemSummary } from '../line-items/LineItemSummary'
+import { OrderLineItemStats } from '../line-items/OrderLineItemStats'
 
 interface ActionConfig {
   label: string
@@ -70,10 +72,12 @@ export function OrderDetailSidebar({
   order,
   onClose,
   role = 'owner',
+  onDuplicated,
 }: {
   order: Order | null
   onClose: () => void
   role?: UserRole
+  onDuplicated?: (order: Order) => void
 }) {
   const isOpen = order !== null
 
@@ -90,6 +94,7 @@ export function OrderDetailSidebar({
           order={order}
           onClose={onClose}
           role={role}
+          onDuplicated={onDuplicated}
         />
       )}
     </aside>
@@ -100,10 +105,12 @@ function SidebarBody({
   order,
   onClose,
   role,
+  onDuplicated,
 }: {
   order: Order
   onClose: () => void
   role: UserRole
+  onDuplicated?: (order: Order) => void
 }) {
   const { transition, discardDraft, duplicate, isPending, error } =
     useOrderActions()
@@ -166,26 +173,34 @@ function SidebarBody({
 
   async function handleConfirmDuplicate() {
     setDuplicatePending(false)
-    await duplicate({ sourceOrderId: order.id }).catch(() => {})
+    const copy = await duplicate({ sourceOrderId: order.id }).catch(() => null)
+    if (copy) onDuplicated?.(copy)
   }
 
   return (
     <>
       <header className="flex items-center justify-between border-b border-zinc-800 px-5 py-4">
-        <div className="flex items-center gap-3">
-          <span className="font-mono text-base font-medium text-zinc-50">
-            #{order.orderNumber}
-          </span>
-          <StatusPill status={order.status} />
+        <div className="min-w-0">
+          <div className="flex items-center gap-3">
+            <span className="font-mono text-base font-medium text-zinc-50">
+              #{order.orderNumber}
+            </span>
+            <StatusPill status={order.status} />
+          </div>
+          <div className="mt-2">
+            <OrderLineItemStats orderId={order.id} />
+          </div>
         </div>
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Close detail panel"
-          className="rounded p-1 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
-        >
-          ✕
-        </button>
+        <ShortcutTooltip label="Close panel" shortcut="Esc">
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close detail panel"
+            className="rounded p-1 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
+          >
+            <XMarkIcon aria-hidden className="h-4 w-4" />
+          </button>
+        </ShortcutTooltip>
       </header>
 
       <dl className="grid grid-cols-[max-content_1fr] gap-x-4 gap-y-2 border-b border-zinc-800 px-5 py-4 text-sm">
@@ -226,48 +241,56 @@ function SidebarBody({
               {error.message}
             </p>
           )}
-          <LineItemEditor
-            orderId={order.id}
-            orderStatus={order.status}
-            role={role}
-          />
+          <LineItemSummary orderId={order.id} />
         </div>
 
-        <div className="flex gap-2 border-t border-zinc-800 bg-zinc-950 px-5 py-4">
+        <div className="flex shrink-0 gap-2 border-t border-zinc-800 bg-zinc-950 px-5 py-4">
           <div className="flex-1">
             {terminalAction && (
-              <button
-                type="button"
-                disabled={isPending}
-                onClick={() => setPendingAction(terminalAction)}
-                className={`${ACTION_BUTTON_BASE} ${STATUS_BUTTON_TONES[terminalAction.toStatus]}`}
+              <ShortcutTooltip
+                label={`${terminalAction.label} order`}
+                className="block"
               >
-                {terminalAction.label}
-              </button>
+                <button
+                  type="button"
+                  disabled={isPending}
+                  onClick={() => setPendingAction(terminalAction)}
+                  className={`${ACTION_BUTTON_BASE} w-full ${STATUS_BUTTON_TONES[terminalAction.toStatus]}`}
+                >
+                  {terminalAction.label}
+                </button>
+              </ShortcutTooltip>
             )}
           </div>
           {showDuplicate && (
             <div className="flex-1">
-              <button
-                type="button"
-                disabled={isPending}
-                onClick={() => setDuplicatePending(true)}
-                className={`${ACTION_BUTTON_BASE} ${STATUS_BUTTON_TONES.drafted}`}
-              >
-                Duplicate
-              </button>
+              <ShortcutTooltip label="Duplicate order" className="block">
+                <button
+                  type="button"
+                  disabled={isPending}
+                  onClick={() => setDuplicatePending(true)}
+                  className={`${ACTION_BUTTON_BASE} w-full ${STATUS_BUTTON_TONES.drafted}`}
+                >
+                  Duplicate
+                </button>
+              </ShortcutTooltip>
             </div>
           )}
           <div className="flex-1">
             {primaryAction && (
-              <button
-                type="button"
-                disabled={isPending}
-                onClick={() => setPendingAction(primaryAction)}
-                className={`${ACTION_BUTTON_BASE} ${STATUS_BUTTON_TONES[primaryAction.toStatus]}`}
+              <ShortcutTooltip
+                label={`${primaryAction.label} order`}
+                className="block"
               >
-                {primaryAction.label}
-              </button>
+                <button
+                  type="button"
+                  disabled={isPending}
+                  onClick={() => setPendingAction(primaryAction)}
+                  className={`${ACTION_BUTTON_BASE} w-full ${STATUS_BUTTON_TONES[primaryAction.toStatus]}`}
+                >
+                  {primaryAction.label}
+                </button>
+              </ShortcutTooltip>
             )}
           </div>
         </div>

@@ -11,6 +11,8 @@ import {
   transitionOrderAction,
 } from './actions'
 import {
+  LIST_ORDERS_QUERY_KEY,
+  ORDERS_COUNT_QUERY_KEY,
   ORDERS_QUERY_KEY,
   ORDERS_STATUS_COUNTS_QUERY_KEY,
   ordersByStatusQueryKey,
@@ -18,6 +20,7 @@ import {
 import {
   findInCaches,
   insertSortedIfInWindow,
+  prependToCache,
   removeFromCache,
   updateInCache,
   type OrdersCache,
@@ -210,6 +213,26 @@ export function useOrderActions(): UseOrderActionsResult {
 
   const duplicate = useMutation({
     mutationFn: duplicateOrderAction,
+    onSuccess: (order) => {
+      queryClient.setQueryData<OrdersCache>(ORDERS_QUERY_KEY, (old) =>
+        prependToCache(old, order),
+      )
+      queryClient.setQueryData<OrdersCache>(
+        ordersByStatusQueryKey('drafted'),
+        (old) => prependToCache(old, order),
+      )
+      queryClient.setQueryData<number>(ORDERS_COUNT_QUERY_KEY, (n) =>
+        (n ?? 0) + 1,
+      )
+      queryClient.setQueryData<OrderStatusCounts>(
+        ORDERS_STATUS_COUNTS_QUERY_KEY,
+        (counts) =>
+          counts ? { ...counts, drafted: (counts.drafted ?? 0) + 1 } : counts,
+      )
+      void queryClient.invalidateQueries({
+        queryKey: LIST_ORDERS_QUERY_KEY,
+      })
+    },
   })
 
   const isPending =

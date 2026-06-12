@@ -1,4 +1,4 @@
-import { afterAll, afterEach, beforeAll, describe, expect, test, vi } from 'vitest'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest'
 import {
   PostgreSqlContainer,
   type StartedPostgreSqlContainer,
@@ -44,7 +44,7 @@ describe('orderRepository (integration)', () => {
   })
 
   afterEach(async () => {
-    await pool.query('TRUNCATE TABLE orders, order_status_history CASCADE')
+    await pool.query('TRUNCATE TABLE orders, order_status_history, skus CASCADE')
     await pool.query('UPDATE order_status_counts SET count = 0')
     await pool.query('ALTER SEQUENCE order_number_seq RESTART WITH 1000000')
   })
@@ -111,6 +111,8 @@ describe('orderRepository (integration)', () => {
     for (const order of all) {
       expect(Object.keys(order).sort()).toEqual([
         'createdAt',
+        'createdBy',
+        'createdByEmail',
         'duplicatedFromOrderId',
         'id',
         'orderNumber',
@@ -625,6 +627,15 @@ describe('orderRepository (integration)', () => {
   describe('duplicateOrder', () => {
     const ACTOR = '33333333-3333-3333-3333-333333333333'
 
+    beforeEach(async () => {
+      await pool.query(
+        `INSERT INTO profiles (id, email, role)
+         VALUES ($1, 'duplicate@example.com', 'owner')
+         ON CONFLICT (id) DO UPDATE SET role = EXCLUDED.role`,
+        [ACTOR],
+      )
+    })
+
     test('creates a fresh draft with its own number, linked back to the source', async () => {
       const source = await repo.insertOrder()
       await repo.transitionOrderStatus({
@@ -730,6 +741,63 @@ describe('orderRepository (integration)', () => {
           from_status: null,
           to_status: 'drafted',
           reason: `Duplicated from order #${source.orderNumber}`,
+        },
+      ])
+    })
+
+    test('copies source line items onto the duplicated draft', async () => {
+      const source = await repo.insertOrder()
+      const { rows: skus } = await pool.query<{ id: string }>(
+        `INSERT INTO skus (sku_number, name, default_unit)
+         VALUES
+           ('SKU-COPY-A', 'Copy A', 'case'),
+           ('SKU-COPY-B', 'Copy B', 'each')
+         RETURNING id`,
+      )
+      await pool.query(
+        `INSERT INTO order_line_items
+          (order_id, sku_id, line_number, quantity, unit, unit_price, notes)
+         VALUES
+          ($1, $2, 1, 2, 'case', 10.50, 'first'),
+          ($1, $3, 2, 5, 'each', NULL, NULL)`,
+        [source.id, skus[0].id, skus[1].id],
+      )
+
+      const copy = await repo.duplicateOrder({
+        sourceOrderId: source.id,
+        changedBy: ACTOR,
+      })
+
+      const { rows } = await pool.query(
+        `SELECT
+           sku_id,
+           line_number,
+           quantity::float8 AS quantity,
+           unit,
+           unit_price::float8 AS unit_price,
+           notes
+         FROM order_line_items
+         WHERE order_id = $1
+         ORDER BY line_number`,
+        [copy.id],
+      )
+
+      expect(rows).toEqual([
+        {
+          sku_id: skus[0].id,
+          line_number: 1,
+          quantity: 2,
+          unit: 'case',
+          unit_price: 10.5,
+          notes: 'first',
+        },
+        {
+          sku_id: skus[1].id,
+          line_number: 2,
+          quantity: 5,
+          unit: 'each',
+          unit_price: null,
+          notes: null,
         },
       ])
     })

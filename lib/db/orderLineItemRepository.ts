@@ -1,6 +1,6 @@
 import { and, asc, eq, sql } from 'drizzle-orm'
 import { db } from '../db'
-import { orderLineItems, skus } from '../schema'
+import { orderLineItems, orders, skus } from '../schema'
 import {
   toOrderLineItem,
   toSku,
@@ -161,6 +161,13 @@ export async function insertOrderLineItem(args: {
   notes?: string | null
 }): Promise<OrderLineItem> {
   const lineItemId = await db.transaction(async (tx) => {
+    const [order] = await tx
+      .select({ id: orders.id })
+      .from(orders)
+      .where(eq(orders.id, args.orderId))
+      .for('update')
+    if (!order) throw new Error(`Order not found: ${args.orderId}`)
+
     const [line] = await tx
       .select({
         value: sql<number>`coalesce(max(${orderLineItems.lineNumber}), 0)::int`,

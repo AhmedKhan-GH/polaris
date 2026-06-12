@@ -147,7 +147,12 @@ function BoardWithSidebar({
         statuses={statuses}
         dateFilters={dateFilters}
       />
-      <OrderDetailSidebar order={selectedOrder} onClose={handleClose} role={role} />
+      <OrderDetailSidebar
+        order={selectedOrder}
+        onClose={handleClose}
+        role={role}
+        onDuplicated={(copy) => setSelectedId(copy.id)}
+      />
     </>
   )
 }
@@ -193,7 +198,12 @@ function ListWithSidebar({
         selectedId={selectedId}
         onSelect={handleSelect}
       />
-      <OrderDetailSidebar order={selectedOrder} onClose={handleClose} role={role} />
+      <OrderDetailSidebar
+        order={selectedOrder}
+        onClose={handleClose}
+        role={role}
+        onDuplicated={(copy) => setSelectedId(copy.id)}
+      />
     </>
   )
 }

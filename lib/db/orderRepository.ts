@@ -401,6 +401,29 @@ export async function duplicateOrder(args: {
       reason: `Duplicated from order #${source.orderNumber}`,
     })
 
+    await tx.execute(sql`
+      INSERT INTO order_line_items (
+        order_id,
+        sku_id,
+        line_number,
+        quantity,
+        unit,
+        unit_price,
+        notes
+      )
+      SELECT
+        ${created.id}::uuid,
+        sku_id,
+        line_number,
+        quantity,
+        unit,
+        unit_price,
+        notes
+      FROM order_line_items
+      WHERE order_id = ${source.id}
+      ORDER BY line_number, created_at, id
+    `)
+
     const email = changedBy
       ? (await tx.select({ email: profiles.email }).from(profiles).where(eq(profiles.id, changedBy)).limit(1))[0]?.email ?? null
       : null
