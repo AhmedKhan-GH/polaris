@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { startRlsTestDb } from '../../../lib/db/__tests__/rls-test-db';
+import { startRlsTestDb } from '@/lib/db/__tests__/rls-test-db';
 
 /**
  * organizations creator-read RLS, against a throwaway testcontainer.
@@ -12,13 +12,13 @@ import { startRlsTestDb } from '../../../lib/db/__tests__/rls-test-db';
 const USER_A = '11111111-1111-1111-1111-111111111111';
 const USER_B = '22222222-2222-2222-2222-222222222222';
 
-describe('organizations creator-read RLS (testcontainer)', () => {
+describe('organizations creator-read RLS (testcontainer)', (): void => {
   let rls: Awaited<ReturnType<typeof startRlsTestDb>> | undefined;
   let withUserContext: typeof import('@/lib/db/with-user-context').withUserContext;
   let db: typeof import('@/lib/db/client').db | undefined;
   let organizations: typeof import('@/lib/db/schema').organizations;
 
-  beforeAll(async () => {
+  beforeAll(async (): Promise<void> => {
     rls = await startRlsTestDb();
     process.env.DATABASE_URL = rls.appConnUri;
     // Dynamic import AFTER env is set: the client binds to DATABASE_URL on load.
@@ -32,26 +32,26 @@ describe('organizations creator-read RLS (testcontainer)', () => {
     );
   });
 
-  afterAll(async () => {
+  afterAll(async (): Promise<void> => {
     await db?.$client.end();
     await rls?.cleanup();
   });
 
-  it("shows USER_A their organization but not USER_B's", async () => {
+  it("shows USER_A their organization but not USER_B's", async (): Promise<void> => {
     const rows = await withUserContext({ userId: USER_A, roles: [] }, (tx) =>
       tx.select().from(organizations),
     );
 
-    expect(rows.map((r) => r.name)).toEqual(['Org A']);
-    expect(rows.map((r) => r.createdBy)).toEqual([USER_A]);
+    expect(rows.map((r): string => r.name)).toEqual(['Org A']);
+    expect(rows.map((r): string => r.createdBy)).toEqual([USER_A]);
   });
 
-  it("hides USER_A's organization from USER_B", async () => {
+  it("hides USER_A's organization from USER_B", async (): Promise<void> => {
     const rows = await withUserContext({ userId: USER_B, roles: [] }, (tx) =>
       tx.select().from(organizations),
     );
 
-    expect(rows.map((r) => r.name)).toEqual(['Org B']);
+    expect(rows.map((r): string => r.name)).toEqual(['Org B']);
     expect(rows).not.toEqual(
       expect.arrayContaining([
         expect.objectContaining({ name: 'Org A', createdBy: USER_A }),
