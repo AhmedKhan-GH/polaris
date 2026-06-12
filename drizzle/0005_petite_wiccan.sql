@@ -7,12 +7,11 @@ CREATE TABLE "organizations" (
 --> statement-breakpoint
 ALTER TABLE "organizations" ENABLE ROW LEVEL SECURITY;
 --> statement-breakpoint
--- IAM foundation: creator-scoped organization reads until memberships land.
--- This table is queried through the Drizzle/app_user path, so the policy reads
--- the transaction-scoped app.user_id GUC set by withUserContext.
+-- Only the creator can read their org for M1.
 CREATE POLICY "organizations_creator_read" ON "organizations" AS PERMISSIVE FOR SELECT TO "app_user"
   USING (
     "organizations"."created_by" = current_setting('app.user_id', true)::uuid
   );
 --> statement-breakpoint
+-- Keep this read-only until the app needs org writes.
 GRANT SELECT ON "organizations" TO "app_user";

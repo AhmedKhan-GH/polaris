@@ -11,4 +11,5 @@
 // feature is one deleted line here — the foundation stays green.
 
 export * from '@/app/_features/notes/schema';
+// This keeps customer tables visible to Drizzle.
 export * from '@/app/customer/schema';
