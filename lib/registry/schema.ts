@@ -12,4 +12,5 @@
 
 export * from '@/app/_features/notes/schema';
 // This keeps customer tables visible to Drizzle.
-export * from '@/app/customer/schema';
+export * from '@/app/customer/memberships';
+export * from '@/app/customer/organizations';

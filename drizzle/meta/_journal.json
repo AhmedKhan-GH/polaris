@@ -43,6 +43,27 @@
       "when": 1781216047091,
       "tag": "0005_petite_wiccan",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1781373382687,
+      "tag": "0006_quiet_payback",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1781373816211,
+      "tag": "0007_funny_hitman",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1781377213822,
+      "tag": "0008_kind_mariko_yashida",
+      "breakpoints": true
     }
   ]
 }
