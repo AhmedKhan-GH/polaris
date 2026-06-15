@@ -36,7 +36,7 @@ jobs:
 
       - name: Cache Testcontainers images
         id: tc-images
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.cache/tc-images.tar
           key: tc-images-${{ runner.os }}-postgres17-ryuk
@@ -78,7 +78,7 @@ jobs:
 
       - name: Cache Playwright browsers
         id: playwright-cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
@@ -93,7 +93,7 @@ jobs:
 
       - name: Cache Supabase Docker images
         id: supabase-images
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.cache/supabase-images.tar
           key: supabase-images-${{ runner.os }}-${{ hashFiles('supabase/config.toml') }}
