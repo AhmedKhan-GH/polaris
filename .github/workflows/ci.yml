@@ -12,7 +12,7 @@ jobs:
     name: Clone & Build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: actions/setup-node@v4
         with:
@@ -66,7 +66,7 @@ jobs:
       DATABASE_URL: postgresql://app_user:apppw@127.0.0.1:54322/postgres
       MIGRATE_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: actions/setup-node@v4
         with:
