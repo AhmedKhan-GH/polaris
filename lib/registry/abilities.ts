@@ -13,9 +13,11 @@
 
 import { activityAbilities } from '@/app/_features/activity/permissions';
 import { notesAbilities } from '@/app/_features/notes/permissions';
+import { orgAbilities } from '@/app/_features/orgs/permissions';
 import type { AbilityContributor } from '@/lib/permissions/ability';
 
 export const abilityContributors: AbilityContributor[] = [
   activityAbilities,
   notesAbilities,
+  orgAbilities,
 ];

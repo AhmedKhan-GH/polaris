@@ -41,7 +41,7 @@ describe("Memberships RLS test and duplicate check", (): void => {
             [USER_A, "member", USER_B, "member"]
         );
         await rls.admin.query("insert into memberships (org_id, user_id, role) values ($1, $2, $3), ($4, $5, $6)",
-            [ORG_A_ID, USER_A, "member", ORG_B_ID, USER_B, "member"]);
+            [ORG_A_ID, USER_A, "org_admin", ORG_B_ID, USER_B, "org_member"]);
     })
 
     afterAll(async (): Promise<void> => {

@@ -48,7 +48,7 @@ describe("organizations membership-read RLS (testcontainer)", (): void => {
     // Seed memberships — each user belongs to their own org only.
     await rls.admin.query(
       "insert into memberships (org_id, user_id, role) values ($1, $2, $3), ($4, $5, $6)",
-      [ORG_A_ID, USER_A, "member", ORG_B_ID, USER_B, "member"],
+      [ORG_A_ID, USER_A, "org_member", ORG_B_ID, USER_B, "org_member"],
     );
   });
 
