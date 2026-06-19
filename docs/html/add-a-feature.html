@@ -142,6 +142,7 @@
           <li><a href="#auth">auth</a></li>
           <li><a href="#landing">landing</a></li>
           <li><a href="#notes">notes</a></li>
+          <li><a href="#products">products</a></li>
           <li><a href="#shell">shell</a></li>
 <!-- END GENERATED feature-toc -->
       </ul>
@@ -334,6 +335,47 @@ export { getNotes, createNote } from './actions';
  */</span>
 <span class="tok-k">export</span> { <span class="tok-t">NotesLive</span> } <span class="tok-k">from</span> <span class="tok-s">'./NotesLive'</span>;
 <span class="tok-k">export</span> { getNotes, createNote } <span class="tok-k">from</span> <span class="tok-s">'./actions'</span>;</code></pre></figure>
+    </details>
+  </section>
+  <section class="featdoc" id="products">
+    <h3 class="featdoc-title">products</h3>
+    <p>Products dev API (Iron Rule 8, ADR-0005) — the ONLY surface outsiders may import; the boundary law (rule D) fails the build on anything deeper. Exactly what the route page consumes, one deliberate export per line.</p>
+    <p>NOT exported on purpose: the manifests `schema`/`permissions`/`nav` (the registry's seam, rule C — never re-export manifests through the index). There is no client island: a reference catalog needs no realtime.</p>
+    <p class="muted featdoc-import">Import surface: <code>@/app/_features/products</code> — everything else in the folder is private (rule&nbsp;D).</p>
+  <table>
+    <tr><th>Export</th><th>Kind</th><th>Description</th><th>Source module</th></tr>
+      <tr><td><code>getProducts</code></td><td><span class="pill">server action</span></td><td></td><td><code>./actions</code></td></tr>
+      <tr><td><code>createProduct</code></td><td><span class="pill">server action</span></td><td></td><td><code>./actions</code></td></tr>
+      <tr><td><code>updateProduct</code></td><td><span class="pill">server action</span></td><td></td><td><code>./actions</code></td></tr>
+      <tr><td><code>retireProduct</code></td><td><span class="pill">server action</span></td><td></td><td><code>./actions</code></td></tr>
+      <tr><td><code>ProductRow</code></td><td><span class="pill">server action</span></td><td></td><td><code>./actions</code></td></tr>
+  </table>
+    <p class="featdoc-label"><strong>Used by</strong></p>
+  <table>
+    <tr><th>Importing file</th><th>Imports</th></tr>
+      <tr><td><code>app/(dashboard)/products/page.tsx</code></td><td><code>createProduct</code>, <code>getProducts</code>, <code>retireProduct</code>, <code>updateProduct</code></td></tr>
+  </table>
+    <p class="featdoc-label"><strong>Other seams</strong></p>
+  <p><strong>Manifests</strong> (registry-only, rule C): <code>nav.ts</code> · <code>permissions.ts</code> · <code>schema.ts</code></p>
+    <details class="contract">
+      <summary>The contract, verbatim — <code>app/_features/products/index.ts</code></summary>
+      <figure class="snippet"><figcaption>app/_features/products/index.ts</figcaption>
+      <pre><code><span class="tok-c">/**
+ * Products dev API (Iron Rule 8, ADR-0005) — the ONLY surface outsiders may
+ * import; the boundary law (rule D) fails the build on anything deeper. Exactly
+ * what the route page consumes, one deliberate export per line.
+ *
+ * NOT exported on purpose: the manifests `schema`/`permissions`/`nav` (the
+ * registry's seam, rule C — never re-export manifests through the index). There
+ * is no client island: a reference catalog needs no realtime.
+ */</span>
+<span class="tok-k">export</span> {
+  getProducts,
+  createProduct,
+  updateProduct,
+  retireProduct,
+  <span class="tok-k">type</span> <span class="tok-t">ProductRow</span>,
+} <span class="tok-k">from</span> <span class="tok-s">'./actions'</span>;</code></pre></figure>
     </details>
   </section>
   <section class="featdoc" id="shell">
