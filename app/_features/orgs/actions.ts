@@ -37,7 +37,7 @@ export async function createOrganization(
       const { name } = createOrganizationSchema.parse(input);
       const orgId = randomUUID();
 
-      await db.transaction(async (tx) => {
+      await db.transaction(async (tx): Promise<void> => {
         // The insert policies read these GUCs.
         await tx.execute(
           sql`select set_config('app.user_id', ${ctx.userId}, true)`,
