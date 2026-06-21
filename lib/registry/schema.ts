@@ -12,3 +12,4 @@
 
 export * from '@/app/_features/notes/schema';
 export * from '@/app/_features/products/schema';
+export * from '@/app/_features/orders/schema';

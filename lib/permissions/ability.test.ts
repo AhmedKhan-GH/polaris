@@ -83,8 +83,8 @@ describe('lib/permissions ability — default contributors come from the registr
     expect(buildAbility({ roles: ['member'] }).can('read', 'SignInLog')).toBe(false);
     expect(buildAbility({ roles: [] }).can('read', 'SignInLog')).toBe(false);
     expect(buildAbility({ roles: [] }).can('create', 'Note')).toBe(true);
-    // `Order` is owned by no registered contributor → still fail-closed.
-    expect(buildAbility({ roles: ['owner'] }).can('create', 'Order')).toBe(false);
+    // A subject owned by NO registered contributor → still fail-closed.
+    expect(buildAbility({ roles: ['owner'] }).can('create', 'Unregistered')).toBe(false);
   });
 
   it('consults the registry for the default list (proven by mocking it)', async () => {
