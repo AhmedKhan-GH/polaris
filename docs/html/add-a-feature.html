@@ -355,8 +355,14 @@ export { getNotes, createNote } from './actions';
       <tr><td><code>OrderRow</code></td><td><span class="pill">server action</span></td><td></td><td><code>./actions</code></td></tr>
       <tr><td><code>LineItemRow</code></td><td><span class="pill">server action</span></td><td></td><td><code>./actions</code></td></tr>
   </table>
+    <p class="featdoc-label"><strong>Used by</strong></p>
+  <table>
+    <tr><th>Importing file</th><th>Imports</th></tr>
+      <tr><td><code>app/(dashboard)/orders/[id]/page.tsx</code></td><td><code>addLineItem</code>, <code>getOrder</code>, <code>getOrderLineItems</code>, <code>removeLineItem</code>, <code>updateLineItem</code></td></tr>
+      <tr><td><code>app/(dashboard)/orders/page.tsx</code></td><td><code>createOrder</code>, <code>getOrders</code></td></tr>
+  </table>
     <p class="featdoc-label"><strong>Other seams</strong></p>
-  <p><strong>Manifests</strong> (registry-only, rule C): <code>permissions.ts</code> · <code>schema.ts</code></p>
+  <p><strong>Manifests</strong> (registry-only, rule C): <code>nav.ts</code> · <code>permissions.ts</code> · <code>schema.ts</code></p>
     <details class="contract">
       <summary>The contract, verbatim — <code>app/_features/orders/index.ts</code></summary>
       <figure class="snippet"><figcaption>app/_features/orders/index.ts</figcaption>
@@ -397,6 +403,7 @@ export { getNotes, createNote } from './actions';
     <p class="featdoc-label"><strong>Used by</strong></p>
   <table>
     <tr><th>Importing file</th><th>Imports</th></tr>
+      <tr><td><code>app/(dashboard)/orders/[id]/page.tsx</code></td><td><code>getProducts</code></td></tr>
       <tr><td><code>app/(dashboard)/products/page.tsx</code></td><td><code>createProduct</code>, <code>getProducts</code>, <code>retireProduct</code>, <code>updateProduct</code></td></tr>
   </table>
     <p class="featdoc-label"><strong>Other seams</strong></p>

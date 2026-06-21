@@ -67,7 +67,7 @@ export default async function globalSetup(): Promise<void> {
   try {
     // 2. Reset the test-owned tables. auth.users + profiles persist (they are
     //    reconciled by seedDemoUsers), so we never truncate them here.
-    await pool.query('TRUNCATE notes, sign_in_log, products');
+    await pool.query('TRUNCATE order_line_items, orders, products, notes, sign_in_log');
   } finally {
     await pool.end();
   }
