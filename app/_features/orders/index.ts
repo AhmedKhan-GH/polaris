@@ -6,4 +6,14 @@
  * NOT exported on purpose: the manifests `schema`/`permissions`/`nav` (the
  * registry's seam, rule C — never re-export manifests through the index).
  */
-export { createOrder, getOrders, getOrder, type OrderRow } from './actions';
+export {
+  createOrder,
+  getOrders,
+  getOrder,
+  getOrderLineItems,
+  addLineItem,
+  updateLineItem,
+  removeLineItem,
+  type OrderRow,
+  type LineItemRow,
+} from './actions';

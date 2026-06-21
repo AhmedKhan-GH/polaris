@@ -8,7 +8,7 @@ import { withUserContext } from '@/lib/db/with-user-context';
 import { withPermission } from '@/lib/permissions/guard';
 import { createRateLimiter, withRateLimit } from '@/lib/rate-limit';
 
-import { orders } from './schema';
+import { orderLineItems, orders } from './schema';
 
 /**
  * Write budget for orders, OWNED by this feature (Charter D6). 30 writes / 60s
@@ -17,6 +17,10 @@ import { orders } from './schema';
 const ordersWriteLimiter = createRateLimiter({ points: 30, duration: 60 });
 
 const idField = z.string().uuid('Invalid order id');
+const quantityField = z.coerce
+  .number()
+  .int('Quantity must be a positive whole number')
+  .positive('Quantity must be a positive whole number');
 
 export type OrderRow = {
   id: string;
@@ -72,4 +76,90 @@ export async function getOrder(id: string): Promise<OrderRow | undefined> {
       return rows[0];
     }),
   );
+}
+
+export type LineItemRow = {
+  id: string;
+  orderId: string;
+  productId: string;
+  quantity: number;
+};
+
+/**
+ * Read one order's line items (RLS-scoped: returns rows only when the parent
+ * order is visible to the caller). The page joins these to the product catalog
+ * (via the products dev-API) for display — orders never imports products' schema.
+ */
+export async function getOrderLineItems(orderId: string): Promise<LineItemRow[]> {
+  const id = idField.parse(orderId);
+  return withPermission('read', 'Order', (ctx) =>
+    withUserContext(ctx, (tx) =>
+      tx.select().from(orderLineItems).where(eq(orderLineItems.orderId, id)),
+    ),
+  );
+}
+
+// --- line-item intake ------------------------------------------------------
+//
+// All three writes guard `update Order` (editing a line edits the order). That
+// CASL check is COARSE — it confirms the caller may edit orders at all; the
+// ROW-level "is this YOUR order" gate is the line-item RLS (its WITH CHECK
+// requires the parent order be the caller's own), so an owner's read-all never
+// becomes write-all here. Both layers must pass.
+
+const addLineSchema = z.object({
+  orderId: idField,
+  productId: z.string().uuid('Invalid product id'),
+  quantity: quantityField,
+});
+
+/** Add a product line to an order (one row per product — a duplicate trips the
+ *  unique constraint). */
+export async function addLineItem(formData: FormData): Promise<void> {
+  const { orderId } = await withPermission('update', 'Order', (ctx) =>
+    withRateLimit(ordersWriteLimiter, `orders:line:add:${ctx.userId}`, async () => {
+      const values = addLineSchema.parse({
+        orderId: String(formData.get('orderId') ?? ''),
+        productId: String(formData.get('productId') ?? ''),
+        quantity: String(formData.get('quantity') ?? ''),
+      });
+      await withUserContext(ctx, (tx) => tx.insert(orderLineItems).values(values));
+      return values;
+    }),
+  );
+
+  revalidatePath(`/orders/${orderId}`);
+}
+
+/** Change a line's quantity. */
+export async function updateLineItem(formData: FormData): Promise<void> {
+  const orderId = await withPermission('update', 'Order', (ctx) =>
+    withRateLimit(ordersWriteLimiter, `orders:line:update:${ctx.userId}`, async () => {
+      const id = idField.parse(String(formData.get('id') ?? ''));
+      const order = idField.parse(String(formData.get('orderId') ?? ''));
+      const quantity = quantityField.parse(String(formData.get('quantity') ?? ''));
+      await withUserContext(ctx, (tx) =>
+        tx.update(orderLineItems).set({ quantity }).where(eq(orderLineItems.id, id)),
+      );
+      return order;
+    }),
+  );
+
+  revalidatePath(`/orders/${orderId}`);
+}
+
+/** Remove a line from an order. */
+export async function removeLineItem(formData: FormData): Promise<void> {
+  const orderId = await withPermission('update', 'Order', (ctx) =>
+    withRateLimit(ordersWriteLimiter, `orders:line:remove:${ctx.userId}`, async () => {
+      const id = idField.parse(String(formData.get('id') ?? ''));
+      const order = idField.parse(String(formData.get('orderId') ?? ''));
+      await withUserContext(ctx, (tx) =>
+        tx.delete(orderLineItems).where(eq(orderLineItems.id, id)),
+      );
+      return order;
+    }),
+  );
+
+  revalidatePath(`/orders/${orderId}`);
 }

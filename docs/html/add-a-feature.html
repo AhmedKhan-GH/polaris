@@ -348,7 +348,12 @@ export { getNotes, createNote } from './actions';
       <tr><td><code>createOrder</code></td><td><span class="pill">server action</span></td><td></td><td><code>./actions</code></td></tr>
       <tr><td><code>getOrders</code></td><td><span class="pill">server action</span></td><td></td><td><code>./actions</code></td></tr>
       <tr><td><code>getOrder</code></td><td><span class="pill">server action</span></td><td></td><td><code>./actions</code></td></tr>
+      <tr><td><code>getOrderLineItems</code></td><td><span class="pill">server action</span></td><td></td><td><code>./actions</code></td></tr>
+      <tr><td><code>addLineItem</code></td><td><span class="pill">server action</span></td><td></td><td><code>./actions</code></td></tr>
+      <tr><td><code>updateLineItem</code></td><td><span class="pill">server action</span></td><td></td><td><code>./actions</code></td></tr>
+      <tr><td><code>removeLineItem</code></td><td><span class="pill">server action</span></td><td></td><td><code>./actions</code></td></tr>
       <tr><td><code>OrderRow</code></td><td><span class="pill">server action</span></td><td></td><td><code>./actions</code></td></tr>
+      <tr><td><code>LineItemRow</code></td><td><span class="pill">server action</span></td><td></td><td><code>./actions</code></td></tr>
   </table>
     <p class="featdoc-label"><strong>Other seams</strong></p>
   <p><strong>Manifests</strong> (registry-only, rule C): <code>permissions.ts</code> · <code>schema.ts</code></p>
@@ -363,7 +368,17 @@ export { getNotes, createNote } from './actions';
  * NOT exported on purpose: the manifests `schema`/`permissions`/`nav` (the
  * registry's seam, rule C — never re-export manifests through the index).
  */</span>
-<span class="tok-k">export</span> { createOrder, getOrders, getOrder, <span class="tok-k">type</span> <span class="tok-t">OrderRow</span> } <span class="tok-k">from</span> <span class="tok-s">'./actions'</span>;</code></pre></figure>
+<span class="tok-k">export</span> {
+  createOrder,
+  getOrders,
+  getOrder,
+  getOrderLineItems,
+  addLineItem,
+  updateLineItem,
+  removeLineItem,
+  <span class="tok-k">type</span> <span class="tok-t">OrderRow</span>,
+  <span class="tok-k">type</span> <span class="tok-t">LineItemRow</span>,
+} <span class="tok-k">from</span> <span class="tok-s">'./actions'</span>;</code></pre></figure>
     </details>
   </section>
   <section class="featdoc" id="products">
