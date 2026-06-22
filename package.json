@@ -48,7 +48,7 @@
     "@vitejs/plugin-react": "^6.0.2",
     "dotenv": "^17.4.2",
     "drizzle-kit": "^0.31.10",
-    "eslint": "^9",
+    "eslint": "^10",
     "eslint-config-next": "^16",
     "eslint-plugin-import-x": "^4.16.2",
     "jsdom": "^29.1.1",
