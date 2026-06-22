@@ -1,15 +1,42 @@
 # Orders & Line-Item Intake — Design Spec
 
 - **Date:** 2026-06-22
-- **Status:** Proposed (awaiting review)
+- **Status:** Implemented (as-built; see "As-built revisions" below)
 - **Base branch:** `main` (now includes the products catalog, PR #179)
-- **Target branch:** `feature/orders` (fresh off `main`)
+- **Target branch:** `feature/orders-rebuild` (PR #180); fuzzy SKU search stacked on `feature/fuzzy-sku-search` (PR #182)
+
+## As-built revisions (2026-06-22)
+
+Two design points changed during implementation. This spec is updated to match
+what shipped; the reasoning is recorded here.
+
+1. **Line model — duplicate-SKU lines + `line_number` (was: one row per
+   product).** The original lean model enforced `unique(order_id, product_id)`
+   and merged a re-added product into the existing line. That denied a real
+   intake need: the SAME product on multiple lines at different negotiated
+   prices. Shipped instead — `unique(order_id, line_number)` (no product-unique),
+   each `addLine` APPENDS a line at `max(line_number)+1`, and the detail table
+   shows a `#` column. Migration `0009` (drops the old constraint, backfills
+   `line_number`, then adds the new one).
+2. **Fuzzy SKU search intake (was: native fields only — decision #4 reversed).**
+   Decision #4 had locked "native form fields only, no fuzzy." That was reversed
+   by request: the product picker is now a fuzzy, search-as-you-type combobox
+   (`fuzzysort`, Obsidian-style) matching SKU *or* name, both fields always
+   shown. Native focus/tab still applies elsewhere; macros, keybinds, a command
+   bar, and MCP remain deferred. Lives in the stacked PR #182; dummy SKUs seed
+   via `npm run db:seed-products`.
+
+Smaller things shipped alongside (not part of the core design): the `update
+Order` CASL grant (line edits and transitions need it — its absence crashed
+cancel), an empty-product guard on Add line (the combobox is `required`; the
+action no-ops on an empty `productId`), semantic status chips, and a global Back
+button (shell chrome, a separate concern from orders).
 
 ## Goal
 
 Build the **orders feature with line-item intake** on `main`, atop the
-products catalog. Entry is a simple native form (informed by Ian Keilman's
-work, not porting his macro editor); add a
+products catalog. Entry is a line-item form with a **fuzzy SKU-search product
+picker** (informed by Ian Keilman's work, not porting his macro editor); add a
 minimal industry-standard **order state machine**, and a three-level **role
 model**.
 
@@ -42,10 +69,12 @@ Three inputs feed this feature:
 - Realtime line-item sync (Ian had a realtime spec) — deferred.
 - **Rapid-entry enhancements** — keyboard macros (Ian's `entryMacro`), custom
   keybinds, a command bar, an MCP server. All sit on the same server actions;
-  add later if a real need appears.
-- **Richer line model** — per-line `unit`, fractional quantity, per-line price
-  override, `line_number` ordering, line `notes` (all from Ian's model). Lean
-  model stands: one row per product, integer qty, snapshot price.
+  add later if a real need appears. (Fuzzy SKU search WAS added — see As-built
+  revisions — but this macro/keybind/command-bar/MCP layer stays deferred.)
+- **Richer line model** — per-line `unit`, fractional quantity, and line `notes`
+  (from Ian's model) stay deferred. SHIPPED instead: `line_number` ordering and
+  duplicate-SKU lines (same product across lines, each its own snapshot price) —
+  see As-built revisions. Integer qty and snapshot price stand.
 
 ## Order state machine (LOCKED)
 
@@ -113,22 +142,30 @@ created_at      timestamptz not null default now()
 -- 6-digit min width. Gaps (from rolled-back inserts) are expected and fine.
 ```
 
-**`order_lines`** (re-derived, + **price snapshot**):
+**`order_lines`** (re-derived, + **price snapshot** + **`line_number`**):
 
 ```
 id            uuid pk
 order_id      uuid not null references orders(id) on delete cascade
+line_number   integer not null check (> 0)   -- per-order ordering; assigned max+1 by the action
 product_id    uuid not null references products(id) on delete restrict   -- hand-written FK in migration
 quantity      integer not null check (> 0)
 unit_price_cents integer not null      -- PRICE SNAPSHOT at add time
-unique(order_id, product_id)
+unique(order_id, line_number)          -- NOT product-unique: the same SKU may repeat across lines
 ```
 
 **Why the snapshot:** the line stores `unit_price_cents` captured from the
 catalog when the line is added — so a later `updateProduct` price change never
-rewrites a submitted order's totals. This is the one schema change vs.
-`feature/orders-intake`, which derived price live. (Resolves the accounting-
-correctness gap; line totals = `unit_price_cents × quantity`.)
+rewrites a submitted order's totals. This is the price-side schema change vs.
+`feature/orders-intake`, which derived price live (`line_number`, below, is the
+other). (Resolves the accounting-correctness gap; line totals =
+`unit_price_cents × quantity`.)
+
+**Why duplicate-SKU lines:** the same product may legitimately appear on several
+lines at different negotiated prices, so a line is keyed by `line_number`
+(`unique(order_id, line_number)`), not by product. `addLine` appends at
+`max(line_number)+1`; the unique constraint is the backstop against a race. (This
+reverses the original one-row-per-product + merge model.)
 
 ## RLS + CASL (twin layers, both must pass)
 
@@ -158,24 +195,31 @@ correctness gap; line totals = `unit_price_cents × quantity`.)
 CASL twin mirrors all of the above; a `transition` ability + `getAllowedTransitions(role, status)`
 drive the UI (informed by Ian's `lib/abilities.ts`).
 
-## Line-item intake UX (native fields)
+## Line-item intake UX (fuzzy search + native fields)
 
-A simple native HTML form on the order detail page — **no custom keybinds, no
-macro, no command bar.** Browser-native focus/tab order only.
+A line-item form on the order detail page. Browser-native focus/tab order —
+**no custom keybinds, macro, or command bar** — but the product picker is a
+**fuzzy search-as-you-type combobox**.
 
-- **Entry row:** a product picker (from `getProducts()`, retired filtered out) +
-  a quantity `<input>` + an **Add** button → `addLine`. Native `Tab` moves
-  between fields; native `Enter` submits the form.
-- **Existing lines:** a table with inline quantity edit (`updateLine`) and a
-  **Remove** button (`removeLine`); line totals from the `unit_price_cents`
-  snapshot (`getOrderLines`).
-- Controls render only on the contractor's **own `draft`** (`canEdit`); locked
-  once `submitted`.
+- **Entry row:** a **fuzzy SKU/name search** product picker (`ProductCombobox`,
+  backed by `fuzzysort` over `getProducts()`, retired filtered out) + a quantity
+  `<input>` + an **Add** button → `addLine`. The combobox matches SKU *or* name
+  and always shows both per result; ↑/↓/Enter/Esc drive the list. A product MUST
+  be picked — the input is `required` and `addLine` no-ops on an empty
+  `productId`. Re-adding a product APPENDS a new line (duplicate SKUs allowed).
+- **Existing lines:** a table — `#` (`line_number`), product, qty, unit
+  (snapshot), line total — with inline quantity edit (`updateLine`) and a
+  **Remove** button (`removeLine`); totals from the `unit_price_cents` snapshot
+  (`getOrderLines`, ordered by `line_number`).
+- Controls render only when the caller may write the order — the contractor's
+  **own `draft`**, or any non-terminal order for `owner`/`admin`; locked once
+  `submitted` (member) and on terminal orders (all).
 
-This is essentially the form `feature/orders-intake` already prototyped — we
-re-derive it (TDD) with the snapshot price. Ian's `LineItemEditor` / `entryMacro`
-are **not** ported; rapid-entry keybinds, a command bar, and MCP are deferred
-(YAGNI) and slot onto the same server actions later.
+The form re-derives `feature/orders-intake`'s prototype (TDD) with the snapshot
+price; the fuzzy combobox replaced the original native `<select>` by request
+(decision #4 reversed — see As-built revisions). Ian's `LineItemEditor` /
+`entryMacro` are still **not** ported; macros, a command bar, and MCP stay
+deferred (YAGNI) on the same server actions.
 
 ## Integration plan (TDD slices, in order)
 
@@ -189,8 +233,9 @@ are **not** ported; rapid-entry keybinds, a command bar, and MCP are deferred
    rule + `getAllowedTransitions`. TDD.
 5. **server actions** — create/read/transition + line add/update/remove,
    guarded + rate-limited, exposed via `index.ts`. TDD.
-6. **Intake UI** — native line-entry form (product picker + qty + Add) and the
-   line table (inline edit / remove) over the actions. E2E.
+6. **Intake UI** — line-entry form (product picker + qty + Add) and the line
+   table (`#` / inline edit / remove) over the actions. E2E. (The picker became
+   a `fuzzysort` combobox in the stacked PR #182 — As-built revisions.)
 7. **Pages** — orders list, detail/editor, status display, office queue
    (`submitted`/`processing`). E2E.
 8. **Wiring** — `nav`, `docs:surfaces` regen.
@@ -211,8 +256,13 @@ are **not** ported; rapid-entry keybinds, a command bar, and MCP are deferred
    catalog but cannot manage it. No change to the products feature.
 3. ~~`order_number`~~ **RESOLVED** — 6-digit sequence starting at `100000`
    (bigint, min-width display). ~30-yr runway at ~100 orders/day; phone-friendly.
-4. ~~Intake-editor fidelity~~ **RESOLVED** — native form fields only (browser
-   focus/tab); no macro, keybinds, command bar, or MCP (all deferred).
+4. ~~Intake-editor fidelity~~ **RESOLVED, then partly reversed** — native
+   focus/tab and no macro/keybinds/command-bar/MCP still hold (deferred). The
+   "no fuzzy" part was reversed in implementation: the product picker is now a
+   `fuzzysort` search combobox (As-built revisions; stacked PR #182).
+5. ~~Line model~~ **RESOLVED (as-built)** — duplicate-SKU lines keyed by
+   `line_number`, not one-row-per-product-with-merge; the same product may
+   appear on multiple lines at different snapshot prices. Migration `0009`.
 
 ## References
 
