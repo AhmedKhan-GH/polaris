@@ -142,6 +142,7 @@
           <li><a href="#auth">auth</a></li>
           <li><a href="#landing">landing</a></li>
           <li><a href="#notes">notes</a></li>
+          <li><a href="#orders">orders</a></li>
           <li><a href="#products">products</a></li>
           <li><a href="#shell">shell</a></li>
 <!-- END GENERATED feature-toc -->
@@ -337,6 +338,60 @@ export { getNotes, createNote } from './actions';
 <span class="tok-k">export</span> { getNotes, createNote } <span class="tok-k">from</span> <span class="tok-s">'./actions'</span>;</code></pre></figure>
     </details>
   </section>
+  <section class="featdoc" id="orders">
+    <h3 class="featdoc-title">orders</h3>
+    <p>Orders dev API (Iron Rule 8, ADR-0005) — the ONLY surface outsiders may import; the boundary law (rule D) fails the build on anything deeper. Exactly what the route pages consume, one deliberate export per line.</p>
+    <p>NOT exported on purpose: the manifests `schema`/`permissions`/`nav` (the registry's seam, rule C — never re-export manifests through the index).</p>
+    <p class="muted featdoc-import">Import surface: <code>@/app/_features/orders</code> — everything else in the folder is private (rule&nbsp;D).</p>
+  <table>
+    <tr><th>Export</th><th>Kind</th><th>Description</th><th>Source module</th></tr>
+      <tr><td><code>createOrder</code></td><td><span class="pill">server action</span></td><td></td><td><code>./actions</code></td></tr>
+      <tr><td><code>getOrders</code></td><td><span class="pill">server action</span></td><td></td><td><code>./actions</code></td></tr>
+      <tr><td><code>getOrder</code></td><td><span class="pill">server action</span></td><td></td><td><code>./actions</code></td></tr>
+      <tr><td><code>getOrderLines</code></td><td><span class="pill">server action</span></td><td></td><td><code>./actions</code></td></tr>
+      <tr><td><code>addLine</code></td><td><span class="pill">server action</span></td><td></td><td><code>./actions</code></td></tr>
+      <tr><td><code>updateLine</code></td><td><span class="pill">server action</span></td><td></td><td><code>./actions</code></td></tr>
+      <tr><td><code>removeLine</code></td><td><span class="pill">server action</span></td><td></td><td><code>./actions</code></td></tr>
+      <tr><td><code>transitionOrder</code></td><td><span class="pill">server action</span></td><td></td><td><code>./actions</code></td></tr>
+      <tr><td><code>OrderRow</code></td><td><span class="pill">server action</span></td><td></td><td><code>./actions</code></td></tr>
+      <tr><td><code>LineRow</code></td><td><span class="pill">server action</span></td><td></td><td><code>./actions</code></td></tr>
+      <tr><td><code>getAllowedTransitions</code></td><td><span class="pill">function</span></td><td></td><td><code>./transitions</code></td></tr>
+      <tr><td><code>OrderStatus</code></td><td><span class="pill">component</span></td><td></td><td><code>./transitions</code></td></tr>
+  </table>
+    <p class="featdoc-label"><strong>Used by</strong></p>
+  <table>
+    <tr><th>Importing file</th><th>Imports</th></tr>
+      <tr><td><code>app/(dashboard)/orders/[id]/page.tsx</code></td><td><code>addLine</code>, <code>getAllowedTransitions</code>, <code>getOrder</code>, <code>getOrderLines</code>, <code>removeLine</code>, <code>transitionOrder</code>, <code>updateLine</code>, <code>OrderStatus</code></td></tr>
+      <tr><td><code>app/(dashboard)/orders/page.tsx</code></td><td><code>createOrder</code>, <code>getOrders</code></td></tr>
+  </table>
+    <p class="featdoc-label"><strong>Other seams</strong></p>
+  <p><strong>Manifests</strong> (registry-only, rule C): <code>nav.ts</code> · <code>permissions.ts</code> · <code>schema.ts</code></p>
+    <details class="contract">
+      <summary>The contract, verbatim — <code>app/_features/orders/index.ts</code></summary>
+      <figure class="snippet"><figcaption>app/_features/orders/index.ts</figcaption>
+      <pre><code><span class="tok-c">/**
+ * Orders dev API (Iron Rule 8, ADR-0005) — the ONLY surface outsiders may
+ * import; the boundary law (rule D) fails the build on anything deeper. Exactly
+ * what the route pages consume, one deliberate export per line.
+ *
+ * NOT exported on purpose: the manifests `schema`/`permissions`/`nav` (the
+ * registry's seam, rule C — never re-export manifests through the index).
+ */</span>
+<span class="tok-k">export</span> {
+  createOrder,
+  getOrders,
+  getOrder,
+  getOrderLines,
+  addLine,
+  updateLine,
+  removeLine,
+  transitionOrder,
+  <span class="tok-k">type</span> <span class="tok-t">OrderRow</span>,
+  <span class="tok-k">type</span> <span class="tok-t">LineRow</span>,
+} <span class="tok-k">from</span> <span class="tok-s">'./actions'</span>;
+<span class="tok-k">export</span> { getAllowedTransitions, <span class="tok-k">type</span> <span class="tok-t">OrderStatus</span> } <span class="tok-k">from</span> <span class="tok-s">'./transitions'</span>;</code></pre></figure>
+    </details>
+  </section>
   <section class="featdoc" id="products">
     <h3 class="featdoc-title">products</h3>
     <p>Products dev API (Iron Rule 8, ADR-0005) — the ONLY surface outsiders may import; the boundary law (rule D) fails the build on anything deeper. Exactly what the route page consumes, one deliberate export per line.</p>
@@ -353,6 +408,7 @@ export { getNotes, createNote } from './actions';
     <p class="featdoc-label"><strong>Used by</strong></p>
   <table>
     <tr><th>Importing file</th><th>Imports</th></tr>
+      <tr><td><code>app/(dashboard)/orders/[id]/page.tsx</code></td><td><code>getProducts</code></td></tr>
       <tr><td><code>app/(dashboard)/products/page.tsx</code></td><td><code>createProduct</code>, <code>getProducts</code>, <code>retireProduct</code>, <code>updateProduct</code></td></tr>
   </table>
     <p class="featdoc-label"><strong>Other seams</strong></p>
