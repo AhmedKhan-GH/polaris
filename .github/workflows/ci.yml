@@ -31,6 +31,11 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Docs surfaces are current (regen must be a no-op)
+        run: |
+          npm run docs:surfaces
+          git diff --exit-code docs/html/add-a-feature.html
+
       - name: Test
         run: npm test --if-present
 
