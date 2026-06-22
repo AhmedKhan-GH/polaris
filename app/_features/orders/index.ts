@@ -19,3 +19,4 @@ export {
   type LineRow,
 } from './actions';
 export { getAllowedTransitions, type OrderStatus } from './transitions';
+export { ProductCombobox, type ProductOption } from './ProductCombobox';

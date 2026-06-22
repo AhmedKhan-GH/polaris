@@ -18,7 +18,7 @@ import { loginViaSupabase } from './helpers';
  * cleaned up, so this suite never pollutes the products-table counts.
  */
 const SKU = 'SKU-OE2E';
-const PRODUCT_LABEL = 'Order E2E Widget ($5.00)';
+const PRODUCT_NAME = 'Order E2E Widget';
 let pool: pg.Pool;
 let productId: string;
 
@@ -59,7 +59,8 @@ test.describe('orders intake + lifecycle', () => {
     // Add a line; the total uses the snapshot price (500c × 3 = $15.00).
     // `exact: true` — once a line exists, its inline edit field is also labelled
     // "Quantity for <product>", which a substring match would collide with.
-    await page.getByLabel('Product').selectOption({ label: PRODUCT_LABEL });
+    await page.getByLabel('Product').fill(PRODUCT_NAME);
+    await page.getByRole('option', { name: new RegExp(PRODUCT_NAME) }).click();
     await page.getByLabel('Quantity', { exact: true }).fill('3');
     await page.getByRole('button', { name: 'Add line' }).click();
     await expect(page.getByTestId('line-row')).toHaveCount(1);
@@ -67,7 +68,8 @@ test.describe('orders intake + lifecycle', () => {
 
     // Re-adding the SAME product appends a SECOND line (no merge) — duplicate
     // SKUs are allowed, each line its own row/price.
-    await page.getByLabel('Product').selectOption({ label: PRODUCT_LABEL });
+    await page.getByLabel('Product').fill(PRODUCT_NAME);
+    await page.getByRole('option', { name: new RegExp(PRODUCT_NAME) }).click();
     await page.getByLabel('Quantity', { exact: true }).fill('2');
     await page.getByRole('button', { name: 'Add line' }).click();
     await expect(page.getByTestId('line-row')).toHaveCount(2);

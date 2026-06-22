@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 
 import {
+  ProductCombobox,
   addLine,
   getAllowedTransitions,
   getOrder,
@@ -111,21 +112,10 @@ export default async function OrderDetailPage({
 
       {canEditLines && (
         <form action={addLineAction} className="flex flex-wrap items-end gap-2">
-          <label className="flex flex-col text-xs">
+          <div className="flex flex-col text-xs">
             Product
-            <select
-              name="productId"
-              required
-              aria-label="Product"
-              className="w-56 rounded border border-zinc-300 px-3 py-2 text-sm"
-            >
-              {active.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name} ({usd(p.priceCents)})
-                </option>
-              ))}
-            </select>
-          </label>
+            <ProductCombobox products={active} />
+          </div>
           <label className="flex flex-col text-xs">
             Quantity
             <input
