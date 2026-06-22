@@ -44,7 +44,7 @@ test.afterAll(async () => {
 });
 
 test.describe('orders intake + lifecycle', () => {
-  test('a contractor records an order, merges a duplicate line, and confirms it', async ({
+  test('a contractor records an order, adds a duplicate-SKU line, and confirms it', async ({
     page,
   }) => {
     await loginViaSupabase(page, 'member@example.com');
@@ -64,13 +64,12 @@ test.describe('orders intake + lifecycle', () => {
     await expect(page.getByTestId('line-row')).toHaveCount(1);
     await expect(page.getByTestId('line-row').getByText('$15.00')).toBeVisible();
 
-    // Re-adding the SAME product merges into the one line (3 + 2 = 5 → $25.00),
-    // no crash and no duplicate row.
+    // Re-adding the SAME product appends a SECOND line (no merge) — duplicate
+    // SKUs are allowed, each line its own row/price.
     await page.getByLabel('Product').selectOption({ label: PRODUCT_LABEL });
     await page.getByLabel('Quantity', { exact: true }).fill('2');
     await page.getByRole('button', { name: 'Add line' }).click();
-    await expect(page.getByTestId('line-row')).toHaveCount(1);
-    await expect(page.getByTestId('line-row').getByText('$25.00')).toBeVisible();
+    await expect(page.getByTestId('line-row')).toHaveCount(2);
 
     // A member can submit but NEVER process.
     await expect(page.getByRole('button', { name: 'Process' })).toHaveCount(0);

@@ -436,10 +436,11 @@ export { getNotes, createNote } from './actions';
   </section>
   <section class="featdoc" id="shell">
     <h3 class="featdoc-title">shell</h3>
-    <p>Shell dev API (Iron Rule 8, ADR-0005): the dashboard chrome the root and dashboard layouts/pages compose. All three components are intentionally public — shell is a foundation surface whose whole job is to be rendered by routes.</p>
+    <p>Shell dev API (Iron Rule 8, ADR-0005): the dashboard chrome the root and dashboard layouts/pages compose. All components are intentionally public — shell is a foundation surface whose whole job is to be rendered by routes.</p>
     <p class="muted featdoc-import">Import surface: <code>@/app/_features/shell</code> — everything else in the folder is private (rule&nbsp;D).</p>
   <table>
     <tr><th>Export</th><th>Kind</th><th>Description</th><th>Source module</th></tr>
+      <tr><td><code>BackButton</code></td><td><span class="pill">component</span></td><td></td><td><code>./BackButton</code></td></tr>
       <tr><td><code>ChunkErrorReloader</code></td><td><span class="pill">component</span></td><td></td><td><code>./ChunkErrorReloader</code></td></tr>
       <tr><td><code>DashboardNav</code></td><td><span class="pill">component</span></td><td></td><td><code>./DashboardNav</code></td></tr>
       <tr><td><code>PageHeader</code></td><td><span class="pill">component</span></td><td></td><td><code>./PageHeader</code></td></tr>
@@ -448,7 +449,7 @@ export { getNotes, createNote } from './actions';
   <table>
     <tr><th>Importing file</th><th>Imports</th></tr>
       <tr><td><code>app/(dashboard)/dashboard/page.tsx</code></td><td><code>DashboardNav</code></td></tr>
-      <tr><td><code>app/(dashboard)/layout.tsx</code></td><td><code>PageHeader</code></td></tr>
+      <tr><td><code>app/(dashboard)/layout.tsx</code></td><td><code>BackButton</code>, <code>PageHeader</code></td></tr>
       <tr><td><code>app/layout.tsx</code></td><td><code>ChunkErrorReloader</code></td></tr>
       <tr><td><code>app/page.tsx</code></td><td><code>PageHeader</code></td></tr>
   </table>
@@ -457,10 +458,10 @@ export { getNotes, createNote } from './actions';
       <figure class="snippet"><figcaption>app/_features/shell/index.ts</figcaption>
       <pre><code><span class="tok-c">/**
  * Shell dev API (Iron Rule 8, ADR-0005): the dashboard chrome the root and
- * dashboard layouts/pages compose. All three components are intentionally
- * public — shell is a foundation surface whose whole job is to be rendered
- * by routes.
+ * dashboard layouts/pages compose. All components are intentionally public —
+ * shell is a foundation surface whose whole job is to be rendered by routes.
  */</span>
+<span class="tok-k">export</span> { <span class="tok-t">BackButton</span> } <span class="tok-k">from</span> <span class="tok-s">'./BackButton'</span>;
 <span class="tok-k">export</span> { <span class="tok-t">ChunkErrorReloader</span> } <span class="tok-k">from</span> <span class="tok-s">'./ChunkErrorReloader'</span>;
 <span class="tok-k">export</span> { <span class="tok-t">DashboardNav</span> } <span class="tok-k">from</span> <span class="tok-s">'./DashboardNav'</span>;
 <span class="tok-k">export</span> { <span class="tok-t">PageHeader</span> } <span class="tok-k">from</span> <span class="tok-s">'./PageHeader'</span>;</code></pre></figure>

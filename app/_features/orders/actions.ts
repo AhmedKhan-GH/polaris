@@ -33,6 +33,7 @@ export type OrderRow = {
 export type LineRow = {
   id: string;
   orderId: string;
+  lineNumber: number;
   productId: string;
   quantity: number;
   unitPriceCents: number;
@@ -86,7 +87,11 @@ export async function getOrderLines(orderId: string): Promise<LineRow[]> {
   const id = idField.parse(orderId);
   return withPermission('read', 'Order', (ctx) =>
     withUserContext(ctx, (tx) =>
-      tx.select().from(orderLines).where(eq(orderLines.orderId, id)),
+      tx
+        .select()
+        .from(orderLines)
+        .where(eq(orderLines.orderId, id))
+        .orderBy(orderLines.lineNumber),
     ),
   );
 }
@@ -115,23 +120,24 @@ export type AddLineInput = z.input<typeof addLineSchema>;
  * never imports products (boundary rule B); the FK to products (RESTRICT, in the
  * migration) keeps the referenced product real.
  *
- * Adding a product ALREADY on the order MERGES into the existing line (quantity
- * sums) rather than tripping the unique(order_id, product_id) constraint — the
- * natural rapid-entry behaviour. The original line's price snapshot is kept.
+ * Each call APPENDS a new line — the same product may appear on multiple lines
+ * (e.g. at different negotiated prices). The line's `line_number` is the next
+ * free slot for the order (max + 1), giving stable per-order ordering; the
+ * `unique(order_id, line_number)` constraint is the backstop against a race.
  */
 export async function addLine(input: AddLineInput): Promise<void> {
   const { orderId } = await withPermission('update', 'Order', (ctx) =>
     withRateLimit(ordersWriteLimiter, `orders:line:add:${ctx.userId}`, async () => {
       const values = addLineSchema.parse(input);
-      await withUserContext(ctx, (tx) =>
-        tx
+      await withUserContext(ctx, async (tx) => {
+        const [last] = await tx
+          .select({ max: sql<number>`coalesce(max(${orderLines.lineNumber}), 0)` })
+          .from(orderLines)
+          .where(eq(orderLines.orderId, values.orderId));
+        await tx
           .insert(orderLines)
-          .values(values)
-          .onConflictDoUpdate({
-            target: [orderLines.orderId, orderLines.productId],
-            set: { quantity: sql`${orderLines.quantity} + ${values.quantity}` },
-          }),
-      );
+          .values({ ...values, lineNumber: (last?.max ?? 0) + 1 });
+      });
       return values;
     }),
   );

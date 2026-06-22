@@ -150,6 +150,7 @@ export default async function OrderDetailPage({
       <table className="w-full text-left text-sm">
         <thead>
           <tr>
+            <th className="py-2 pr-4 font-medium">#</th>
             <th className="py-2 pr-4 font-medium">Product</th>
             <th className="py-2 pr-4 font-medium">Qty</th>
             <th className="py-2 pr-4 font-medium">Unit (snapshot)</th>
@@ -160,7 +161,7 @@ export default async function OrderDetailPage({
         <tbody>
           {lines.length === 0 ? (
             <tr>
-              <td colSpan={canEditLines ? 5 : 4} className="py-2 text-zinc-500">
+              <td colSpan={canEditLines ? 6 : 5} className="py-2 text-zinc-500">
                 No line items yet.
               </td>
             </tr>
@@ -169,6 +170,9 @@ export default async function OrderDetailPage({
               const product = byId.get(l.productId);
               return (
                 <tr key={l.id} data-testid="line-row">
+                  <td className="py-2 pr-4 font-mono text-xs text-zinc-500">
+                    {l.lineNumber}
+                  </td>
                   <td className="py-2 pr-4">
                     {product?.name ?? l.productId.slice(0, 8)}
                   </td>

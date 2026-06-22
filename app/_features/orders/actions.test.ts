@@ -20,7 +20,6 @@ const fake = vi.hoisted(() => ({
   withUserContext: vi.fn(),
   revalidatePath: vi.fn(),
   insertValues: vi.fn(),
-  onConflict: vi.fn(),
   updateSet: vi.fn(),
   updateWhere: vi.fn(),
   deleteWhere: vi.fn(),
@@ -53,10 +52,6 @@ function txStub() {
         fake.insertValues(v);
         return {
           returning: async () => [{ id: 'order-new' }],
-          onConflictDoUpdate: (cfg: unknown) => {
-            fake.onConflict(cfg);
-            return { then: (r: (x: undefined) => void) => r(undefined) };
-          },
           then: (r: (x: undefined) => void) => r(undefined),
         };
       }),
@@ -78,7 +73,7 @@ function fd(fields: Record<string, string>): FormData {
 }
 
 beforeEach(() => {
-  for (const k of ['withPermission', 'withRateLimit', 'withUserContext', 'revalidatePath', 'insertValues', 'onConflict', 'updateSet', 'updateWhere', 'deleteWhere'] as const) {
+  for (const k of ['withPermission', 'withRateLimit', 'withUserContext', 'revalidatePath', 'insertValues', 'updateSet', 'updateWhere', 'deleteWhere'] as const) {
     fake[k].mockReset();
   }
   fake.calls.length = 0;
@@ -122,21 +117,19 @@ describe('getOrders', () => {
   });
 });
 
-describe('addLine (price snapshot)', () => {
-  it('guards update/Order and inserts the snapshot price the route passes in', async () => {
+describe('addLine (append + price snapshot)', () => {
+  it('guards update/Order and appends a new line with the next line_number', async () => {
+    fake.selectRows = [{ max: 2 }]; // existing highest line_number for the order
     await addLine({ orderId: ORDER, productId: PRODUCT, quantity: 3, unitPriceCents: 250 });
     expect(fake.withPermission).toHaveBeenCalledWith('update', 'Order', expect.any(Function));
+    // A NEW line (no merge), with the snapshot price and the next line_number.
     expect(fake.insertValues).toHaveBeenCalledWith({
       orderId: ORDER,
       productId: PRODUCT,
       quantity: 3,
       unitPriceCents: 250,
+      lineNumber: 3,
     });
-    // Re-adding the same product MERGES quantity instead of tripping the
-    // unique(order_id, product_id) constraint (which would crash).
-    expect(fake.onConflict).toHaveBeenCalledWith(
-      expect.objectContaining({ set: expect.objectContaining({ quantity: expect.anything() }) }),
-    );
     expect(fake.revalidatePath).toHaveBeenCalledWith(`/orders/${ORDER}`);
   });
 
