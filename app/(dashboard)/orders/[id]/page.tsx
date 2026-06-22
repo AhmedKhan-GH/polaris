@@ -56,6 +56,14 @@ export default async function OrderDetailPage({
     completed: 'Complete',
     cancelled: 'Cancel',
   };
+  // Semantic status chip — explicit bg + text so it reads on dark or light.
+  const statusChip: Record<OrderStatus, string> = {
+    draft: 'bg-zinc-200 text-zinc-800',
+    submitted: 'bg-blue-100 text-blue-800',
+    processing: 'bg-amber-100 text-amber-900',
+    completed: 'bg-green-100 text-green-800',
+    cancelled: 'bg-red-100 text-red-800',
+  };
 
   async function addLineAction(formData: FormData) {
     'use server';
@@ -78,7 +86,7 @@ export default async function OrderDetailPage({
         </h1>
         <span
           data-testid="order-status"
-          className="rounded bg-zinc-100 px-3 py-1 text-sm font-medium"
+          className={`rounded-full px-3 py-1 text-sm font-medium ${statusChip[order.status as OrderStatus] ?? 'bg-zinc-200 text-zinc-800'}`}
         >
           {order.status}
         </span>

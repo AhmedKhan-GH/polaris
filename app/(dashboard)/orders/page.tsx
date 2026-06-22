@@ -9,6 +9,14 @@ import { createOrder, getOrders } from '@/app/_features/orders';
  * creates an empty draft and opens it. Covered by the orders E2E suite (a
  * recorded deviation) rather than a unit test for this async server component.
  */
+const statusChip: Record<string, string> = {
+  draft: 'bg-zinc-200 text-zinc-800',
+  submitted: 'bg-blue-100 text-blue-800',
+  processing: 'bg-amber-100 text-amber-900',
+  completed: 'bg-green-100 text-green-800',
+  cancelled: 'bg-red-100 text-red-800',
+};
+
 export default async function OrdersPage() {
   const orders = await getOrders();
 
@@ -52,8 +60,13 @@ export default async function OrdersPage() {
             orders.map((o) => (
               <tr key={o.id} data-testid="order-row">
                 <td className="py-2 pr-4 font-mono">#{o.orderNumber}</td>
-                <td className="py-2 pr-4" data-testid="order-status">
-                  {o.status}
+                <td className="py-2 pr-4">
+                  <span
+                    data-testid="order-status"
+                    className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusChip[o.status] ?? 'bg-zinc-200 text-zinc-800'}`}
+                  >
+                    {o.status}
+                  </span>
                 </td>
                 <td className="py-2 pr-4">{o.createdAt.toISOString()}</td>
                 <td className="py-2 pr-4">
