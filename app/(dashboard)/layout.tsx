@@ -1,6 +1,6 @@
 import { getSessionUser } from "@/lib/auth/session";
 
-import { PageHeader } from "../_features/shell";
+import { BackButton, PageHeader } from "../_features/shell";
 
 /**
  * Shared chrome for the authenticated dashboard segment: the page header over
@@ -20,7 +20,12 @@ export default async function DashboardLayout({
   return (
     <>
       <PageHeader user={session ? { email: session.email } : null} />
-      <main className="flex-1 px-6 py-8">{children}</main>
+      <main className="flex-1 px-6 py-8">
+        <div className="mb-6">
+          <BackButton />
+        </div>
+        {children}
+      </main>
     </>
   );
 }
