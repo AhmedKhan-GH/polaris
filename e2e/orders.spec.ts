@@ -7,8 +7,9 @@ import { loginViaSupabase } from './helpers';
  * Orders intake + lifecycle, end to end against the live local stack.
  *
  * Proves the role split the CASL + RLS + state-machine layers enforce, through
- * the real pages: a contractor (member) records, merges-on-duplicate, and
- * confirms their OWN order but cannot process it; the office (admin) sees every
+ * the real pages: a contractor (member) records (duplicate SKUs allowed, each its
+ * own line) and confirms their OWN order but cannot process it; the office (admin)
+ * sees every
  * order (read-all) and drives a submitted one through to completion.
  *
  * Each test is INDEPENDENT: `beforeEach` truncates orders so a retry (or a prior
@@ -89,8 +90,8 @@ test.describe('orders intake + lifecycle', () => {
       )
     ).rows[0].id;
     await pool.query(
-      `insert into order_lines (order_id, product_id, quantity, unit_price_cents)
-         values ($1, $2, 2, 500)`,
+      `insert into order_lines (order_id, line_number, product_id, quantity, unit_price_cents)
+         values ($1, 1, $2, 2, 500)`,
       [orderId, productId],
     );
 
