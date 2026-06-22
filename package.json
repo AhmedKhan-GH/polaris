@@ -15,6 +15,7 @@
     "db:migrate": "drizzle-kit migrate",
     "db:reset": "npx supabase db reset && npm run db:setup",
     "db:setup": "tsx scripts/db-setup.ts",
+    "db:seed-products": "tsx scripts/seed-dummy-products.ts",
     "db:create-user": "tsx scripts/create-user.ts",
     "db:studio": "drizzle-kit studio",
     "docs:surfaces": "node scripts/generate-feature-surfaces.mjs"
