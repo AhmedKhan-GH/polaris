@@ -99,6 +99,7 @@ export function ProductCombobox({ products }: { products: readonly ProductOption
         aria-controls={listboxId}
         aria-autocomplete="list"
         autoComplete="off"
+        required
         placeholder="Search SKU or name…"
         value={query}
         onChange={onChange}

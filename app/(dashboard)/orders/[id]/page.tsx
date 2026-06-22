@@ -69,6 +69,7 @@ export default async function OrderDetailPage({
   async function addLineAction(formData: FormData) {
     'use server';
     const productId = String(formData.get('productId') ?? '');
+    if (!productId) return; // no product picked (the combobox also `required`s one) — nothing to add
     const product = (await getProducts()).find((p) => p.id === productId);
     if (!product) throw new Error('Unknown product');
     await addLine({

@@ -27,6 +27,11 @@ describe('ProductCombobox', () => {
     expect(hiddenId().value).toBe('');
   });
 
+  it('requires a value so an empty box cannot submit the add-line form', () => {
+    render(<ProductCombobox products={PRODUCTS} />);
+    expect(screen.getByRole('combobox')).toBeRequired();
+  });
+
   it('fuzzy-filters by name or SKU as you type', () => {
     render(<ProductCombobox products={PRODUCTS} />);
     fireEvent.change(screen.getByRole('combobox'), { target: { value: 'widget' } });
