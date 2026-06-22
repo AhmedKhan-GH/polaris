@@ -96,7 +96,7 @@ async function cli(): Promise<void> {
   if (supabaseUrl && serviceKey && password) {
     await seedDemoUsers({ adminUrl, supabaseUrl, serviceKey, password });
     console.log(
-      'db:setup ✓ demo users seeded: owner@example.com, member@example.com (password: TEST_USER_PASSWORD)',
+      'db:setup ✓ demo users seeded: owner@example.com, member@example.com, admin@example.com (password: TEST_USER_PASSWORD)',
     );
   } else {
     console.log(
@@ -107,9 +107,10 @@ async function cli(): Promise<void> {
 }
 
 /**
- * Seeds the two canonical demo accounts a clean build can log in with —
- * owner@example.com (role `owner`) and member@example.com (role `member`) —
- * and mirrors their roles into `profiles` (the app's role source of truth).
+ * Seeds the three canonical demo accounts a clean build can log in with —
+ * owner@example.com (`owner`), member@example.com (`member`), and
+ * admin@example.com (`admin`) — and mirrors their roles into `profiles` (the
+ * app's role source of truth).
  * Idempotent: an existing user is reconciled, never duplicated. There is no
  * sign-up page by design (ADR-0003), so without this a fresh stack has nobody
  * to log in as.
@@ -123,6 +124,7 @@ export async function seedDemoUsers(opts: {
   const admin = createSupabaseAdmin(opts.supabaseUrl, opts.serviceKey);
   await seedUser(admin, opts.adminUrl, opts.password, 'owner@example.com', 'owner');
   await seedUser(admin, opts.adminUrl, opts.password, 'member@example.com', 'member');
+  await seedUser(admin, opts.adminUrl, opts.password, 'admin@example.com', 'admin');
 }
 
 /**
