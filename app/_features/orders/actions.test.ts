@@ -20,6 +20,7 @@ const fake = vi.hoisted(() => ({
   withUserContext: vi.fn(),
   revalidatePath: vi.fn(),
   insertValues: vi.fn(),
+  onConflict: vi.fn(),
   updateSet: vi.fn(),
   updateWhere: vi.fn(),
   deleteWhere: vi.fn(),
@@ -50,7 +51,14 @@ function txStub() {
     insert: vi.fn(() => ({
       values: vi.fn((v: unknown) => {
         fake.insertValues(v);
-        return { returning: async () => [{ id: 'order-new' }], then: (r: (x: undefined) => void) => r(undefined) };
+        return {
+          returning: async () => [{ id: 'order-new' }],
+          onConflictDoUpdate: (cfg: unknown) => {
+            fake.onConflict(cfg);
+            return { then: (r: (x: undefined) => void) => r(undefined) };
+          },
+          then: (r: (x: undefined) => void) => r(undefined),
+        };
       }),
     })),
     update: vi.fn(() => ({ set: fake.updateSet })),
@@ -70,7 +78,7 @@ function fd(fields: Record<string, string>): FormData {
 }
 
 beforeEach(() => {
-  for (const k of ['withPermission', 'withRateLimit', 'withUserContext', 'revalidatePath', 'insertValues', 'updateSet', 'updateWhere', 'deleteWhere'] as const) {
+  for (const k of ['withPermission', 'withRateLimit', 'withUserContext', 'revalidatePath', 'insertValues', 'onConflict', 'updateSet', 'updateWhere', 'deleteWhere'] as const) {
     fake[k].mockReset();
   }
   fake.calls.length = 0;
@@ -124,6 +132,11 @@ describe('addLine (price snapshot)', () => {
       quantity: 3,
       unitPriceCents: 250,
     });
+    // Re-adding the same product MERGES quantity instead of tripping the
+    // unique(order_id, product_id) constraint (which would crash).
+    expect(fake.onConflict).toHaveBeenCalledWith(
+      expect.objectContaining({ set: expect.objectContaining({ quantity: expect.anything() }) }),
+    );
     expect(fake.revalidatePath).toHaveBeenCalledWith(`/orders/${ORDER}`);
   });
 

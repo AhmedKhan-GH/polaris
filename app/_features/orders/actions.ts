@@ -1,6 +1,6 @@
 'use server';
 
-import { desc, eq } from 'drizzle-orm';
+import { desc, eq, sql } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 
@@ -114,12 +114,24 @@ export type AddLineInput = z.input<typeof addLineSchema>;
  * — so a later catalog price change never rewrites this order's totals. Orders
  * never imports products (boundary rule B); the FK to products (RESTRICT, in the
  * migration) keeps the referenced product real.
+ *
+ * Adding a product ALREADY on the order MERGES into the existing line (quantity
+ * sums) rather than tripping the unique(order_id, product_id) constraint — the
+ * natural rapid-entry behaviour. The original line's price snapshot is kept.
  */
 export async function addLine(input: AddLineInput): Promise<void> {
   const { orderId } = await withPermission('update', 'Order', (ctx) =>
     withRateLimit(ordersWriteLimiter, `orders:line:add:${ctx.userId}`, async () => {
       const values = addLineSchema.parse(input);
-      await withUserContext(ctx, (tx) => tx.insert(orderLines).values(values));
+      await withUserContext(ctx, (tx) =>
+        tx
+          .insert(orderLines)
+          .values(values)
+          .onConflictDoUpdate({
+            target: [orderLines.orderId, orderLines.productId],
+            set: { quantity: sql`${orderLines.quantity} + ${values.quantity}` },
+          }),
+      );
       return values;
     }),
   );

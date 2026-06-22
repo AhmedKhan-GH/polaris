@@ -168,4 +168,35 @@ describe('order_lines parent-derived RLS (testcontainer)', () => {
       );
     expect(bad).not.toBeNull();
   });
+
+  it('merges quantity when the same product is added again (upsert, no unique crash)', async () => {
+    const { sql } = await import('drizzle-orm');
+    const oMerge = (
+      await rls.admin.query(
+        `insert into orders (created_by, status) values ($1, 'draft') returning id`,
+        [MEMBER_A],
+      )
+    ).rows[0].id as string;
+
+    // The exact upsert addLine performs: re-adding a product sums quantity and
+    // keeps the original price snapshot, rather than tripping the unique index.
+    const add = (qty: number) =>
+      withUserContext({ userId: MEMBER_A, roles: ['member'] }, (tx) =>
+        tx
+          .insert(orderLines)
+          .values({ orderId: oMerge, productId: p2, quantity: qty, unitPriceCents: 200 })
+          .onConflictDoUpdate({
+            target: [orderLines.orderId, orderLines.productId],
+            set: { quantity: sql`${orderLines.quantity} + ${qty}` },
+          }),
+      );
+    await add(2);
+    await add(3);
+
+    const { rows } = await rls.admin.query(
+      'select quantity, unit_price_cents from order_lines where order_id = $1 and product_id = $2',
+      [oMerge, p2],
+    );
+    expect(rows).toEqual([{ quantity: 5, unit_price_cents: 200 }]);
+  });
 });

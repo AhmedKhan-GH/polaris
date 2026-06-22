@@ -57,6 +57,14 @@ test.describe('orders intake + lifecycle', () => {
     await expect(row).toHaveCount(1);
     await expect(row.getByText('$15.00')).toBeVisible();
 
+    // Re-adding the SAME product merges into the one line (3 + 2 = 5 → $25.00),
+    // no crash and no duplicate row.
+    await page.getByLabel('Product').selectOption({ label: PRODUCT_LABEL });
+    await page.getByLabel('Quantity').fill('2');
+    await page.getByRole('button', { name: 'Add line' }).click();
+    await expect(page.getByTestId('line-row')).toHaveCount(1);
+    await expect(page.getByTestId('line-row').getByText('$25.00')).toBeVisible();
+
     // A member can submit but NEVER process.
     await expect(page.getByRole('button', { name: 'Process' })).toHaveCount(0);
     await page.getByRole('button', { name: 'Submit' }).click();
