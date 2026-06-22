@@ -41,4 +41,43 @@ describe('app/_features/orders permissions', () => {
     const ability = buildAbility({ userId: ME, roles: ['owner'] });
     expect(ability.can('read', subject('Order', { createdBy: OTHER }))).toBe(true);
   });
+
+  it('grants update Order at the guard level (the bare check withPermission runs)', () => {
+    // The write actions (addLine / transitionOrder / ...) self-guard
+    // `update Order`; the row gate is RLS. Every signed-in role must clear the
+    // guard or all writes throw "Not authorized".
+    expect(buildAbility({ userId: ME, roles: ['member'] }).can('update', 'Order')).toBe(
+      true,
+    );
+    expect(buildAbility({ userId: ME, roles: ['admin'] }).can('update', 'Order')).toBe(
+      true,
+    );
+  });
+
+  it('scopes a member’s update to their OWN order; admin/owner update any', () => {
+    expect(
+      buildAbility({ userId: ME, roles: ['member'] }).can(
+        'update',
+        subject('Order', { createdBy: ME }),
+      ),
+    ).toBe(true);
+    expect(
+      buildAbility({ userId: ME, roles: ['member'] }).can(
+        'update',
+        subject('Order', { createdBy: OTHER }),
+      ),
+    ).toBe(false);
+    expect(
+      buildAbility({ userId: ME, roles: ['admin'] }).can(
+        'update',
+        subject('Order', { createdBy: OTHER }),
+      ),
+    ).toBe(true);
+    expect(
+      buildAbility({ userId: ME, roles: ['owner'] }).can(
+        'update',
+        subject('Order', { createdBy: OTHER }),
+      ),
+    ).toBe(true);
+  });
 });

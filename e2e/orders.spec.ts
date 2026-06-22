@@ -22,6 +22,7 @@ let pool: pg.Pool;
 
 test.beforeAll(async () => {
   pool = new pg.Pool({ connectionString: process.env.MIGRATE_DATABASE_URL });
+  await pool.query('TRUNCATE order_lines, orders'); // clean slate for the count assertions
   await pool.query(
     `insert into products (name, sku, price_cents) values ('Order E2E Widget', $1, 500)
        on conflict (sku) do nothing`,
@@ -79,5 +80,15 @@ test.describe('orders intake + lifecycle', () => {
 
     await page.getByRole('button', { name: 'Complete' }).click();
     await expect(page.getByTestId('order-status')).toHaveText('completed');
+  });
+
+  test('a contractor can cancel their own draft', async ({ page }) => {
+    await loginViaSupabase(page, 'member@example.com');
+    await page.goto('/orders');
+    await page.getByRole('button', { name: 'New order' }).click();
+    await expect(page.getByTestId('order-status')).toHaveText('draft');
+
+    await page.getByRole('button', { name: 'Cancel' }).click();
+    await expect(page.getByTestId('order-status')).toHaveText('cancelled');
   });
 });
