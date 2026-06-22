@@ -57,6 +57,13 @@
       "when": 1782128058241,
       "tag": "0007_big_the_stranger",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1782128374306,
+      "tag": "0008_orders_update_rls",
+      "breakpoints": true
     }
   ]
 }
