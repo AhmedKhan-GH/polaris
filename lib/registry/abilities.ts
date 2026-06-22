@@ -13,11 +13,13 @@
 
 import { activityAbilities } from '@/app/_features/activity/permissions';
 import { notesAbilities } from '@/app/_features/notes/permissions';
+import { ordersAbilities } from '@/app/_features/orders/permissions';
 import { productsAbilities } from '@/app/_features/products/permissions';
 import type { AbilityContributor } from '@/lib/permissions/ability';
 
 export const abilityContributors: AbilityContributor[] = [
   activityAbilities,
   notesAbilities,
+  ordersAbilities,
   productsAbilities,
 ];
