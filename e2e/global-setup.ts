@@ -67,7 +67,10 @@ export default async function globalSetup(): Promise<void> {
   try {
     // 2. Reset the test-owned tables. auth.users + profiles persist (they are
     //    reconciled by seedDemoUsers), so we never truncate them here.
-    await pool.query('TRUNCATE notes, sign_in_log, products');
+    //    order_lines + orders are listed alongside products because order_lines
+    //    holds FKs to BOTH — Postgres refuses to TRUNCATE a referenced table
+    //    unless its referencer is truncated in the same command.
+    await pool.query('TRUNCATE order_lines, orders, notes, sign_in_log, products');
   } finally {
     await pool.end();
   }
