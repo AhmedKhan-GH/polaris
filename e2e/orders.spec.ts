@@ -143,6 +143,16 @@ test.describe('orders intake + lifecycle', () => {
     await price.blur();
     await expect(row.getByText('$5.00')).toBeVisible();
     await expect(row.locator('.line-through')).toHaveCount(0);
+
+    // Override again, then type the LIST price ($5.00) back in: that is not an
+    // off-list price, so the override is cleared — no strikethrough lingers.
+    await price.fill('4.00');
+    await price.blur();
+    await expect(row.locator('.line-through')).toHaveText('$5.00');
+    await price.fill('5.00');
+    await price.blur();
+    await expect(row.getByText('$5.00')).toBeVisible();
+    await expect(row.locator('.line-through')).toHaveCount(0);
   });
 
   test('a contractor can cancel their own draft', async ({ page }) => {

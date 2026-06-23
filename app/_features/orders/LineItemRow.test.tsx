@@ -97,6 +97,16 @@ describe('LineItemRow (editable)', () => {
     expect(fd.get('overridePriceCents')).toBe('');
   });
 
+  it('typing the list price back into an overridden line clears the override (no off-list flag)', () => {
+    renderRow({ overridePriceCents: 800 }); // list $10.00, override $8.00
+    const price = screen.getByLabelText('Unit price for Steel Widget');
+    fireEvent.change(price, { target: { value: '10.00' } });
+    fireEvent.blur(price);
+    const fd = lastFormData(actions.updateLine);
+    // Override == list has no billing effect and isn't off-list — treat as clear.
+    expect(fd.get('overridePriceCents')).toBe('');
+  });
+
   it('does not save when a field is blurred without changing it', () => {
     renderRow();
     fireEvent.blur(screen.getByLabelText('Quantity for Steel Widget'));

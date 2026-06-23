@@ -62,8 +62,11 @@ export function LineItemRow({
   function onPriceBlur(e: React.FocusEvent<HTMLInputElement>) {
     const raw = e.currentTarget.value.trim();
     if (raw === initialPrice) return;
-    // Empty clears the override (revert to list); otherwise dollars → cents.
-    const overridePriceCents = raw === '' ? '' : String(Math.round(Number(raw) * 100));
+    // Empty OR the list price itself clears the override (no off-list flag);
+    // otherwise dollars → cents.
+    const cents = raw === '' ? null : Math.round(Number(raw) * 100);
+    const overridePriceCents =
+      cents === null || cents === line.listPriceCents ? '' : String(cents);
     save({ overridePriceCents });
   }
 
