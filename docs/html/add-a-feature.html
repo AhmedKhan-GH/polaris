@@ -357,13 +357,17 @@ export { getNotes, createNote } from './actions';
       <tr><td><code>LineRow</code></td><td><span class="pill">server action</span></td><td></td><td><code>./actions</code></td></tr>
       <tr><td><code>getAllowedTransitions</code></td><td><span class="pill">function</span></td><td></td><td><code>./transitions</code></td></tr>
       <tr><td><code>OrderStatus</code></td><td><span class="pill">component</span></td><td></td><td><code>./transitions</code></td></tr>
+      <tr><td><code>effectivePriceCents</code></td><td><span class="pill">function</span></td><td></td><td><code>./pricing</code></td></tr>
+      <tr><td><code>lineTotalCents</code></td><td><span class="pill">function</span></td><td></td><td><code>./pricing</code></td></tr>
+      <tr><td><code>LineItemRow</code></td><td><span class="pill">component</span></td><td></td><td><code>./LineItemRow</code></td></tr>
+      <tr><td><code>LineItemRowData</code></td><td><span class="pill">component</span></td><td></td><td><code>./LineItemRow</code></td></tr>
       <tr><td><code>ProductCombobox</code></td><td><span class="pill">component</span></td><td></td><td><code>./ProductCombobox</code></td></tr>
       <tr><td><code>ProductOption</code></td><td><span class="pill">component</span></td><td></td><td><code>./ProductCombobox</code></td></tr>
   </table>
     <p class="featdoc-label"><strong>Used by</strong></p>
   <table>
     <tr><th>Importing file</th><th>Imports</th></tr>
-      <tr><td><code>app/(dashboard)/orders/[id]/page.tsx</code></td><td><code>ProductCombobox</code>, <code>addLine</code>, <code>getAllowedTransitions</code>, <code>getOrder</code>, <code>getOrderLines</code>, <code>removeLine</code>, <code>transitionOrder</code>, <code>updateLine</code>, <code>OrderStatus</code></td></tr>
+      <tr><td><code>app/(dashboard)/orders/[id]/page.tsx</code></td><td><code>LineItemRow</code>, <code>ProductCombobox</code>, <code>addLine</code>, <code>getAllowedTransitions</code>, <code>getOrder</code>, <code>getOrderLines</code>, <code>transitionOrder</code>, <code>OrderStatus</code></td></tr>
       <tr><td><code>app/(dashboard)/orders/page.tsx</code></td><td><code>createOrder</code>, <code>getOrders</code></td></tr>
   </table>
     <p class="featdoc-label"><strong>Other seams</strong></p>
@@ -392,6 +396,8 @@ export { getNotes, createNote } from './actions';
   <span class="tok-k">type</span> <span class="tok-t">LineRow</span>,
 } <span class="tok-k">from</span> <span class="tok-s">'./actions'</span>;
 <span class="tok-k">export</span> { getAllowedTransitions, <span class="tok-k">type</span> <span class="tok-t">OrderStatus</span> } <span class="tok-k">from</span> <span class="tok-s">'./transitions'</span>;
+<span class="tok-k">export</span> { effectivePriceCents, lineTotalCents } <span class="tok-k">from</span> <span class="tok-s">'./pricing'</span>;
+<span class="tok-k">export</span> { <span class="tok-t">LineItemRow</span>, <span class="tok-k">type</span> <span class="tok-t">LineItemRowData</span> } <span class="tok-k">from</span> <span class="tok-s">'./LineItemRow'</span>;
 <span class="tok-k">export</span> { <span class="tok-t">ProductCombobox</span>, <span class="tok-k">type</span> <span class="tok-t">ProductOption</span> } <span class="tok-k">from</span> <span class="tok-s">'./ProductCombobox'</span>;</code></pre></figure>
     </details>
   </section>

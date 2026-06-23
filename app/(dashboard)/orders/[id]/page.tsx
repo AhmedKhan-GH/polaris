@@ -22,8 +22,10 @@ import { getSessionUser } from '@/lib/auth/session';
  * may write the order (member: own draft; owner/admin: any non-terminal).
  * Transition buttons come from `getAllowedTransitions(roles, status)`. Adding a
  * line reads the product's CURRENT price here and passes it to `addLine` as the
- * snapshot — so line totals (shown from the stored `unit_price_cents`) never
- * shift when the catalog price later changes. Covered by the orders E2E suite.
+ * `list_price_cents` snapshot — so line totals never shift when the catalog price
+ * later changes. Each line renders as a `LineItemRow` (its quantity and price
+ * auto-save inline); the effective price is the per-line override when set, else
+ * the snapshot. Covered by the orders E2E suite.
  */
 export default async function OrderDetailPage({
   params,
