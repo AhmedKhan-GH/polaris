@@ -92,7 +92,7 @@ test.describe('orders intake + lifecycle', () => {
       )
     ).rows[0].id;
     await pool.query(
-      `insert into order_lines (order_id, line_number, product_id, quantity, unit_price_cents)
+      `insert into order_lines (order_id, line_number, product_id, quantity, list_price_cents)
          values ($1, 1, $2, 2, 500)`,
       [orderId, productId],
     );
@@ -110,6 +110,39 @@ test.describe('orders intake + lifecycle', () => {
 
     await page.getByRole('button', { name: 'Complete' }).click();
     await expect(page.getByTestId('order-status')).toHaveText('completed');
+  });
+
+  test('inline price override auto-saves on blur (no Save button) and reverts when cleared', async ({
+    page,
+  }) => {
+    await loginViaSupabase(page, 'member@example.com');
+    await page.goto('/orders');
+    await page.getByRole('button', { name: 'New order' }).click();
+
+    // Add one line at the list price (500c × 1 = $5.00).
+    await page.getByLabel('Product').fill(PRODUCT_NAME);
+    await page.getByRole('option', { name: new RegExp(PRODUCT_NAME) }).click();
+    await page.getByLabel('Quantity', { exact: true }).fill('1');
+    await page.getByRole('button', { name: 'Add line' }).click();
+
+    const row = page.getByTestId('line-row');
+    await expect(row.getByText('$5.00')).toBeVisible();
+    // Editing is inline — there is no per-row Save button.
+    await expect(row.getByRole('button', { name: 'Save' })).toHaveCount(0);
+
+    // Override the price to $4.00 and blur: the total follows the override and
+    // the frozen list price ($5.00) is shown struck-through.
+    const price = page.getByLabel(`Unit price for ${PRODUCT_NAME}`);
+    await price.fill('4.00');
+    await price.blur();
+    await expect(row.getByText('$4.00')).toBeVisible(); // line total = override × 1
+    await expect(row.locator('.line-through')).toHaveText('$5.00');
+
+    // Clearing the override reverts the line to its list price.
+    await price.fill('');
+    await price.blur();
+    await expect(row.getByText('$5.00')).toBeVisible();
+    await expect(row.locator('.line-through')).toHaveCount(0);
   });
 
   test('a contractor can cancel their own draft', async ({ page }) => {

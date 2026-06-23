@@ -1,16 +1,13 @@
 import { redirect } from 'next/navigation';
 
 import {
+  LineItemRow,
   ProductCombobox,
   addLine,
-  effectivePriceCents,
   getAllowedTransitions,
   getOrder,
   getOrderLines,
-  lineTotalCents,
-  removeLine,
   transitionOrder,
-  updateLine,
   type OrderStatus,
 } from '@/app/_features/orders';
 import { getProducts } from '@/app/_features/products';
@@ -50,7 +47,6 @@ export default async function OrderDetailPage({
   const [lines, products] = await Promise.all([getOrderLines(id), getProducts()]);
   const byId = new Map(products.map((p) => [p.id, p]));
   const active = products.filter((p) => !p.retired);
-  const usd = (cents: number) => `$${(cents / 100).toFixed(2)}`;
   // The button verb for each transition TARGET (draft as a target = recall).
   const actionLabels: Record<OrderStatus, string> = {
     draft: 'Recall to draft',
@@ -146,9 +142,9 @@ export default async function OrderDetailPage({
             <th className="py-2 pr-4 font-medium">#</th>
             <th className="py-2 pr-4 font-medium">Product</th>
             <th className="py-2 pr-4 font-medium">Qty</th>
-            <th className="py-2 pr-4 font-medium">Unit (snapshot)</th>
+            <th className="py-2 pr-4 font-medium">Unit price</th>
             <th className="py-2 pr-4 font-medium">Line total</th>
-            {canEditLines && <th className="py-2 pr-4 font-medium">Edit</th>}
+            {canEditLines && <th className="py-2 pr-4 font-medium" />}
           </tr>
         </thead>
         <tbody>
@@ -159,55 +155,21 @@ export default async function OrderDetailPage({
               </td>
             </tr>
           ) : (
-            lines.map((l) => {
-              const product = byId.get(l.productId);
-              return (
-                <tr key={l.id} data-testid="line-row">
-                  <td className="py-2 pr-4 font-mono text-xs text-zinc-500">
-                    {l.lineNumber}
-                  </td>
-                  <td className="py-2 pr-4">
-                    {product?.name ?? l.productId.slice(0, 8)}
-                  </td>
-                  <td className="py-2 pr-4">{l.quantity}</td>
-                  <td className="py-2 pr-4">{usd(effectivePriceCents(l))}</td>
-                  <td className="py-2 pr-4">{usd(lineTotalCents(l))}</td>
-                  {canEditLines && (
-                    <td className="flex flex-wrap items-center gap-2 py-2 pr-4">
-                      <form action={updateLine} className="flex gap-1">
-                        <input type="hidden" name="id" value={l.id} />
-                        <input type="hidden" name="orderId" value={order.id} />
-                        <input
-                          name="quantity"
-                          type="number"
-                          min={1}
-                          defaultValue={l.quantity}
-                          required
-                          aria-label={`Quantity for ${product?.name ?? l.productId}`}
-                          className="w-20 rounded border border-zinc-300 px-2 py-1 text-xs"
-                        />
-                        <button
-                          type="submit"
-                          className="rounded border border-zinc-300 px-2 py-1 text-xs font-medium"
-                        >
-                          Save
-                        </button>
-                      </form>
-                      <form action={removeLine}>
-                        <input type="hidden" name="id" value={l.id} />
-                        <input type="hidden" name="orderId" value={order.id} />
-                        <button
-                          type="submit"
-                          className="rounded border border-zinc-300 px-2 py-1 text-xs font-medium text-red-700"
-                        >
-                          Remove
-                        </button>
-                      </form>
-                    </td>
-                  )}
-                </tr>
-              );
-            })
+            lines.map((l) => (
+              <LineItemRow
+                key={l.id}
+                canEdit={canEditLines}
+                line={{
+                  id: l.id,
+                  orderId: order.id,
+                  lineNumber: l.lineNumber,
+                  productName: byId.get(l.productId)?.name ?? l.productId.slice(0, 8),
+                  quantity: l.quantity,
+                  listPriceCents: l.listPriceCents,
+                  overridePriceCents: l.overridePriceCents,
+                }}
+              />
+            ))
           )}
         </tbody>
       </table>

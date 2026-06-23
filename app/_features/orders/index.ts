@@ -20,4 +20,5 @@ export {
 } from './actions';
 export { getAllowedTransitions, type OrderStatus } from './transitions';
 export { effectivePriceCents, lineTotalCents } from './pricing';
+export { LineItemRow, type LineItemRowData } from './LineItemRow';
 export { ProductCombobox, type ProductOption } from './ProductCombobox';
