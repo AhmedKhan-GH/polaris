@@ -20,6 +20,10 @@ const quantityField = z.coerce
   .number()
   .int('Quantity must be a positive whole number')
   .positive('Quantity must be a positive whole number');
+const overridePriceField = z.coerce
+  .number()
+  .int('Invalid price')
+  .nonnegative('Invalid price');
 
 export type OrderRow = {
   id: string;
@@ -146,15 +150,34 @@ export async function addLine(input: AddLineInput): Promise<void> {
   revalidatePath(`/orders/${orderId}`);
 }
 
-/** Change a line's quantity (the price snapshot is immutable here). */
+/**
+ * Edit a line in place — a PARTIAL update of whichever fields the form sends, so
+ * the editable quantity and price cells can auto-save independently:
+ *
+ *   - `quantity` present  → set it (positive int).
+ *   - `overridePriceCents` present → set the per-line price override; an EMPTY
+ *     value clears it (`null`), reverting the line to its `list_price_cents`.
+ *
+ * The `list_price_cents` SNAPSHOT is never touched here — an override lives
+ * alongside it, so off-list pricing stays auditable.
+ */
 export async function updateLine(formData: FormData): Promise<void> {
   const orderId = await withPermission('update', 'Order', (ctx) =>
     withRateLimit(ordersWriteLimiter, `orders:line:update:${ctx.userId}`, async () => {
       const id = idField.parse(String(formData.get('id') ?? ''));
       const order = idField.parse(String(formData.get('orderId') ?? ''));
-      const quantity = quantityField.parse(String(formData.get('quantity') ?? ''));
+
+      const set: { quantity?: number; overridePriceCents?: number | null } = {};
+      if (formData.has('quantity')) {
+        set.quantity = quantityField.parse(String(formData.get('quantity') ?? ''));
+      }
+      if (formData.has('overridePriceCents')) {
+        const raw = String(formData.get('overridePriceCents') ?? '').trim();
+        set.overridePriceCents = raw === '' ? null : overridePriceField.parse(raw);
+      }
+
       await withUserContext(ctx, (tx) =>
-        tx.update(orderLines).set({ quantity }).where(eq(orderLines.id, id)),
+        tx.update(orderLines).set(set).where(eq(orderLines.id, id)),
       );
       return order;
     }),

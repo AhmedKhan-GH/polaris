@@ -148,6 +148,33 @@ describe('updateLine / removeLine', () => {
     expect(fake.updateWhere).toHaveBeenCalled();
   });
 
+  it('sets a per-line price override (and only the override when quantity is not sent)', async () => {
+    await updateLine(fd({ id: LINE, orderId: ORDER, overridePriceCents: '800' }));
+    expect(fake.updateSet).toHaveBeenCalledWith({ overridePriceCents: 800 });
+  });
+
+  it('clears the override (back to the list price) when the price field is empty', async () => {
+    await updateLine(fd({ id: LINE, orderId: ORDER, overridePriceCents: '' }));
+    expect(fake.updateSet).toHaveBeenCalledWith({ overridePriceCents: null });
+  });
+
+  it('honours a zero override (a free line)', async () => {
+    await updateLine(fd({ id: LINE, orderId: ORDER, overridePriceCents: '0' }));
+    expect(fake.updateSet).toHaveBeenCalledWith({ overridePriceCents: 0 });
+  });
+
+  it('updates quantity and override together when both are sent', async () => {
+    await updateLine(fd({ id: LINE, orderId: ORDER, quantity: '4', overridePriceCents: '700' }));
+    expect(fake.updateSet).toHaveBeenCalledWith({ quantity: 4, overridePriceCents: 700 });
+  });
+
+  it('rejects a negative override and never updates', async () => {
+    await expect(
+      updateLine(fd({ id: LINE, orderId: ORDER, overridePriceCents: '-5' })),
+    ).rejects.toThrow(/price/i);
+    expect(fake.updateSet).not.toHaveBeenCalled();
+  });
+
   it('removeLine guards update/Order, deletes by id', async () => {
     await removeLine(fd({ id: LINE, orderId: ORDER }));
     expect(fake.deleteWhere).toHaveBeenCalled();
