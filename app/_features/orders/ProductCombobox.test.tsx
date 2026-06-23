@@ -76,4 +76,26 @@ describe('ProductCombobox', () => {
     fireEvent.keyDown(input, { key: 'Enter' });
     expect(hiddenId().value).toBe('p3');
   });
+
+  // Hybrid search + browse: focusing with no query opens the FULL list to scroll,
+  // and a query shows ALL matches — neither is truncated to a fixed page.
+  const many = (n: number, prefix: string) =>
+    Array.from({ length: n }, (_, i) => ({
+      id: `id-${i}`,
+      sku: `${prefix}-${1000 + i}`,
+      name: `${prefix} item ${i}`,
+      priceCents: 100 + i,
+    }));
+
+  it('opens the full product list on focus (no query) for scrolling, not a truncated 8', () => {
+    render(<ProductCombobox products={many(12, 'WGT')} />);
+    fireEvent.focus(screen.getByRole('combobox'));
+    expect(screen.getAllByRole('option')).toHaveLength(12);
+  });
+
+  it('shows ALL fuzzy matches, not a truncated 8', () => {
+    render(<ProductCombobox products={many(12, 'WGT')} />);
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'wgt' } });
+    expect(screen.getAllByRole('option')).toHaveLength(12);
+  });
 });

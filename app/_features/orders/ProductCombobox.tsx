@@ -52,9 +52,12 @@ export function ProductCombobox({ products }: { products: readonly ProductOption
       const res = q ? fuzzysort.single(q, value) : null;
       return res ? <>{res.highlight(mark)}</> : <>{value}</>;
     };
+    // Hybrid search + browse: a query yields ALL fuzzy matches; an empty box
+    // lists the WHOLE catalog. Neither is paged — the dropdown is a scrollable
+    // viewport (`max-h-64 overflow-auto`), so the full list is reachable.
     const matched = q
-      ? fuzzysort.go(q, products, { keys: ['sku', 'name'], limit: 8 }).map((r) => r.obj)
-      : products.slice(0, 8);
+      ? fuzzysort.go(q, products, { keys: ['sku', 'name'] }).map((r) => r.obj)
+      : products;
     return matched.map((obj) => ({ obj, sku: fmt(obj.sku), name: fmt(obj.name) }));
   }, [query, products]);
 
