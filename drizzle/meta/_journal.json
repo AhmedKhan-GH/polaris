@@ -71,6 +71,13 @@
       "when": 1782160561611,
       "tag": "0009_little_thanos",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1782253738920,
+      "tag": "0010_orders_line_price_override",
+      "breakpoints": true
     }
   ]
 }

@@ -12,7 +12,7 @@ import { startRlsTestDb } from '@/lib/db/__tests__/rls-test-db';
  *     non-terminal order. Terminal parents are frozen for everyone.
  *
  * Plus structural invariants: the SAME product MAY appear on multiple lines, but
- * `line_number` is UNIQUE per order; quantity is positive; `unit_price_cents` is
+ * `line_number` is UNIQUE per order; quantity is positive; `list_price_cents` is
  * the stored snapshot. Constraint checks run on the `admin` (superuser) pool —
  * bypasses RLS, not constraints.
  */
@@ -60,7 +60,7 @@ describe('order_lines parent-derived RLS (testcontainer)', () => {
 
     // One line on A (MEMBER_A's) and one on B (MEMBER_B's) for read tests.
     await rls.admin.query(
-      `insert into order_lines (order_id, line_number, product_id, quantity, unit_price_cents)
+      `insert into order_lines (order_id, line_number, product_id, quantity, list_price_cents)
          values ($1, 1, $2, 1, 100), ($3, 1, $4, 2, 200)`,
       [orderA, p1, orderB, p1],
     );
@@ -92,14 +92,14 @@ describe('order_lines parent-derived RLS (testcontainer)', () => {
         lineNumber: 2,
         productId: p2,
         quantity: 3,
-        unitPriceCents: 200,
+        listPriceCents: 200,
       }),
     );
     const { rows } = await rls.admin.query(
-      `select unit_price_cents from order_lines where order_id = $1 and line_number = 2`,
+      `select list_price_cents from order_lines where order_id = $1 and line_number = 2`,
       [orderA],
     );
-    expect(rows).toEqual([{ unit_price_cents: 200 }]);
+    expect(rows).toEqual([{ list_price_cents: 200 }]);
   });
 
   it('forbids a member adding a line to their own NON-draft (processing) order', async () => {
@@ -111,7 +111,7 @@ describe('order_lines parent-derived RLS (testcontainer)', () => {
           lineNumber: 1,
           productId: p1,
           quantity: 1,
-          unitPriceCents: 100,
+          listPriceCents: 100,
         }),
     ).then(
       () => null,
@@ -128,7 +128,7 @@ describe('order_lines parent-derived RLS (testcontainer)', () => {
         lineNumber: 2,
         productId: p2,
         quantity: 1,
-        unitPriceCents: 200,
+        listPriceCents: 200,
       }),
     );
     const { rows } = await rls.admin.query(
@@ -147,7 +147,7 @@ describe('order_lines parent-derived RLS (testcontainer)', () => {
           lineNumber: 1,
           productId: p1,
           quantity: 1,
-          unitPriceCents: 100,
+          listPriceCents: 100,
         }),
     ).then(
       () => null,
@@ -161,7 +161,7 @@ describe('order_lines parent-derived RLS (testcontainer)', () => {
     // orderA already has p1 on line 1 (seed); add p1 again on line 3 at a
     // different price — allowed now that the product-unique constraint is gone.
     await rls.admin.query(
-      `insert into order_lines (order_id, line_number, product_id, quantity, unit_price_cents)
+      `insert into order_lines (order_id, line_number, product_id, quantity, list_price_cents)
          values ($1, 3, $2, 5, 450)`,
       [orderA, p1],
     );
@@ -175,7 +175,7 @@ describe('order_lines parent-derived RLS (testcontainer)', () => {
   it('enforces unique line_number per order', async () => {
     const dup = await rls.admin
       .query(
-        `insert into order_lines (order_id, line_number, product_id, quantity, unit_price_cents)
+        `insert into order_lines (order_id, line_number, product_id, quantity, list_price_cents)
            values ($1, 1, $2, 9, 100)`,
         [orderA, p2], // line 1 already used on orderA (seed)
       )
@@ -189,7 +189,7 @@ describe('order_lines parent-derived RLS (testcontainer)', () => {
   it('rejects a non-positive quantity (check constraint)', async () => {
     const bad = await rls.admin
       .query(
-        `insert into order_lines (order_id, line_number, product_id, quantity, unit_price_cents)
+        `insert into order_lines (order_id, line_number, product_id, quantity, list_price_cents)
            values ($1, 9, $2, 0, 100)`,
         [orderC, p2],
       )

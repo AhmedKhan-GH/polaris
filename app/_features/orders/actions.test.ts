@@ -120,14 +120,14 @@ describe('getOrders', () => {
 describe('addLine (append + price snapshot)', () => {
   it('guards update/Order and appends a new line with the next line_number', async () => {
     fake.selectRows = [{ max: 2 }]; // existing highest line_number for the order
-    await addLine({ orderId: ORDER, productId: PRODUCT, quantity: 3, unitPriceCents: 250 });
+    await addLine({ orderId: ORDER, productId: PRODUCT, quantity: 3, listPriceCents: 250 });
     expect(fake.withPermission).toHaveBeenCalledWith('update', 'Order', expect.any(Function));
     // A NEW line (no merge), with the snapshot price and the next line_number.
     expect(fake.insertValues).toHaveBeenCalledWith({
       orderId: ORDER,
       productId: PRODUCT,
       quantity: 3,
-      unitPriceCents: 250,
+      listPriceCents: 250,
       lineNumber: 3,
     });
     expect(fake.revalidatePath).toHaveBeenCalledWith(`/orders/${ORDER}`);
@@ -135,7 +135,7 @@ describe('addLine (append + price snapshot)', () => {
 
   it('rejects a negative price without inserting', async () => {
     await expect(
-      addLine({ orderId: ORDER, productId: PRODUCT, quantity: 1, unitPriceCents: -5 }),
+      addLine({ orderId: ORDER, productId: PRODUCT, quantity: 1, listPriceCents: -5 }),
     ).rejects.toThrow(/price/i);
     expect(fake.insertValues).not.toHaveBeenCalled();
   });

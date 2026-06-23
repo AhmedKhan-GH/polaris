@@ -3,9 +3,11 @@ import { redirect } from 'next/navigation';
 import {
   ProductCombobox,
   addLine,
+  effectivePriceCents,
   getAllowedTransitions,
   getOrder,
   getOrderLines,
+  lineTotalCents,
   removeLine,
   transitionOrder,
   updateLine,
@@ -76,7 +78,7 @@ export default async function OrderDetailPage({
       orderId,
       productId,
       quantity: Number(formData.get('quantity') ?? '0'),
-      unitPriceCents: product.priceCents,
+      listPriceCents: product.priceCents,
     });
   }
 
@@ -168,8 +170,8 @@ export default async function OrderDetailPage({
                     {product?.name ?? l.productId.slice(0, 8)}
                   </td>
                   <td className="py-2 pr-4">{l.quantity}</td>
-                  <td className="py-2 pr-4">{usd(l.unitPriceCents)}</td>
-                  <td className="py-2 pr-4">{usd(l.unitPriceCents * l.quantity)}</td>
+                  <td className="py-2 pr-4">{usd(effectivePriceCents(l))}</td>
+                  <td className="py-2 pr-4">{usd(lineTotalCents(l))}</td>
                   {canEditLines && (
                     <td className="flex flex-wrap items-center gap-2 py-2 pr-4">
                       <form action={updateLine} className="flex gap-1">

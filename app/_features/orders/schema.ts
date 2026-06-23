@@ -56,11 +56,15 @@ export const orders = pgTable(
  * entirely from the parent order (the RLS policies join back to `orders`), so
  * this table has no `created_by`.
  *
- * A line is `(order, line_number, product, quantity)` with a `unit_price_cents`
+ * A line is `(order, line_number, product, quantity)` with a `list_price_cents`
  * SNAPSHOT captured at add time (so a later catalog price change never rewrites a
- * placed order's totals). The SAME product MAY appear on multiple lines (e.g. at
- * different negotiated prices); lines are ordered and identified within an order
- * by `line_number` (`unique(order_id, line_number)`), assigned by the action.
+ * placed order's totals) and an optional `override_price_cents` — a deliberate
+ * per-line price the user typed, stored ALONGSIDE the snapshot (never overwriting
+ * it) so off-list pricing stays auditable. The effective price billed is the
+ * override when set, else the list snapshot (see `pricing.ts`). The SAME product
+ * MAY appear on multiple lines (e.g. at different negotiated prices); lines are
+ * ordered and identified within an order by `line_number`
+ * (`unique(order_id, line_number)`), assigned by the action.
  *
  * `order_id` references the sibling table directly (same feature). `product_id`
  * is a bare uuid here — its cross-feature FK to `products(id)` is declared in the
@@ -78,11 +82,16 @@ export const orderLines = pgTable(
     lineNumber: integer('line_number').notNull(),
     productId: uuid('product_id').notNull(),
     quantity: integer('quantity').notNull(),
-    unitPriceCents: integer('unit_price_cents').notNull(),
+    listPriceCents: integer('list_price_cents').notNull(),
+    overridePriceCents: integer('override_price_cents'),
   },
   (table) => [
     unique('order_lines_order_line_unique').on(table.orderId, table.lineNumber),
     check('order_lines_quantity_positive', sql`${table.quantity} > 0`),
     check('order_lines_line_number_positive', sql`${table.lineNumber} > 0`),
+    check(
+      'order_lines_override_price_nonneg',
+      sql`${table.overridePriceCents} is null or ${table.overridePriceCents} >= 0`,
+    ),
   ],
 ).enableRLS();

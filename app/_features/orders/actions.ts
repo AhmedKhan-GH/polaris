@@ -36,7 +36,8 @@ export type LineRow = {
   lineNumber: number;
   productId: string;
   quantity: number;
-  unitPriceCents: number;
+  listPriceCents: number;
+  overridePriceCents: number | null;
 };
 
 /**
@@ -105,7 +106,7 @@ const addLineSchema = z.object({
   orderId: idField,
   productId: z.string().uuid('Invalid product id'),
   quantity: quantityField,
-  unitPriceCents: z.coerce
+  listPriceCents: z.coerce
     .number()
     .int('Invalid price')
     .nonnegative('Invalid price'),
@@ -114,7 +115,7 @@ const addLineSchema = z.object({
 export type AddLineInput = z.input<typeof addLineSchema>;
 
 /**
- * Add a product line. The `unitPriceCents` SNAPSHOT is passed in by the caller —
+ * Add a product line. The `listPriceCents` SNAPSHOT is passed in by the caller —
  * the ROUTE, which composes the products dev-API and reads the price server-side
  * — so a later catalog price change never rewrites this order's totals. Orders
  * never imports products (boundary rule B); the FK to products (RESTRICT, in the
