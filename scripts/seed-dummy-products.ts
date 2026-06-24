@@ -2,18 +2,15 @@ import { config as loadEnv } from 'dotenv';
 import pg from 'pg';
 
 /**
- * DEV-ONLY: populate the catalog with a spread of dummy products so the
- * line-item intake (fuzzy SKU search) has something to search. Run manually:
- *
- *   npm run db:seed-products
+ * DEV-ONLY dummy catalog: a spread of products so the line-item intake (fuzzy
+ * SKU search) has something to search. The reusable verb is `seedDummyProducts`;
+ * the umbrella `db:seed-dev` calls it alongside the demo users, and
+ * `db:seed-products` runs it alone.
  *
  * Deliberately NOT wired into `db:setup` or the e2e `global-setup`: those keep
  * the products table controlled (the products E2E asserts exact counts), so dummy
  * data must be opt-in. Idempotent — re-running inserts only SKUs that are missing.
  */
-loadEnv({ path: '.env.local' });
-loadEnv({ path: '.env.test' });
-
 const CATEGORIES = [
   { prefix: 'WGT', noun: 'Widget' },
   { prefix: 'GDT', noun: 'Gadget' },
@@ -31,7 +28,7 @@ const CATEGORIES = [
 const MATERIALS = ['Steel', 'Brass', 'Copper', 'Aluminum', 'Nylon'];
 const SIZES = ['M6', 'M8', 'M10', '1/4in', '1/2in'];
 
-function buildDummyProducts(): { sku: string; name: string; priceCents: number }[] {
+export function buildDummyProducts(): { sku: string; name: string; priceCents: number }[] {
   const products: { sku: string; name: string; priceCents: number }[] = [];
   let n = 1000;
   for (const cat of CATEGORIES) {
@@ -49,18 +46,14 @@ function buildDummyProducts(): { sku: string; name: string; priceCents: number }
   return products;
 }
 
-async function main(): Promise<void> {
-  const url = process.env.MIGRATE_DATABASE_URL;
-  if (!url) {
-    throw new Error(
-      'MIGRATE_DATABASE_URL is not set — seed-dummy-products needs the privileged ' +
-        'connection string (check .env.local / .env.test).',
-    );
-  }
-  const pool = new pg.Pool({ connectionString: url });
+/**
+ * Upsert the dummy catalog under the privileged role, returning the resulting
+ * row count. Idempotent (`on conflict (sku) do nothing`).
+ */
+export async function seedDummyProducts(adminUrl: string): Promise<number> {
+  const pool = new pg.Pool({ connectionString: adminUrl });
   try {
-    const products = buildDummyProducts();
-    for (const p of products) {
+    for (const p of buildDummyProducts()) {
       await pool.query(
         `insert into products (name, sku, price_cents) values ($1, $2, $3)
            on conflict (sku) do nothing`,
@@ -68,15 +61,35 @@ async function main(): Promise<void> {
       );
     }
     const { rows } = await pool.query('select count(*)::int as n from products');
-    console.log(
-      `seed-dummy-products ✓ upserted ${products.length} dummy SKUs; products now has ${rows[0].n} rows`,
-    );
+    return rows[0].n as number;
   } finally {
     await pool.end();
   }
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+/** True only when this file is the process entry (`npm run db:seed-products`),
+ *  not when imported (by seed-dev) — same argv guard db-setup uses. */
+export function isSeedProductsCliEntry(argv1: string | undefined): boolean {
+  return argv1?.replaceAll('\\', '/').endsWith('scripts/seed-dummy-products.ts') ?? false;
+}
+
+async function cli(): Promise<void> {
+  loadEnv({ path: '.env.local' });
+  loadEnv({ path: '.env.test' });
+  const url = process.env.MIGRATE_DATABASE_URL;
+  if (!url) {
+    throw new Error(
+      'MIGRATE_DATABASE_URL is not set — seed-dummy-products needs the privileged ' +
+        'connection string (check .env.local / .env.test).',
+    );
+  }
+  const total = await seedDummyProducts(url);
+  console.log(`seed-dummy-products ✓ upserted dummy SKUs; products now has ${total} rows`);
+}
+
+if (isSeedProductsCliEntry(process.argv[1])) {
+  cli().catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
+}

@@ -1,6 +1,7 @@
 import pg from 'pg';
 
-import { seedDemoUsers, setupDb } from '../scripts/db-setup';
+import { setupDb } from '../scripts/db-setup';
+import { seedDemoUsers } from '../scripts/seed-dev';
 
 /**
  * One-time setup for the whole E2E run, against the LIVE local Supabase stack

@@ -8,15 +8,15 @@ import {
   liveDbGate,
 } from '@/lib/db/__tests__/live-db';
 
-import { seedDemoUsers } from './db-setup';
+import { seedDemoUsers } from './seed-dev';
 
 /**
- * The live-stack half of the `db:setup` contract: a clean build must end with
- * accounts someone can actually log in with. GoTrue exists only on the real
- * stack (the testcontainer half of the contract lives in
- * db-setup.integration.test.ts), so this suite reaches `:54321`/`:54322`
- * directly and gates on reachability exactly like the realtime/profiles
- * live suites.
+ * The live-stack half of the demo-user seeding contract (`db:seed-dev`): the
+ * dev/test fixtures must end with accounts someone can actually log in with.
+ * GoTrue exists only on the real stack (the testcontainer half of db:setup's
+ * provisioning contract lives in db-setup.integration.test.ts), so this suite
+ * reaches `:54321`/`:54322` directly and gates on reachability exactly like the
+ * realtime/profiles live suites.
  *
  * Before seeding, the three demo users are DELETED — without that, state left
  * by any earlier e2e run would make a do-nothing seeder look green; deleting
@@ -37,7 +37,7 @@ const PASSWORD = 'test-password-123';
 const EMAILS = ['owner@example.com', 'member@example.com', 'admin@example.com'];
 
 (mode === 'run' ? describe : describe.skip)(
-  'db:setup seeds login-able demo users on the live stack',
+  'db:seed-dev seeds login-able demo users on the live stack',
   () => {
     let admin: pg.Client;
 
