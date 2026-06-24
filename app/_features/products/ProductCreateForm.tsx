@@ -2,6 +2,8 @@
 
 import { useState, useTransition } from 'react';
 
+import { normalizeDollarInput } from '@/lib/money';
+
 import { createProduct } from './actions';
 
 /**
@@ -17,6 +19,14 @@ import { createProduct } from './actions';
 export function ProductCreateForm() {
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+
+  // Snap the price box to a fixed two-decimal money display when the owner leaves
+  // it (12 → 12.00, 12.999 → 13.00) — the value the server then rounds to cents.
+  function onPriceBlur(e: React.FocusEvent<HTMLInputElement>) {
+    const input = e.currentTarget;
+    const normalized = normalizeDollarInput(input.value);
+    if (normalized !== null) input.value = normalized;
+  }
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -61,6 +71,7 @@ export function ProductCreateForm() {
           required
           aria-label="Price ($)"
           placeholder="0.00"
+          onBlur={onPriceBlur}
           className="w-32 rounded border border-zinc-300 px-3 py-2 text-sm"
         />
       </span>

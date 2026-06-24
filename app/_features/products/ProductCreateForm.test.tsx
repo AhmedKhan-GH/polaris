@@ -68,4 +68,22 @@ describe('ProductCreateForm', () => {
     await waitFor(() => expect(actions.createProduct).toHaveBeenCalled());
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
+
+  // A financial field should snap to a fixed two-decimal display when the owner
+  // leaves it — never a bare integer, never a third decimal.
+  it('snaps a whole-dollar price to two decimals on blur (12 → 12.00)', () => {
+    render(<ProductCreateForm />);
+    const price = screen.getByLabelText('Price ($)') as HTMLInputElement;
+    fireEvent.change(price, { target: { value: '12' } });
+    fireEvent.blur(price);
+    expect(price.value).toBe('12.00');
+  });
+
+  it('rounds a third decimal to the nearest cent on blur (12.999 → 13.00)', () => {
+    render(<ProductCreateForm />);
+    const price = screen.getByLabelText('Price ($)') as HTMLInputElement;
+    fireEvent.change(price, { target: { value: '12.999' } });
+    fireEvent.blur(price);
+    expect(price.value).toBe('13.00');
+  });
 });

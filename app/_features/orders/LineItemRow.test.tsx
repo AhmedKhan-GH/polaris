@@ -113,6 +113,27 @@ describe('LineItemRow (editable)', () => {
     fireEvent.blur(screen.getByLabelText('Unit price for Steel Widget'));
     expect(actions.updateLine).not.toHaveBeenCalled();
   });
+
+  // The unit-price box should snap to a fixed two-decimal display on blur and
+  // persist the cents it shows — a bare integer becomes `N.00`, a third decimal
+  // rounds to the nearest cent.
+  it('snaps a whole-dollar override to two decimals on blur and saves the cents', () => {
+    renderRow();
+    const price = screen.getByLabelText('Unit price for Steel Widget') as HTMLInputElement;
+    fireEvent.change(price, { target: { value: '12' } });
+    fireEvent.blur(price);
+    expect(price.value).toBe('12.00');
+    expect(lastFormData(actions.updateLine).get('overridePriceCents')).toBe('1200');
+  });
+
+  it('rounds a third-decimal override to the nearest cent on blur (12.999 → 13.00 → 1300)', () => {
+    renderRow();
+    const price = screen.getByLabelText('Unit price for Steel Widget') as HTMLInputElement;
+    fireEvent.change(price, { target: { value: '12.999' } });
+    fireEvent.blur(price);
+    expect(price.value).toBe('13.00');
+    expect(lastFormData(actions.updateLine).get('overridePriceCents')).toBe('1300');
+  });
 });
 
 describe('LineItemRow (read-only)', () => {

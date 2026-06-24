@@ -2,6 +2,8 @@
 
 import { useTransition } from 'react';
 
+import { normalizeDollarInput } from '@/lib/money';
+
 import { removeLine, updateLine } from './actions';
 import { effectivePriceCents, lineTotalCents } from './pricing';
 
@@ -60,7 +62,12 @@ export function LineItemRow({
   }
 
   function onPriceBlur(e: React.FocusEvent<HTMLInputElement>) {
-    const raw = e.currentTarget.value.trim();
+    const input = e.currentTarget;
+    // Snap to a fixed two-decimal money display on blur (12 → 12.00, 12.999 →
+    // 13.00), matching the server's round-to-cent, then apply the override rules.
+    const normalized = normalizeDollarInput(input.value);
+    if (normalized !== null) input.value = normalized;
+    const raw = input.value.trim();
     if (raw === initialPrice) return;
     // Empty OR the list price itself clears the override (no off-list flag);
     // otherwise dollars → cents.

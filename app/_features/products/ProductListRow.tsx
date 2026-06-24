@@ -2,6 +2,8 @@
 
 import { useState, useTransition } from 'react';
 
+import { normalizeDollarInput } from '@/lib/money';
+
 import { restoreProduct, retireProduct, updateProduct } from './actions';
 
 /**
@@ -69,7 +71,13 @@ export function ProductListRow({
   }
 
   function onPriceBlur(e: React.FocusEvent<HTMLInputElement>) {
-    const raw = e.currentTarget.value.trim();
+    const input = e.currentTarget;
+    // Snap to a fixed two-decimal money display the way financial inputs do
+    // (12 → 12.00, 12.999 → 13.00); the server stores exactly this rounded value,
+    // and normalizing first means a re-typed equivalent (10 vs 10.00) won't save.
+    const normalized = normalizeDollarInput(input.value);
+    if (normalized !== null) input.value = normalized;
+    const raw = input.value.trim();
     // Empty is ignored (price is required); the server converts dollars → cents.
     if (raw === initialPrice || raw === '') return;
     save({ price: raw });

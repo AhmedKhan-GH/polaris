@@ -92,6 +92,37 @@ describe('ProductListRow (manageable)', () => {
     expect(fd.has('name')).toBe(false);
   });
 
+  // The price box should snap to a fixed two-decimal display on blur and persist
+  // exactly what it shows — a bare integer becomes `N.00`, a third decimal rounds.
+  it('snaps a whole-dollar price to two decimals on blur and saves it that way', async () => {
+    renderRow();
+    const price = screen.getByLabelText('Price for SKU-1') as HTMLInputElement;
+    fireEvent.change(price, { target: { value: '12' } });
+    fireEvent.blur(price);
+    expect(price.value).toBe('12.00');
+    await waitFor(() => expect(actions.updateProduct).toHaveBeenCalledTimes(1));
+    expect(lastFormData(actions.updateProduct).get('price')).toBe('12.00');
+  });
+
+  it('rounds a third-decimal price to the nearest cent on blur (12.999 → 13.00)', async () => {
+    renderRow();
+    const price = screen.getByLabelText('Price for SKU-1') as HTMLInputElement;
+    fireEvent.change(price, { target: { value: '12.999' } });
+    fireEvent.blur(price);
+    expect(price.value).toBe('13.00');
+    await waitFor(() => expect(actions.updateProduct).toHaveBeenCalledTimes(1));
+    expect(lastFormData(actions.updateProduct).get('price')).toBe('13.00');
+  });
+
+  it('does not save when a re-typed price is equivalent to the seeded one (10 → 10.00)', () => {
+    renderRow(); // seeded $10.00
+    const price = screen.getByLabelText('Price for SKU-1') as HTMLInputElement;
+    fireEvent.change(price, { target: { value: '10' } });
+    fireEvent.blur(price);
+    expect(price.value).toBe('10.00');
+    expect(actions.updateProduct).not.toHaveBeenCalled();
+  });
+
   it('does not save when a field is blurred without changing it', () => {
     renderRow();
     fireEvent.blur(screen.getByLabelText('Name for SKU-1'));
