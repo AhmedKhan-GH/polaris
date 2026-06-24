@@ -53,7 +53,7 @@ export async function withOrgContext<T>(
         // and cannot distinguish that from "org doesn't exist", which is the
         // correct fail-closed behaviour for a tenant boundary.
         const result = await tx.execute(
-            sql`select role from memberships where org_id = ${orgId} limit 1`,
+            sql`select role from memberships where org_id = ${orgId} and user_id = ${userId} limit 1`,
         );
 
         const row = result.rows[0];

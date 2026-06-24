@@ -71,6 +71,20 @@
       "when": 1781560400666,
       "tag": "0009_big_prima",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1782245521030,
+      "tag": "0010_org_admin_add_members",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1782263533192,
+      "tag": "0011_list_org_members",
+      "breakpoints": true
     }
   ]
 }
