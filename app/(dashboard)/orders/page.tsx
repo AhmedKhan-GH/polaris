@@ -47,6 +47,7 @@ export default async function OrdersPage() {
           <tr>
             <th className="py-2 pr-4 font-medium">Order</th>
             <th className="py-2 pr-4 font-medium">Status</th>
+            <th className="py-2 pr-4 font-medium">Created by</th>
             <th className="py-2 pr-4 font-medium">Created (UTC)</th>
             <th className="py-2 pr-4 font-medium"></th>
           </tr>
@@ -54,7 +55,7 @@ export default async function OrdersPage() {
         <tbody>
           {orders.length === 0 ? (
             <tr>
-              <td colSpan={4} className="py-2 text-zinc-500">
+              <td colSpan={5} className="py-2 text-zinc-500">
                 No orders yet.
               </td>
             </tr>
@@ -69,6 +70,12 @@ export default async function OrdersPage() {
                   >
                     {o.status}
                   </span>
+                </td>
+                <td
+                  data-testid="order-created-by"
+                  className="py-2 pr-4 font-mono text-xs"
+                >
+                  {o.createdBy}
                 </td>
                 <td className="py-2 pr-4">{o.createdAt.toISOString()}</td>
                 <td className="py-2 pr-4">

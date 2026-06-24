@@ -55,6 +55,8 @@ test.describe('orders intake + lifecycle', () => {
     // Creating an order adds a draft to the LIST (no navigation); open it to edit.
     await page.getByRole('button', { name: 'New order' }).click();
     await expect(page.getByTestId('order-row')).toHaveCount(1);
+    // The list shows who created each order (the creator's id).
+    await expect(page.getByTestId('order-created-by')).toHaveText(/[0-9a-f-]{36}/);
     await page.getByRole('link', { name: 'Open' }).click();
     await expect(page).toHaveURL(/\/orders\/[0-9a-f-]+$/);
     await expect(page.getByTestId('order-status')).toHaveText('draft');
