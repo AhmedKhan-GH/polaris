@@ -24,3 +24,19 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/*
+ * Drop the native up/down spinners on number inputs. They render transparent
+ * until hover/focus (reading as phantom buttons), step by 1 — useless for
+ * fractional quantities and money — and reserve stray width. type="number" is
+ * kept for the numeric keypad and validation; only the stepper UI is removed.
+ */
+input[type='number']::-webkit-outer-spin-button,
+input[type='number']::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type='number'] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
