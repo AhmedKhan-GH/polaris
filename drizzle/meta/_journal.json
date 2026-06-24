@@ -78,6 +78,13 @@
       "when": 1782253738920,
       "tag": "0010_orders_line_price_override",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1782296880180,
+      "tag": "0011_curly_bastion",
+      "breakpoints": true
     }
   ]
 }

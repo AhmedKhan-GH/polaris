@@ -26,16 +26,21 @@ const DEMO_USERS = [
 /**
  * Create (or reconcile) the three canonical demo accounts and mirror their roles
  * into `profiles`. Idempotent — each `createUser` tolerates an existing email.
+ * Returns the owner's user id so the caller can stamp owner-managed seed data
+ * (e.g. the dummy catalog's `created_by`).
  */
 export async function seedDemoUsers(opts: {
   adminUrl: string;
   supabaseUrl: string;
   serviceKey: string;
   password: string;
-}): Promise<void> {
+}): Promise<{ ownerId: string }> {
+  let ownerId = '';
   for (const u of DEMO_USERS) {
-    await createUser({ ...opts, email: u.email, role: u.role });
+    const id = await createUser({ ...opts, email: u.email, role: u.role });
+    if (u.role === 'owner') ownerId = id;
   }
+  return { ownerId };
 }
 
 /** True only when this file is the process entry (`npm run db:seed-dev`), not
@@ -61,12 +66,12 @@ async function cli(): Promise<void> {
     );
   }
 
-  await seedDemoUsers({ adminUrl, supabaseUrl, serviceKey, password });
+  const { ownerId } = await seedDemoUsers({ adminUrl, supabaseUrl, serviceKey, password });
   console.log(
     'db:seed-dev ✓ demo users seeded: owner@example.com, member@example.com, admin@example.com (password: TEST_USER_PASSWORD)',
   );
 
-  const total = await seedDummyProducts(adminUrl);
+  const total = await seedDummyProducts(adminUrl, ownerId);
   console.log(`db:seed-dev ✓ dummy SKUs seeded; products now has ${total} rows`);
 }
 

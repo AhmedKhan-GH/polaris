@@ -1,8 +1,7 @@
 import {
+  ProductListRow,
   createProduct,
   getProducts,
-  retireProduct,
-  updateProduct,
 } from '@/app/_features/products';
 import { getSessionUser } from '@/lib/auth/session';
 import { buildAbility } from '@/lib/permissions/ability';
@@ -25,7 +24,6 @@ export default async function ProductsPage() {
   }).can('manage', 'Product');
 
   const products = await getProducts();
-  const usd = (cents: number) => `$${(cents / 100).toFixed(2)}`;
 
   return (
     <div className="flex flex-col gap-6">
@@ -72,75 +70,33 @@ export default async function ProductsPage() {
             <th className="py-2 pr-4 font-medium">SKU</th>
             <th className="py-2 pr-4 font-medium">Price</th>
             <th className="py-2 pr-4 font-medium">Status</th>
+            <th className="py-2 pr-4 font-medium">Created by</th>
+            <th className="py-2 pr-4 font-medium">Created (UTC)</th>
             {canManage && <th className="py-2 pr-4 font-medium">Manage</th>}
           </tr>
         </thead>
         <tbody>
           {products.length === 0 ? (
             <tr>
-              <td colSpan={canManage ? 5 : 4} className="py-2 text-zinc-500">
+              <td colSpan={canManage ? 7 : 6} className="py-2 text-zinc-500">
                 No products yet.
               </td>
             </tr>
           ) : (
             products.map((p) => (
-              <tr key={p.id} data-testid="product-row">
-                <td className="py-2 pr-4">{p.name}</td>
-                <td className="py-2 pr-4">{p.sku}</td>
-                <td className="py-2 pr-4">{usd(p.priceCents)}</td>
-                <td className="py-2 pr-4 text-zinc-500">
-                  {p.retired ? 'Retired' : 'Active'}
-                </td>
-                {canManage && (
-                  <td className="flex flex-wrap items-center gap-2 py-2 pr-4">
-                    {!p.retired && (
-                      <>
-                        <form action={updateProduct} className="flex gap-1">
-                          <input type="hidden" name="id" value={p.id} />
-                          <input
-                            name="name"
-                            defaultValue={p.name}
-                            required
-                            aria-label={`Edit name for ${p.sku}`}
-                            className="w-28 rounded border border-zinc-300 px-2 py-1 text-xs"
-                          />
-                          <input
-                            name="sku"
-                            defaultValue={p.sku}
-                            required
-                            aria-label={`Edit SKU for ${p.sku}`}
-                            className="w-24 rounded border border-zinc-300 px-2 py-1 text-xs"
-                          />
-                          <input
-                            name="priceCents"
-                            type="number"
-                            min={0}
-                            defaultValue={p.priceCents}
-                            required
-                            aria-label={`Edit price for ${p.sku}`}
-                            className="w-24 rounded border border-zinc-300 px-2 py-1 text-xs"
-                          />
-                          <button
-                            type="submit"
-                            className="rounded border border-zinc-300 px-2 py-1 text-xs font-medium"
-                          >
-                            Save
-                          </button>
-                        </form>
-                        <form action={retireProduct}>
-                          <input type="hidden" name="id" value={p.id} />
-                          <button
-                            type="submit"
-                            className="rounded border border-zinc-300 px-2 py-1 text-xs font-medium text-red-700"
-                          >
-                            Retire
-                          </button>
-                        </form>
-                      </>
-                    )}
-                  </td>
-                )}
-              </tr>
+              <ProductListRow
+                key={p.id}
+                product={{
+                  id: p.id,
+                  name: p.name,
+                  sku: p.sku,
+                  priceCents: p.priceCents,
+                  retired: p.retired,
+                  createdBy: p.createdBy,
+                  createdAt: p.createdAt.toISOString(),
+                }}
+                canManage={canManage}
+              />
             ))
           )}
         </tbody>

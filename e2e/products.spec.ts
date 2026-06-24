@@ -28,9 +28,11 @@ test.describe('products catalog', () => {
 
     const row = page.getByTestId('product-row');
     await expect(row).toHaveCount(1);
-    await expect(row.getByText('Test Widget')).toBeVisible();
+    // Owner manages the catalog, so name and price are inline-editable inputs
+    // (price shown in dollars); SKU and status stay plain text.
+    await expect(row.getByLabel('Name for SKU-100')).toHaveValue('Test Widget');
     await expect(row.getByText('SKU-100')).toBeVisible();
-    await expect(row.getByText('$15.00')).toBeVisible();
+    await expect(row.getByLabel('Price for SKU-100')).toHaveValue('15.00');
     await expect(row.getByText('Active')).toBeVisible();
   });
 

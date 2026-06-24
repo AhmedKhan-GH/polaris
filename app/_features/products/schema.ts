@@ -3,10 +3,12 @@ import { boolean, integer, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg
 
 /**
  * Products — a FLAT reference catalog (Domain Charter D4). A product belongs to
- * the catalog, not a user: there is no `created_by` and no per-row ownership.
- * Visibility is UNCONDITIONAL for every signed-in caller (members need the
- * line-item picker); writes are owner-only. Both facts are enforced by the
- * hand-written RLS in the migration — role-based (`app.user_roles`), NOT
+ * the catalog, not a user: it carries a `created_by` AUDIT stamp (who added it
+ * in the UI) but has NO per-row ownership — visibility and writes stay
+ * role-based, never identity-scoped (the RLS reads `app.user_roles` only, never
+ * `created_by`). Visibility is UNCONDITIONAL for every signed-in caller (members
+ * need the line-item picker); writes are owner-only. Both facts are enforced by
+ * the hand-written RLS in the migration — role-based (`app.user_roles`), NOT
  * identity-based — and mirrored in CASL by `productsAbilities`.
  *
  * RLS is enabled here so it travels with the schema; the POLICY and GRANT live
@@ -28,6 +30,7 @@ export const products = pgTable('products', {
   sku: text('sku').notNull().unique(),
   priceCents: integer('price_cents').notNull(),
   retired: boolean('retired').notNull().default(false),
+  createdBy: uuid('created_by').notNull(),
   createdAt: timestamp('created_at', { withTimezone: true })
     .notNull()
     .default(sql`now()`),

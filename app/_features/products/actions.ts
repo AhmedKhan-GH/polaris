@@ -40,7 +40,6 @@ const createSchema = z.object({
   sku: skuField,
   priceCents: priceCentsField,
 });
-const updateSchema = createSchema.extend({ id: idField });
 
 export type ProductRow = {
   id: string;
@@ -48,6 +47,7 @@ export type ProductRow = {
   sku: string;
   priceCents: number;
   retired: boolean;
+  createdBy: string;
   createdAt: Date;
 };
 
@@ -80,7 +80,9 @@ export async function createProduct(formData: FormData): Promise<void> {
         sku: String(formData.get('sku') ?? ''),
         priceCents: String(formData.get('priceCents') ?? ''),
       });
-      await withUserContext(ctx, (tx) => tx.insert(products).values(values));
+      await withUserContext(ctx, (tx) =>
+        tx.insert(products).values({ ...values, createdBy: ctx.userId }),
+      );
     }),
   );
 
@@ -88,20 +90,29 @@ export async function createProduct(formData: FormData): Promise<void> {
 }
 
 /**
- * Edit a product's name, sku, and price. Same guard chain as create, with
- * `update Product`; the `id` is validated as a uuid before any write.
+ * Edit a product in place — a PARTIAL update of whichever fields the form sends
+ * (name / sku / priceCents), so the inline list cells can each auto-save on blur
+ * independently. Same guard chain as create, with `update Product`; the `id` is
+ * validated as a uuid before any write.
  */
 export async function updateProduct(formData: FormData): Promise<void> {
   await withPermission('update', 'Product', (ctx) =>
     withRateLimit(productsWriteLimiter, `products:update:${ctx.userId}`, async () => {
-      const { id, ...values } = updateSchema.parse({
-        id: String(formData.get('id') ?? ''),
-        name: String(formData.get('name') ?? ''),
-        sku: String(formData.get('sku') ?? ''),
-        priceCents: String(formData.get('priceCents') ?? ''),
-      });
+      const id = idField.parse(String(formData.get('id') ?? ''));
+
+      const set: { name?: string; sku?: string; priceCents?: number } = {};
+      if (formData.has('name')) {
+        set.name = nameField.parse(String(formData.get('name') ?? ''));
+      }
+      if (formData.has('sku')) {
+        set.sku = skuField.parse(String(formData.get('sku') ?? ''));
+      }
+      if (formData.has('priceCents')) {
+        set.priceCents = priceCentsField.parse(String(formData.get('priceCents') ?? ''));
+      }
+
       await withUserContext(ctx, (tx) =>
-        tx.update(products).set(values).where(eq(products.id, id)),
+        tx.update(products).set(set).where(eq(products.id, id)),
       );
     }),
   );

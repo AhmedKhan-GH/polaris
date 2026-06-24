@@ -37,8 +37,8 @@ describe('products role RLS (testcontainer)', () => {
 
     // Seed as superuser (bypasses RLS): two catalog rows.
     await rls.admin.query(
-      'insert into products (name, sku, price_cents) values ($1, $2, $3), ($4, $5, $6)',
-      ['Widget', 'SKU-1', 100, 'Gadget', 'SKU-2', 250],
+      'insert into products (name, sku, price_cents, created_by) values ($1, $2, $3, $7), ($4, $5, $6, $7)',
+      ['Widget', 'SKU-1', 100, 'Gadget', 'SKU-2', 250, MEMBER],
     );
   });
 
@@ -56,7 +56,7 @@ describe('products role RLS (testcontainer)', () => {
 
   it('lets an owner INSERT a product (WITH CHECK: owner)', async () => {
     await withUserContext({ userId: MEMBER, roles: ['owner'] }, (tx) =>
-      tx.insert(products).values({ name: 'Sprocket', sku: 'SKU-3', priceCents: 500 }),
+      tx.insert(products).values({ name: 'Sprocket', sku: 'SKU-3', priceCents: 500, createdBy: MEMBER }),
     );
     const { rows } = await rls.admin.query(
       `select name from products where sku = 'SKU-3'`,
@@ -68,7 +68,7 @@ describe('products role RLS (testcontainer)', () => {
     const rejection = await withUserContext(
       { userId: MEMBER, roles: ['member'] },
       (tx) =>
-        tx.insert(products).values({ name: 'Sneak', sku: 'SKU-X', priceCents: 1 }),
+        tx.insert(products).values({ name: 'Sneak', sku: 'SKU-X', priceCents: 1, createdBy: MEMBER }),
     ).then(
       () => null,
       (err: unknown) => err as { cause?: { message?: string } },
@@ -129,7 +129,7 @@ describe('products role RLS (testcontainer)', () => {
     const rejection = await withUserContext(
       { userId: MEMBER, roles: ['x,owner'] },
       (tx) =>
-        tx.insert(products).values({ name: 'Forge', sku: 'SKU-Y', priceCents: 1 }),
+        tx.insert(products).values({ name: 'Forge', sku: 'SKU-Y', priceCents: 1, createdBy: MEMBER }),
     ).then(
       () => null,
       (err: unknown) => err as { cause?: { message?: string } },

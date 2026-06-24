@@ -46,17 +46,21 @@ export function buildDummyProducts(): { sku: string; name: string; priceCents: n
 }
 
 /**
- * Upsert the dummy catalog under the privileged role, returning the resulting
- * row count. Idempotent (`on conflict (sku) do nothing`).
+ * Upsert the dummy catalog under the privileged role, stamping each row's
+ * `created_by` with the seeding owner's id, and returning the resulting row
+ * count. Idempotent (`on conflict (sku) do nothing`).
  */
-export async function seedDummyProducts(adminUrl: string): Promise<number> {
+export async function seedDummyProducts(
+  adminUrl: string,
+  createdBy: string,
+): Promise<number> {
   const pool = new pg.Pool({ connectionString: adminUrl });
   try {
     for (const p of buildDummyProducts()) {
       await pool.query(
-        `insert into products (name, sku, price_cents) values ($1, $2, $3)
+        `insert into products (name, sku, price_cents, created_by) values ($1, $2, $3, $4)
            on conflict (sku) do nothing`,
-        [p.name, p.sku, p.priceCents],
+        [p.name, p.sku, p.priceCents, createdBy],
       );
     }
     const { rows } = await pool.query('select count(*)::int as n from products');

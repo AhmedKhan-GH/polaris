@@ -97,7 +97,7 @@ beforeEach(() => {
 });
 
 describe('app/_features/products createProduct', () => {
-  it('guards create/Product, inserts { name, sku, priceCents }, revalidates /products', async () => {
+  it('guards create/Product, inserts { name, sku, priceCents } stamped created_by=self, revalidates /products', async () => {
     await createProduct(fd({ name: 'Sprocket', sku: 'SKU-9', priceCents: '500' }));
 
     expect(fake.withPermission).toHaveBeenCalledWith(
@@ -109,6 +109,7 @@ describe('app/_features/products createProduct', () => {
       name: 'Sprocket',
       sku: 'SKU-9',
       priceCents: 500,
+      createdBy: ID,
     });
     expect(fake.revalidatePath).toHaveBeenCalledWith('/products');
   });
@@ -158,6 +159,19 @@ describe('app/_features/products updateProduct', () => {
     });
     expect(fake.updateWhere).toHaveBeenCalled();
     expect(fake.revalidatePath).toHaveBeenCalledWith('/products');
+  });
+
+  it('updates only the fields present — a PARTIAL set (name alone, for inline auto-save)', async () => {
+    await updateProduct(fd({ id: ID, name: 'Renamed' }));
+
+    expect(fake.updateSet).toHaveBeenCalledWith({ name: 'Renamed' });
+    expect(fake.revalidatePath).toHaveBeenCalledWith('/products');
+  });
+
+  it('updates only the price when only priceCents is present', async () => {
+    await updateProduct(fd({ id: ID, priceCents: '1500' }));
+
+    expect(fake.updateSet).toHaveBeenCalledWith({ priceCents: 1500 });
   });
 
   it('rejects a non-uuid id without touching the database', async () => {

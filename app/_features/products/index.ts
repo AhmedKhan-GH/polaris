@@ -14,3 +14,4 @@ export {
   retireProduct,
   type ProductRow,
 } from './actions';
+export { ProductListRow, type ProductListRowData } from './ProductListRow';
