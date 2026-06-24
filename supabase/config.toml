@@ -58,8 +58,10 @@ enabled = true
 schema_paths = []
 
 [db.seed]
-# If enabled, seeds the database after migrations during a db reset.
-enabled = true
+# Disabled: this project seeds via drizzle migrations (db:setup) and scripts
+# (db:seed-dev), not a Supabase seed.sql — so the CLI seeder is off, which also
+# silences the "no files matched pattern seed.sql" warning on start/reset.
+enabled = false
 # Specifies an ordered list of seed files to load during db reset.
 # Supports glob patterns relative to supabase directory: "./seeds/*.sql"
 sql_paths = ["./seed.sql"]
