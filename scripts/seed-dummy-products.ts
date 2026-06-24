@@ -1,11 +1,10 @@
-import { config as loadEnv } from 'dotenv';
 import pg from 'pg';
 
 /**
  * DEV-ONLY dummy catalog: a spread of products so the line-item intake (fuzzy
- * SKU search) has something to search. The reusable verb is `seedDummyProducts`;
- * the umbrella `db:seed-dev` calls it alongside the demo users, and
- * `db:seed-products` runs it alone.
+ * SKU search) has something to search. Library-only — the reusable verb is
+ * `seedDummyProducts`, which the umbrella `db:seed-dev` calls alongside the demo
+ * users (there is no standalone products-only command).
  *
  * Deliberately NOT wired into `db:setup` or the e2e `global-setup`: those keep
  * the products table controlled (the products E2E asserts exact counts), so dummy
@@ -65,31 +64,4 @@ export async function seedDummyProducts(adminUrl: string): Promise<number> {
   } finally {
     await pool.end();
   }
-}
-
-/** True only when this file is the process entry (`npm run db:seed-products`),
- *  not when imported (by seed-dev) — same argv guard db-setup uses. */
-export function isSeedProductsCliEntry(argv1: string | undefined): boolean {
-  return argv1?.replaceAll('\\', '/').endsWith('scripts/seed-dummy-products.ts') ?? false;
-}
-
-async function cli(): Promise<void> {
-  loadEnv({ path: '.env.local' });
-  loadEnv({ path: '.env.test' });
-  const url = process.env.MIGRATE_DATABASE_URL;
-  if (!url) {
-    throw new Error(
-      'MIGRATE_DATABASE_URL is not set — seed-dummy-products needs the privileged ' +
-        'connection string (check .env.local / .env.test).',
-    );
-  }
-  const total = await seedDummyProducts(url);
-  console.log(`seed-dummy-products ✓ upserted dummy SKUs; products now has ${total} rows`);
-}
-
-if (isSeedProductsCliEntry(process.argv[1])) {
-  cli().catch((err) => {
-    console.error(err);
-    process.exit(1);
-  });
 }
