@@ -3,10 +3,11 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { startRlsTestDb } from '@/lib/db/__tests__/rls-test-db';
 
 /**
- * order_lines parent-derived RLS, against a throwaway testcontainer. A line is
- * NOT independently owned — access derives from its parent order:
+ * order_lines RLS, against a throwaway testcontainer. A line is NOT independently
+ * owned — write access derives from its parent order; read is currently open:
  *
- *   - READ (USING): visible iff the parent order is visible (own OR owner/admin).
+ *   - READ (USING): OPEN for now — every signed-in caller sees every line
+ *     (read-all), regardless of the parent order's creator or status.
  *   - WRITE (INSERT/UPDATE/DELETE): allowed iff the caller may WRITE the parent —
  *     a `member` only on their OWN `draft` order; `owner`/`admin` on any
  *     non-terminal order. Terminal parents are frozen for everyone.
@@ -40,8 +41,9 @@ describe('order_lines parent-derived RLS (testcontainer)', () => {
     ({ orderLines } = await import('@/app/_features/orders/schema'));
 
     const prods = await rls.admin.query(
-      `insert into products (name, sku, price_cents)
-         values ('P1', 'SKU-1', 100), ('P2', 'SKU-2', 200) returning id, sku`,
+      `insert into products (name, sku, price_cents, created_by)
+         values ('P1', 'SKU-1', 100, $1), ('P2', 'SKU-2', 200, $1) returning id, sku`,
+      [MEMBER_A],
     );
     p1 = prods.rows.find((r) => r.sku === 'SKU-1').id;
     p2 = prods.rows.find((r) => r.sku === 'SKU-2').id;
@@ -71,11 +73,12 @@ describe('order_lines parent-derived RLS (testcontainer)', () => {
     await rls.cleanup();
   });
 
-  it('lets a member read lines only for their own orders (parent-derived)', async () => {
+  it('lets ANY signed-in caller read lines for every order (read is open for now)', async () => {
+    // A plain member now sees lines on someone else's order too — read is open.
     const rows = await withUserContext({ userId: MEMBER_A, roles: ['member'] }, (tx) =>
       tx.select().from(orderLines),
     );
-    expect(rows.map((r) => r.orderId)).toEqual([orderA]);
+    expect(rows.map((r) => r.orderId).sort()).toEqual([orderA, orderB].sort());
   });
 
   it('lets an admin read lines for every order', async () => {

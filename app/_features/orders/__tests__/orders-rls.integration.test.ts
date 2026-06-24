@@ -6,8 +6,8 @@ import { startRlsTestDb } from '@/lib/db/__tests__/rls-test-db';
  * orders role+ownership RLS, against a throwaway testcontainer. Orders are an
  * OWNED resource with a role overlay:
  *
- *   - READ (USING): a row is visible to its creator (`created_by` = the
- *     `app.user_id` GUC) OR to any `owner`/`admin` (read-all).
+ *   - READ (USING): OPEN for now — every signed-in caller sees every order
+ *     (read-all), regardless of creator or status.
  *   - INSERT (WITH CHECK): create-as-self — `created_by` must equal the acting
  *     user, for every role (read-all never becomes write-as-anyone on insert).
  *   - `order_number` is assigned from a sequence that starts at 100000;
@@ -55,11 +55,12 @@ describe('orders role+ownership RLS (testcontainer)', () => {
     expect(rows).toEqual([{ order_number: '100000', status: 'draft' }]);
   });
 
-  it('lets a member read only their own orders (USING: own)', async () => {
+  it('lets ANY signed-in caller read every order (read is open for now)', async () => {
+    // A plain member now sees someone else's order too — read is open.
     const rows = await withUserContext({ userId: MEMBER_A, roles: ['member'] }, (tx) =>
       tx.select().from(orders),
     );
-    expect(rows.map((r) => r.createdBy)).toEqual([MEMBER_A]);
+    expect(rows.map((r) => r.createdBy).sort()).toEqual([MEMBER_A, MEMBER_B]);
   });
 
   it('lets an admin read every order (USING: read-all)', async () => {

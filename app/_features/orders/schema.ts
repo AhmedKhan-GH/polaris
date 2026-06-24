@@ -11,8 +11,10 @@ import {
 } from 'drizzle-orm/pg-core';
 
 /**
- * Orders — an OWNED resource with a role overlay (Domain Charter D4). A `member`
- * owns the orders they create; `owner`/`admin` read all. The header carries the
+ * Orders — an OWNED resource with a role overlay (Domain Charter D4). READ is
+ * OPEN for now: every signed-in caller sees all orders (and their lines), a
+ * deliberate temporary stance. WRITES stay owned — a `member` writes only the
+ * orders they create; `owner`/`admin` write all. The header carries the
  * lifecycle `status` and a human-readable `order_number`; line items live in a
  * sibling table.
  *

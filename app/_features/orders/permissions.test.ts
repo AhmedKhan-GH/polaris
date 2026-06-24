@@ -26,10 +26,13 @@ describe('app/_features/orders permissions', () => {
     );
   });
 
-  it('lets a member read their OWN order but not someone else’s', () => {
-    const ability = buildAbility({ userId: ME, roles: ['member'] });
-    expect(ability.can('read', subject('Order', { createdBy: ME }))).toBe(true);
-    expect(ability.can('read', subject('Order', { createdBy: OTHER }))).toBe(false);
+  it('lets any signed-in caller read ANY order (open read for now)', () => {
+    // Read is intentionally open at the moment — every signed-in caller sees all
+    // orders (and their line items), regardless of who created them. Writes stay
+    // ownership/role-scoped (see the update cases below).
+    const member = buildAbility({ userId: ME, roles: ['member'] });
+    expect(member.can('read', subject('Order', { createdBy: ME }))).toBe(true);
+    expect(member.can('read', subject('Order', { createdBy: OTHER }))).toBe(true);
   });
 
   it('lets an admin read any order (read-all)', () => {
