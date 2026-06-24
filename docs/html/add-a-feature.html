@@ -412,15 +412,18 @@ export { getNotes, createNote } from './actions';
       <tr><td><code>createProduct</code></td><td><span class="pill">server action</span></td><td></td><td><code>./actions</code></td></tr>
       <tr><td><code>updateProduct</code></td><td><span class="pill">server action</span></td><td></td><td><code>./actions</code></td></tr>
       <tr><td><code>retireProduct</code></td><td><span class="pill">server action</span></td><td></td><td><code>./actions</code></td></tr>
+      <tr><td><code>restoreProduct</code></td><td><span class="pill">server action</span></td><td></td><td><code>./actions</code></td></tr>
       <tr><td><code>ProductRow</code></td><td><span class="pill">server action</span></td><td></td><td><code>./actions</code></td></tr>
+      <tr><td><code>CreateProductResult</code></td><td><span class="pill">server action</span></td><td></td><td><code>./actions</code></td></tr>
       <tr><td><code>ProductListRow</code></td><td><span class="pill">component</span></td><td></td><td><code>./ProductListRow</code></td></tr>
       <tr><td><code>ProductListRowData</code></td><td><span class="pill">component</span></td><td></td><td><code>./ProductListRow</code></td></tr>
+      <tr><td><code>ProductCreateForm</code></td><td><span class="pill">component</span></td><td></td><td><code>./ProductCreateForm</code></td></tr>
   </table>
     <p class="featdoc-label"><strong>Used by</strong></p>
   <table>
     <tr><th>Importing file</th><th>Imports</th></tr>
       <tr><td><code>app/(dashboard)/orders/[id]/page.tsx</code></td><td><code>getProducts</code></td></tr>
-      <tr><td><code>app/(dashboard)/products/page.tsx</code></td><td><code>ProductListRow</code>, <code>createProduct</code>, <code>getProducts</code></td></tr>
+      <tr><td><code>app/(dashboard)/products/page.tsx</code></td><td><code>ProductCreateForm</code>, <code>ProductListRow</code>, <code>getProducts</code>, <code>ProductRow</code></td></tr>
   </table>
     <p class="featdoc-label"><strong>Other seams</strong></p>
   <p><strong>Manifests</strong> (registry-only, rule C): <code>nav.ts</code> · <code>permissions.ts</code> · <code>schema.ts</code></p>
@@ -441,9 +444,12 @@ export { getNotes, createNote } from './actions';
   createProduct,
   updateProduct,
   retireProduct,
+  restoreProduct,
   <span class="tok-k">type</span> <span class="tok-t">ProductRow</span>,
+  <span class="tok-k">type</span> <span class="tok-t">CreateProductResult</span>,
 } <span class="tok-k">from</span> <span class="tok-s">'./actions'</span>;
-<span class="tok-k">export</span> { <span class="tok-t">ProductListRow</span>, <span class="tok-k">type</span> <span class="tok-t">ProductListRowData</span> } <span class="tok-k">from</span> <span class="tok-s">'./ProductListRow'</span>;</code></pre></figure>
+<span class="tok-k">export</span> { <span class="tok-t">ProductListRow</span>, <span class="tok-k">type</span> <span class="tok-t">ProductListRowData</span> } <span class="tok-k">from</span> <span class="tok-s">'./ProductListRow'</span>;
+<span class="tok-k">export</span> { <span class="tok-t">ProductCreateForm</span> } <span class="tok-k">from</span> <span class="tok-s">'./ProductCreateForm'</span>;</code></pre></figure>
     </details>
   </section>
   <section class="featdoc" id="shell">

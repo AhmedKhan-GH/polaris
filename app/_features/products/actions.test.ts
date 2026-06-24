@@ -45,7 +45,13 @@ vi.mock('next/cache', () => ({
   revalidatePath: fake.revalidatePath,
 }));
 
-import { createProduct, getProducts, retireProduct, updateProduct } from './actions';
+import {
+  createProduct,
+  getProducts,
+  restoreProduct,
+  retireProduct,
+  updateProduct,
+} from './actions';
 
 /**
  * A drizzle-shaped chainable tx stub. `insert().values()` records the inserted
@@ -97,8 +103,8 @@ beforeEach(() => {
 });
 
 describe('app/_features/products createProduct', () => {
-  it('guards create/Product, inserts { name, sku, priceCents } stamped created_by=self, revalidates /products', async () => {
-    await createProduct(fd({ name: 'Sprocket', sku: 'SKU-9', priceCents: '500' }));
+  it('guards create/Product, converts the dollar price to cents, stamps created_by, revalidates, returns no error', async () => {
+    const res = await createProduct(fd({ name: 'Sprocket', sku: 'SKU-9', price: '5.00' }));
 
     expect(fake.withPermission).toHaveBeenCalledWith(
       'create',
@@ -112,23 +118,35 @@ describe('app/_features/products createProduct', () => {
       createdBy: ID,
     });
     expect(fake.revalidatePath).toHaveBeenCalledWith('/products');
+    expect(res).toEqual({});
   });
 
-  it('rejects a blank name with the schema message, AFTER consulting the limiter', async () => {
-    await expect(
-      createProduct(fd({ name: '', sku: 'SKU-9', priceCents: '1' })),
-    ).rejects.toThrow('Product name is required');
+  it('returns a validation error (not a throw) for a blank name, AFTER the limiter; no insert', async () => {
+    const res = await createProduct(fd({ name: '', sku: 'SKU-9', price: '1.00' }));
 
+    expect(res.error).toMatch(/name is required/i);
     expect(fake.insertValues).not.toHaveBeenCalled();
     expect(fake.revalidatePath).not.toHaveBeenCalled();
     expect(fake.calls).toEqual(['guard', 'limiter']);
   });
 
-  it('rejects a negative price with the schema message', async () => {
-    await expect(
-      createProduct(fd({ name: 'X', sku: 'SKU-9', priceCents: '-1' })),
-    ).rejects.toThrow(/non-negative/i);
+  it('returns a validation error for a negative price', async () => {
+    const res = await createProduct(fd({ name: 'X', sku: 'SKU-9', price: '-1' }));
+
+    expect(res.error).toBeTruthy();
     expect(fake.insertValues).not.toHaveBeenCalled();
+  });
+
+  it('surfaces a duplicate SKU as a friendly error (DB unique violation 23505), no revalidate', async () => {
+    fake.insertValues.mockReset();
+    fake.insertValues.mockRejectedValue(
+      Object.assign(new Error('duplicate key value'), { code: '23505' }),
+    );
+
+    const res = await createProduct(fd({ name: 'X', sku: 'SKU-1', price: '1.00' }));
+
+    expect(res.error).toMatch(/already exists/i);
+    expect(fake.revalidatePath).not.toHaveBeenCalled();
   });
 
   it('propagates a throttle rejection and never inserts or revalidates', async () => {
@@ -136,7 +154,7 @@ describe('app/_features/products createProduct', () => {
     fake.withRateLimit.mockRejectedValue(new Error('Rate limit exceeded. Retry in 1s'));
 
     await expect(
-      createProduct(fd({ name: 'X', sku: 'SKU-9', priceCents: '1' })),
+      createProduct(fd({ name: 'X', sku: 'SKU-9', price: '1.00' })),
     ).rejects.toThrow('Rate limit exceeded. Retry in 1s');
     expect(fake.insertValues).not.toHaveBeenCalled();
     expect(fake.revalidatePath).not.toHaveBeenCalled();
@@ -144,8 +162,8 @@ describe('app/_features/products createProduct', () => {
 });
 
 describe('app/_features/products updateProduct', () => {
-  it('guards update/Product, sets { name, sku, priceCents } by id, revalidates', async () => {
-    await updateProduct(fd({ id: ID, name: 'Renamed', sku: 'SKU-2', priceCents: '250' }));
+  it('guards update/Product, sets { name, sku, priceCents (from dollars) } by id, revalidates', async () => {
+    await updateProduct(fd({ id: ID, name: 'Renamed', sku: 'SKU-2', price: '2.50' }));
 
     expect(fake.withPermission).toHaveBeenCalledWith(
       'update',
@@ -168,15 +186,15 @@ describe('app/_features/products updateProduct', () => {
     expect(fake.revalidatePath).toHaveBeenCalledWith('/products');
   });
 
-  it('updates only the price when only priceCents is present', async () => {
-    await updateProduct(fd({ id: ID, priceCents: '1500' }));
+  it('updates only the price when only price is present (dollars → cents)', async () => {
+    await updateProduct(fd({ id: ID, price: '15.00' }));
 
     expect(fake.updateSet).toHaveBeenCalledWith({ priceCents: 1500 });
   });
 
   it('rejects a non-uuid id without touching the database', async () => {
     await expect(
-      updateProduct(fd({ id: 'not-a-uuid', name: 'X', sku: 'S', priceCents: '1' })),
+      updateProduct(fd({ id: 'not-a-uuid', name: 'X', sku: 'S', price: '1.00' })),
     ).rejects.toThrow();
     expect(fake.updateSet).not.toHaveBeenCalled();
   });
@@ -192,6 +210,21 @@ describe('app/_features/products retireProduct', () => {
       expect.any(Function),
     );
     expect(fake.updateSet).toHaveBeenCalledWith({ retired: true });
+    expect(fake.updateWhere).toHaveBeenCalled();
+    expect(fake.revalidatePath).toHaveBeenCalledWith('/products');
+  });
+});
+
+describe('app/_features/products restoreProduct', () => {
+  it('guards update/Product, sets retired=false by id (reversing a retire), revalidates', async () => {
+    await restoreProduct(fd({ id: ID }));
+
+    expect(fake.withPermission).toHaveBeenCalledWith(
+      'update',
+      'Product',
+      expect.any(Function),
+    );
+    expect(fake.updateSet).toHaveBeenCalledWith({ retired: false });
     expect(fake.updateWhere).toHaveBeenCalled();
     expect(fake.revalidatePath).toHaveBeenCalledWith('/products');
   });

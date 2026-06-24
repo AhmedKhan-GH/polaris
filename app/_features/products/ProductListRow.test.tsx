@@ -6,10 +6,14 @@
 // mocked — we assert WHAT the row submits (a partial FormData) and what it
 // renders, not the DB. Real persistence is proven by actions.test + the E2E suite.
 
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const actions = vi.hoisted(() => ({ updateProduct: vi.fn(), retireProduct: vi.fn() }));
+const actions = vi.hoisted(() => ({
+  updateProduct: vi.fn(),
+  retireProduct: vi.fn(),
+  restoreProduct: vi.fn(),
+}));
 vi.mock('./actions', () => actions);
 
 import { ProductListRow } from './ProductListRow';
@@ -40,6 +44,7 @@ const lastFormData = (fn: typeof actions.updateProduct) =>
 beforeEach(() => {
   actions.updateProduct.mockReset();
   actions.retireProduct.mockReset();
+  actions.restoreProduct.mockReset();
 });
 afterEach(cleanup);
 
@@ -57,12 +62,12 @@ describe('ProductListRow (manageable)', () => {
     ).toBeInTheDocument();
   });
 
-  it('saves the name on blur (partial FormData: just name)', () => {
+  it('saves the name on blur (partial FormData: just name)', async () => {
     renderRow();
     const name = screen.getByLabelText('Name for SKU-1');
     fireEvent.change(name, { target: { value: 'Brass Widget' } });
     fireEvent.blur(name);
-    expect(actions.updateProduct).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(actions.updateProduct).toHaveBeenCalledTimes(1));
     const fd = lastFormData(actions.updateProduct);
     expect(fd.get('id')).toBe('prod-1');
     expect(fd.get('name')).toBe('Brass Widget');
@@ -76,13 +81,14 @@ describe('ProductListRow (manageable)', () => {
     expect(screen.getByText('SKU-1')).toBeInTheDocument();
   });
 
-  it('saves the price on blur converted to CENTS (partial: just priceCents)', () => {
+  it('saves the price on blur in DOLLARS (partial FormData: just price)', async () => {
     renderRow();
     const price = screen.getByLabelText('Price for SKU-1');
     fireEvent.change(price, { target: { value: '12.50' } });
     fireEvent.blur(price);
+    await waitFor(() => expect(actions.updateProduct).toHaveBeenCalledTimes(1));
     const fd = lastFormData(actions.updateProduct);
-    expect(fd.get('priceCents')).toBe('1250');
+    expect(fd.get('price')).toBe('12.50');
     expect(fd.has('name')).toBe(false);
   });
 
@@ -101,18 +107,50 @@ describe('ProductListRow (manageable)', () => {
     expect(actions.updateProduct).not.toHaveBeenCalled();
   });
 
-  it('retires the product on click (FormData: just id)', () => {
+  it('asks for confirmation before retiring — retires only after Confirm', () => {
     renderRow();
-    fireEvent.click(screen.getByRole('button', { name: /retire/i }));
+    fireEvent.click(screen.getByRole('button', { name: 'Retire' }));
+    // A confirmation dialog appears; nothing retired yet.
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(actions.retireProduct).not.toHaveBeenCalled();
+    // Confirming executes the retire with just the id.
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm' }));
     expect(actions.retireProduct).toHaveBeenCalledTimes(1);
     expect(lastFormData(actions.retireProduct).get('id')).toBe('prod-1');
   });
 
-  it('shows a retired product read-only (no inputs, no Retire) even for a manager', () => {
+  it('cancelling the confirmation closes the dialog and does not retire', () => {
+    renderRow();
+    fireEvent.click(screen.getByRole('button', { name: 'Retire' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(actions.retireProduct).not.toHaveBeenCalled();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('renders a $ adornment outside the editable price input', () => {
+    renderRow();
+    const row = screen.getByTestId('product-row');
+    expect(within(row).getByText('$')).toBeInTheDocument();
+  });
+
+  it('caps the editable name length at the input level (matching the server limit)', () => {
+    renderRow();
+    expect(screen.getByLabelText('Name for SKU-1')).toHaveAttribute('maxlength', '200');
+  });
+
+  it('shows a retired product read-only with a Restore action (no inputs, no Retire) for a manager', () => {
     renderRow({ retired: true });
     expect(screen.queryByLabelText('Name for SKU-1')).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /retire/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Retire' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Restore' })).toBeInTheDocument();
     expect(screen.getByText('Retired')).toBeInTheDocument();
+  });
+
+  it('restores a retired product on click (FormData: just id, no confirmation)', () => {
+    renderRow({ retired: true });
+    fireEvent.click(screen.getByRole('button', { name: 'Restore' }));
+    expect(actions.restoreProduct).toHaveBeenCalledTimes(1);
+    expect(lastFormData(actions.restoreProduct).get('id')).toBe('prod-1');
   });
 });
 
@@ -128,5 +166,64 @@ describe('ProductListRow (read-only)', () => {
     expect(
       within(row).getByText('11111111-1111-4111-8111-111111111111'),
     ).toBeInTheDocument();
+  });
+
+  it('formats the read-only price with thousands separators', () => {
+    renderRow({ priceCents: 1234567 }, false); // $12,345.67
+    expect(screen.getByText('$12,345.67')).toBeInTheDocument();
+  });
+});
+
+// Inline edits auto-save on blur with no Save button, so a failed save (realistically
+// the per-user write budget tripping on rapid edits) must NOT be silent: surface it,
+// keep the typed value so the edit can be retried, and clear it once a save lands.
+describe('ProductListRow (inline-save feedback)', () => {
+  it('surfaces an error and keeps the typed value when an inline save fails', async () => {
+    actions.updateProduct.mockRejectedValue(
+      new Error('Rate limit exceeded. Retry in 5s'),
+    );
+    renderRow();
+    const name = screen.getByLabelText('Name for SKU-1');
+    fireEvent.change(name, { target: { value: 'Brass Widget' } });
+    fireEvent.blur(name);
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/couldn.t save/i);
+    expect(name).toHaveValue('Brass Widget'); // retained so the edit isn't lost
+  });
+
+  it('clears the error once a later edit saves successfully', async () => {
+    actions.updateProduct
+      .mockRejectedValueOnce(new Error('boom'))
+      .mockResolvedValueOnce(undefined);
+    renderRow();
+    const price = screen.getByLabelText('Price for SKU-1');
+    fireEvent.change(price, { target: { value: '12.50' } });
+    fireEvent.blur(price);
+    expect(await screen.findByRole('alert')).toBeInTheDocument();
+
+    fireEvent.change(price, { target: { value: '13.50' } });
+    fireEvent.blur(price);
+    await waitFor(() =>
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument(),
+    );
+  });
+
+  it('shows a saving indicator while an inline save is in flight', async () => {
+    let release!: () => void;
+    actions.updateProduct.mockReturnValue(
+      new Promise<void>((resolve) => {
+        release = resolve;
+      }),
+    );
+    renderRow();
+    const name = screen.getByLabelText('Name for SKU-1');
+    fireEvent.change(name, { target: { value: 'Brass Widget' } });
+    fireEvent.blur(name);
+
+    expect(await screen.findByText(/saving/i)).toBeInTheDocument();
+    release();
+    await waitFor(() =>
+      expect(screen.queryByText(/saving/i)).not.toBeInTheDocument(),
+    );
   });
 });

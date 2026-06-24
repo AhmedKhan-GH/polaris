@@ -12,6 +12,9 @@ export {
   createProduct,
   updateProduct,
   retireProduct,
+  restoreProduct,
   type ProductRow,
+  type CreateProductResult,
 } from './actions';
 export { ProductListRow, type ProductListRowData } from './ProductListRow';
+export { ProductCreateForm } from './ProductCreateForm';

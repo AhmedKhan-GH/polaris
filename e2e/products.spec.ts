@@ -23,7 +23,7 @@ test.describe('products catalog', () => {
 
     await page.getByLabel('Product name').fill('Test Widget');
     await page.getByLabel('SKU').fill('SKU-100');
-    await page.getByLabel('Price (cents)').fill('1500');
+    await page.getByLabel('Price ($)').fill('15.00');
     await page.getByRole('button', { name: 'Add product' }).click();
 
     const row = page.getByTestId('product-row');
@@ -59,6 +59,8 @@ test.describe('products catalog', () => {
     await page.goto('/products');
 
     await page.getByRole('button', { name: 'Retire' }).click();
+    // Retire is gated behind a confirmation dialog.
+    await page.getByRole('button', { name: 'Confirm' }).click();
 
     const row = page.getByTestId('product-row');
     await expect(row).toHaveCount(1); // still listed, not deleted
@@ -66,6 +68,21 @@ test.describe('products catalog', () => {
     // A retired row exposes no further controls.
     await expect(page.getByRole('button', { name: 'Retire' })).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Save' })).toHaveCount(0);
+  });
+
+  test('owner restores the retired product back to the active list', async ({
+    page,
+  }) => {
+    await loginViaSupabase(page);
+    await page.goto('/products');
+
+    // The retired product (from the prior test) offers a Restore action.
+    await page.getByRole('button', { name: 'Restore' }).click();
+
+    const row = page.getByTestId('product-row');
+    await expect(row).toHaveCount(1); // back, and active again
+    await expect(row.getByText('Active')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Restore' })).toHaveCount(0);
   });
 
   test('the dashboard shows the ungated Products link for any user', async ({
