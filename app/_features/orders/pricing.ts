@@ -26,3 +26,10 @@ export function effectivePriceCents(line: LinePrice): number {
 export function lineTotalCents(line: LinePrice & { quantity: number }): number {
   return effectivePriceCents(line) * line.quantity;
 }
+
+/** The order's total: the sum of every line total (0 for an empty order). */
+export function orderTotalCents(
+  lines: Array<LinePrice & { quantity: number }>,
+): number {
+  return lines.reduce((sum, line) => sum + lineTotalCents(line), 0);
+}

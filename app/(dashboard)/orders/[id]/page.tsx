@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 
 import {
   LineItemRow,
+  OrderSummary,
   ProductCombobox,
   addLine,
   getAllowedTransitions,
@@ -175,6 +176,8 @@ export default async function OrderDetailPage({
           )}
         </tbody>
       </table>
+
+      <OrderSummary lines={lines} />
     </div>
   );
 }

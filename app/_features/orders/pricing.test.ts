@@ -8,7 +8,11 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { effectivePriceCents, lineTotalCents } from '@/app/_features/orders/pricing';
+import {
+  effectivePriceCents,
+  lineTotalCents,
+  orderTotalCents,
+} from '@/app/_features/orders/pricing';
 
 describe('effectivePriceCents', () => {
   it('uses the list price when there is no override', () => {
@@ -31,5 +35,20 @@ describe('lineTotalCents', () => {
 
   it('multiplies the override price by quantity', () => {
     expect(lineTotalCents({ listPriceCents: 1000, overridePriceCents: 800, quantity: 2 })).toBe(1600);
+  });
+});
+
+describe('orderTotalCents', () => {
+  it('sums every line total across the order (mixing list and override lines)', () => {
+    expect(
+      orderTotalCents([
+        { listPriceCents: 1000, overridePriceCents: null, quantity: 3 }, // 3000
+        { listPriceCents: 500, overridePriceCents: 400, quantity: 2 }, // 800
+      ]),
+    ).toBe(3800);
+  });
+
+  it('is zero for an order with no lines', () => {
+    expect(orderTotalCents([])).toBe(0);
   });
 });
