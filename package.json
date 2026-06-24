@@ -11,6 +11,7 @@
     "test:watch": "vitest",
     "test:integration": "vitest run --config vitest.integration.config.mts",
     "test:e2e": "playwright test",
+    "test:e2e:isolated": "node scripts/e2e-isolated.mjs",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:reset": "npx supabase db reset && npm run db:setup",
