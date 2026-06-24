@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react';
 
 import { normalizeDollarInput } from '@/lib/money';
+import { useInlineKeys } from '@/lib/use-inline-keys';
 
 import { restoreProduct, retireProduct, updateProduct } from './actions';
 
@@ -64,14 +65,13 @@ export function ProductListRow({
     });
   }
 
-  function onNameBlur(e: React.FocusEvent<HTMLInputElement>) {
-    const value = e.currentTarget.value.trim();
+  function commitName(input: HTMLInputElement) {
+    const value = input.value.trim();
     if (value === product.name || value === '') return;
     save({ name: value });
   }
 
-  function onPriceBlur(e: React.FocusEvent<HTMLInputElement>) {
-    const input = e.currentTarget;
+  function commitPrice(input: HTMLInputElement) {
     // Snap to a fixed two-decimal money display the way financial inputs do
     // (12 → 12.00, 12.999 → 13.00); the server stores exactly this rounded value,
     // and normalizing first means a re-typed equivalent (10 vs 10.00) won't save.
@@ -82,6 +82,10 @@ export function ProductListRow({
     if (raw === initialPrice || raw === '') return;
     save({ price: raw });
   }
+
+  // Enter commits then deselects, Escape reverts — layered over the blur-save.
+  const nameKeys = useInlineKeys(commitName);
+  const priceKeys = useInlineKeys(commitPrice);
 
   function onRetire() {
     const fd = new FormData();
@@ -103,8 +107,10 @@ export function ProductListRow({
             defaultValue={product.name}
             maxLength={200}
             aria-label={`Name for ${product.sku}`}
-            onBlur={onNameBlur}
-            className="w-40 rounded border border-zinc-300 px-2 py-1 text-sm"
+            onFocus={nameKeys.onFocus}
+            onKeyDown={nameKeys.onKeyDown}
+            onBlur={nameKeys.onBlur}
+            className="w-40 rounded border border-zinc-300 px-2 py-1 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         ) : (
           product.name
@@ -121,8 +127,10 @@ export function ProductListRow({
               step="0.01"
               defaultValue={toDollars(product.priceCents)}
               aria-label={`Price for ${product.sku}`}
-              onBlur={onPriceBlur}
-              className="w-20 rounded border border-zinc-300 px-2 py-1 text-sm"
+              onFocus={priceKeys.onFocus}
+              onKeyDown={priceKeys.onKeyDown}
+              onBlur={priceKeys.onBlur}
+              className="w-20 rounded border border-zinc-300 px-2 py-1 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </span>
         ) : (

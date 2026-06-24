@@ -136,6 +136,49 @@ describe('LineItemRow (editable)', () => {
   });
 });
 
+// Inline cells commit on Enter (not just blur) and cancel on Escape (revert,
+// no save) — the keyboard ergonomics expected of a financial grid.
+describe('LineItemRow (keyboard commit/cancel)', () => {
+  it('commits a price override on Enter, normalized, just like blur', () => {
+    renderRow();
+    const price = screen.getByLabelText('Unit price for Steel Widget') as HTMLInputElement;
+    fireEvent.focus(price);
+    fireEvent.change(price, { target: { value: '12' } });
+    fireEvent.keyDown(price, { key: 'Enter' });
+    expect(price.value).toBe('12.00');
+    expect(lastFormData(actions.updateLine).get('overridePriceCents')).toBe('1200');
+  });
+
+  it('cancels a price edit on Escape — reverts to the prior value and does not save', () => {
+    renderRow(); // effective $10.00
+    const price = screen.getByLabelText('Unit price for Steel Widget') as HTMLInputElement;
+    fireEvent.focus(price);
+    fireEvent.change(price, { target: { value: '7.77' } });
+    fireEvent.keyDown(price, { key: 'Escape' });
+    expect(price.value).toBe('10.00');
+    expect(actions.updateLine).not.toHaveBeenCalled();
+  });
+
+  it('commits a quantity edit on Enter', () => {
+    renderRow();
+    const qty = screen.getByLabelText('Quantity for Steel Widget') as HTMLInputElement;
+    fireEvent.focus(qty);
+    fireEvent.change(qty, { target: { value: '5' } });
+    fireEvent.keyDown(qty, { key: 'Enter' });
+    expect(lastFormData(actions.updateLine).get('quantity')).toBe('5');
+  });
+
+  it('cancels a quantity edit on Escape — reverts and does not save', () => {
+    renderRow(); // seeded qty 3
+    const qty = screen.getByLabelText('Quantity for Steel Widget') as HTMLInputElement;
+    fireEvent.focus(qty);
+    fireEvent.change(qty, { target: { value: '9' } });
+    fireEvent.keyDown(qty, { key: 'Escape' });
+    expect(qty.value).toBe('3');
+    expect(actions.updateLine).not.toHaveBeenCalled();
+  });
+});
+
 describe('LineItemRow (read-only)', () => {
   it('renders plain values with no inputs and no remove control when canEdit is false', () => {
     renderRow({}, false);

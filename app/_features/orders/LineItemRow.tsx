@@ -3,6 +3,7 @@
 import { useTransition } from 'react';
 
 import { normalizeDollarInput } from '@/lib/money';
+import { useInlineKeys } from '@/lib/use-inline-keys';
 
 import { removeLine, updateLine } from './actions';
 import { effectivePriceCents, lineTotalCents } from './pricing';
@@ -55,16 +56,15 @@ export function LineItemRow({
     startTransition(() => updateLine(fd));
   }
 
-  function onQuantityBlur(e: React.FocusEvent<HTMLInputElement>) {
-    const value = e.currentTarget.value.trim();
+  function commitQuantity(input: HTMLInputElement) {
+    const value = input.value.trim();
     if (value === initialQty || value === '') return;
     save({ quantity: value });
   }
 
-  function onPriceBlur(e: React.FocusEvent<HTMLInputElement>) {
-    const input = e.currentTarget;
-    // Snap to a fixed two-decimal money display on blur (12 → 12.00, 12.999 →
-    // 13.00), matching the server's round-to-cent, then apply the override rules.
+  function commitPrice(input: HTMLInputElement) {
+    // Snap to a fixed two-decimal money display (12 → 12.00, 12.999 → 13.00),
+    // matching the server's round-to-cent, then apply the override rules.
     const normalized = normalizeDollarInput(input.value);
     if (normalized !== null) input.value = normalized;
     const raw = input.value.trim();
@@ -76,6 +76,10 @@ export function LineItemRow({
       cents === null || cents === line.listPriceCents ? '' : String(cents);
     save({ overridePriceCents });
   }
+
+  // Enter commits then deselects, Escape reverts — layered over the blur-save.
+  const quantityKeys = useInlineKeys(commitQuantity);
+  const priceKeys = useInlineKeys(commitPrice);
 
   function onRemove() {
     const fd = new FormData();
@@ -95,8 +99,10 @@ export function LineItemRow({
             min={1}
             defaultValue={line.quantity}
             aria-label={`Quantity for ${line.productName}`}
-            onBlur={onQuantityBlur}
-            className="w-20 rounded border border-zinc-300 px-2 py-1 text-sm"
+            onFocus={quantityKeys.onFocus}
+            onKeyDown={quantityKeys.onKeyDown}
+            onBlur={quantityKeys.onBlur}
+            className="w-20 rounded border border-zinc-300 px-2 py-1 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         ) : (
           line.quantity
@@ -111,8 +117,10 @@ export function LineItemRow({
               step="0.01"
               defaultValue={toDollars(effective)}
               aria-label={`Unit price for ${line.productName}`}
-              onBlur={onPriceBlur}
-              className="w-24 rounded border border-zinc-300 px-2 py-1 text-sm"
+              onFocus={priceKeys.onFocus}
+              onKeyDown={priceKeys.onKeyDown}
+              onBlur={priceKeys.onBlur}
+              className="w-24 rounded border border-zinc-300 px-2 py-1 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             {hasOverride && (
               <span className="text-xs text-zinc-400 line-through">

@@ -185,6 +185,51 @@ describe('ProductListRow (manageable)', () => {
   });
 });
 
+// Inline cells commit on Enter (not just blur) and cancel on Escape (revert,
+// no save) — the keyboard ergonomics expected of a financial grid.
+describe('ProductListRow (keyboard commit/cancel)', () => {
+  it('commits a price edit on Enter, normalized, just like blur', async () => {
+    renderRow();
+    const price = screen.getByLabelText('Price for SKU-1') as HTMLInputElement;
+    fireEvent.focus(price);
+    fireEvent.change(price, { target: { value: '12.5' } });
+    fireEvent.keyDown(price, { key: 'Enter' });
+    expect(price.value).toBe('12.50');
+    await waitFor(() => expect(actions.updateProduct).toHaveBeenCalledTimes(1));
+    expect(lastFormData(actions.updateProduct).get('price')).toBe('12.50');
+  });
+
+  it('cancels a price edit on Escape — reverts to the prior value and does not save', () => {
+    renderRow(); // seeded $10.00
+    const price = screen.getByLabelText('Price for SKU-1') as HTMLInputElement;
+    fireEvent.focus(price);
+    fireEvent.change(price, { target: { value: '99.99' } });
+    fireEvent.keyDown(price, { key: 'Escape' });
+    expect(price.value).toBe('10.00');
+    expect(actions.updateProduct).not.toHaveBeenCalled();
+  });
+
+  it('commits a name edit on Enter', async () => {
+    renderRow();
+    const name = screen.getByLabelText('Name for SKU-1') as HTMLInputElement;
+    fireEvent.focus(name);
+    fireEvent.change(name, { target: { value: 'Brass Widget' } });
+    fireEvent.keyDown(name, { key: 'Enter' });
+    await waitFor(() => expect(actions.updateProduct).toHaveBeenCalledTimes(1));
+    expect(lastFormData(actions.updateProduct).get('name')).toBe('Brass Widget');
+  });
+
+  it('cancels a name edit on Escape — reverts and does not save', () => {
+    renderRow();
+    const name = screen.getByLabelText('Name for SKU-1') as HTMLInputElement;
+    fireEvent.focus(name);
+    fireEvent.change(name, { target: { value: 'Zzz' } });
+    fireEvent.keyDown(name, { key: 'Escape' });
+    expect(name.value).toBe('Steel Widget');
+    expect(actions.updateProduct).not.toHaveBeenCalled();
+  });
+});
+
 describe('ProductListRow (read-only)', () => {
   it('renders plain values with no inputs and no retire control when canManage is false', () => {
     renderRow({}, false);
