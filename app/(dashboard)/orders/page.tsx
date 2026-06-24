@@ -1,12 +1,12 @@
 import Link from 'next/link';
-import { redirect } from 'next/navigation';
 
 import { createOrder, getOrders } from '@/app/_features/orders';
 
 /**
  * Orders list — an all-authed surface (the nav entry is ungated). `getOrders` is
  * RLS-scoped: a member sees only their own, owner/admin see all. "New order"
- * creates an empty draft and opens it. Covered by the orders E2E suite (a
+ * creates an empty draft and adds it to the list (open it from its row to add
+ * lines) — it does NOT navigate away. Covered by the orders E2E suite (a
  * recorded deviation) rather than a unit test for this async server component.
  */
 const statusChip: Record<string, string> = {
@@ -20,17 +20,19 @@ const statusChip: Record<string, string> = {
 export default async function OrdersPage() {
   const orders = await getOrders();
 
-  async function createAndOpen() {
+  async function createDraftOrder() {
     'use server';
-    const id = await createOrder();
-    redirect(`/orders/${id}`);
+    // Create an empty draft and STAY on the list — createOrder revalidates
+    // /orders, so the new draft appears in the table (newest first); open it
+    // from its row to add lines.
+    await createOrder();
   }
 
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold tracking-tight">Orders</h1>
-        <form action={createAndOpen}>
+        <form action={createDraftOrder}>
           <button
             type="submit"
             className="rounded bg-zinc-900 px-4 py-2 text-sm font-medium text-white"

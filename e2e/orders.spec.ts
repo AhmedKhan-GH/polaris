@@ -52,7 +52,10 @@ test.describe('orders intake + lifecycle', () => {
     await page.goto('/orders');
     await expect(page.getByTestId('order-row')).toHaveCount(0);
 
+    // Creating an order adds a draft to the LIST (no navigation); open it to edit.
     await page.getByRole('button', { name: 'New order' }).click();
+    await expect(page.getByTestId('order-row')).toHaveCount(1);
+    await page.getByRole('link', { name: 'Open' }).click();
     await expect(page).toHaveURL(/\/orders\/[0-9a-f-]+$/);
     await expect(page.getByTestId('order-status')).toHaveText('draft');
 
@@ -118,6 +121,8 @@ test.describe('orders intake + lifecycle', () => {
     await loginViaSupabase(page, 'member@example.com');
     await page.goto('/orders');
     await page.getByRole('button', { name: 'New order' }).click();
+    await expect(page.getByTestId('order-row')).toHaveCount(1);
+    await page.getByRole('link', { name: 'Open' }).click();
 
     // Add one line at the list price (500c × 1 = $5.00).
     await page.getByLabel('Product').fill(PRODUCT_NAME);
@@ -159,6 +164,8 @@ test.describe('orders intake + lifecycle', () => {
     await loginViaSupabase(page, 'member@example.com');
     await page.goto('/orders');
     await page.getByRole('button', { name: 'New order' }).click();
+    await expect(page.getByTestId('order-row')).toHaveCount(1);
+    await page.getByRole('link', { name: 'Open' }).click();
     await expect(page.getByTestId('order-status')).toHaveText('draft');
 
     await page.getByRole('button', { name: 'Cancel' }).click();
