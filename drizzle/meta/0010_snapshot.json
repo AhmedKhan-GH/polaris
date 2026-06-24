@@ -208,7 +208,7 @@
         },
         "order_lines_override_price_nonneg": {
           "name": "order_lines_override_price_nonneg",
-          "value": "\"order_lines\".\"override_price_cents\" IS NULL OR \"order_lines\".\"override_price_cents\" >= 0"
+          "value": "\"order_lines\".\"override_price_cents\" is null or \"order_lines\".\"override_price_cents\" >= 0"
         }
       },
       "isRLSEnabled": true
