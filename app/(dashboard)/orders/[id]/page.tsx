@@ -124,6 +124,7 @@ export default async function OrderDetailPage({
               name="quantity"
               type="number"
               min={1}
+              step={1}
               defaultValue={1}
               required
               aria-label="Quantity"

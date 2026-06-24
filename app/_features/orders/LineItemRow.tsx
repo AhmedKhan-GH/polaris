@@ -1,6 +1,6 @@
 'use client';
 
-import { useTransition } from 'react';
+import { useState, useTransition } from 'react';
 
 import { normalizeDollarInput } from '@/lib/money';
 import { useInlineKeys } from '@/lib/use-inline-keys';
@@ -40,6 +40,7 @@ export function LineItemRow({
   canEdit: boolean;
 }) {
   const [, startTransition] = useTransition();
+  const [confirmingRemove, setConfirmingRemove] = useState(false);
   const hasOverride = line.overridePriceCents !== null;
   const effective = effectivePriceCents(line);
   const total = lineTotalCents(line);
@@ -57,8 +58,19 @@ export function LineItemRow({
   }
 
   function commitQuantity(input: HTMLInputElement) {
-    const value = input.value.trim();
-    if (value === initialQty || value === '') return;
+    const raw = input.value.trim();
+    if (raw === '') return; // empty ignored — the field stays for a retry
+    const n = Number(raw);
+    // Quantity is a positive WHOLE number; the server's int-only validation
+    // throws on anything else (which crashed the page). Reject a fractional or
+    // non-positive entry here by reverting to the prior value, rather than
+    // sending it. An integer-valued decimal (4.0) is fine — store it as 4.
+    if (!Number.isInteger(n) || n < 1) {
+      input.value = initialQty;
+      return;
+    }
+    const value = String(n);
+    if (value === initialQty) return;
     save({ quantity: value });
   }
 
@@ -97,6 +109,7 @@ export function LineItemRow({
           <input
             type="number"
             min={1}
+            step={1}
             defaultValue={line.quantity}
             aria-label={`Quantity for ${line.productName}`}
             onFocus={quantityKeys.onFocus}
@@ -144,11 +157,45 @@ export function LineItemRow({
         <td className="py-2 pr-4">
           <button
             type="button"
-            onClick={onRemove}
+            onClick={() => setConfirmingRemove(true)}
             className="rounded border border-zinc-300 px-2 py-1 text-xs font-medium text-red-700"
           >
             Remove
           </button>
+          {confirmingRemove && (
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-label="Confirm remove"
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+            >
+              <div className="flex max-w-sm flex-col gap-3 rounded bg-white p-4 text-sm shadow-lg">
+                <p>
+                  Remove <span className="font-medium">{line.productName}</span>{' '}
+                  from this order? This can’t be undone.
+                </p>
+                <div className="flex justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setConfirmingRemove(false)}
+                    className="rounded border border-zinc-300 px-3 py-1.5 text-xs font-medium"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setConfirmingRemove(false);
+                      onRemove();
+                    }}
+                    className="rounded bg-red-700 px-3 py-1.5 text-xs font-medium text-white"
+                  >
+                    Confirm
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </td>
       )}
     </tr>

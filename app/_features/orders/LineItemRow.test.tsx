@@ -177,6 +177,70 @@ describe('LineItemRow (keyboard commit/cancel)', () => {
     expect(qty.value).toBe('3');
     expect(actions.updateLine).not.toHaveBeenCalled();
   });
+
+  // Quantity is a positive whole number. A fractional entry must never reach the
+  // server (its int-only validation throws, which previously crashed the page) —
+  // reject it at the field by reverting to the prior value.
+  it('rejects a non-integer quantity on blur — reverts and does not save', () => {
+    renderRow(); // seeded qty 3
+    const qty = screen.getByLabelText('Quantity for Steel Widget') as HTMLInputElement;
+    fireEvent.focus(qty);
+    fireEvent.change(qty, { target: { value: '2.5' } });
+    fireEvent.blur(qty);
+    expect(qty.value).toBe('3');
+    expect(actions.updateLine).not.toHaveBeenCalled();
+  });
+
+  it('rejects a non-integer quantity committed with Enter — reverts and does not save', () => {
+    renderRow();
+    const qty = screen.getByLabelText('Quantity for Steel Widget') as HTMLInputElement;
+    fireEvent.focus(qty);
+    fireEvent.change(qty, { target: { value: '4.2' } });
+    fireEvent.keyDown(qty, { key: 'Enter' });
+    expect(qty.value).toBe('3');
+    expect(actions.updateLine).not.toHaveBeenCalled();
+  });
+
+  it('still accepts an integer-valued decimal (4.0 → 4)', () => {
+    renderRow();
+    const qty = screen.getByLabelText('Quantity for Steel Widget') as HTMLInputElement;
+    fireEvent.focus(qty);
+    fireEvent.change(qty, { target: { value: '4.0' } });
+    fireEvent.blur(qty);
+    expect(lastFormData(actions.updateLine).get('quantity')).toBe('4');
+  });
+});
+
+// Removing a line is a hard delete, so it's gated behind a confirmation dialog
+// (mirroring the product retire flow) — nothing is removed until Confirm.
+describe('LineItemRow (remove confirmation)', () => {
+  it('asks for confirmation before removing — removes only after Confirm', () => {
+    renderRow();
+    fireEvent.click(screen.getByRole('button', { name: 'Remove' }));
+    // A confirmation dialog appears; nothing removed yet.
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(actions.removeLine).not.toHaveBeenCalled();
+    // Confirming removes the line with just id + orderId.
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm' }));
+    expect(actions.removeLine).toHaveBeenCalledTimes(1);
+    const fd = lastFormData(actions.removeLine);
+    expect(fd.get('id')).toBe('line-1');
+    expect(fd.get('orderId')).toBe('order-1');
+  });
+
+  it('cancelling the confirmation closes the dialog and does not remove', () => {
+    renderRow();
+    fireEvent.click(screen.getByRole('button', { name: 'Remove' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(actions.removeLine).not.toHaveBeenCalled();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('names the line being removed in the dialog', () => {
+    renderRow();
+    fireEvent.click(screen.getByRole('button', { name: 'Remove' }));
+    expect(within(screen.getByRole('dialog')).getByText(/Steel Widget/)).toBeInTheDocument();
+  });
 });
 
 describe('LineItemRow (read-only)', () => {
