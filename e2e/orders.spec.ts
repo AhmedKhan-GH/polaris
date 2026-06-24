@@ -173,4 +173,34 @@ test.describe('orders intake + lifecycle', () => {
     await page.getByRole('button', { name: 'Cancel' }).click();
     await expect(page.getByTestId('order-status')).toHaveText('cancelled');
   });
+
+  test('removing a line renumbers the remaining lines (no gaps)', async ({ page }) => {
+    await loginViaSupabase(page, 'member@example.com');
+    await page.goto('/orders');
+    await page.getByRole('button', { name: 'New order' }).click();
+    await expect(page.getByTestId('order-row')).toHaveCount(1);
+    await page.getByRole('link', { name: 'Open' }).click();
+
+    // Three lines of the same product (allowed on separate lines) → #1, #2, #3.
+    for (let i = 1; i <= 3; i++) {
+      await page.getByLabel('Product').fill(PRODUCT_NAME);
+      await page.getByRole('option', { name: new RegExp(PRODUCT_NAME) }).click();
+      await page.getByLabel('Quantity', { exact: true }).fill('1');
+      await page.getByRole('button', { name: 'Add line' }).click();
+      await expect(page.getByTestId('line-row')).toHaveCount(i);
+    }
+    await expect(page.getByTestId('line-number')).toHaveText(['1', '2', '3']);
+
+    // Remove the MIDDLE line (its confirm dialog → Confirm).
+    await page
+      .getByTestId('line-row')
+      .nth(1)
+      .getByRole('button', { name: 'Remove' })
+      .click();
+    await page.getByRole('button', { name: 'Confirm' }).click();
+
+    // The remaining two lines renumber to 1, 2 — the gap is closed.
+    await expect(page.getByTestId('line-row')).toHaveCount(2);
+    await expect(page.getByTestId('line-number')).toHaveText(['1', '2']);
+  });
 });

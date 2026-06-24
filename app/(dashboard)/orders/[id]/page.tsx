@@ -159,14 +159,17 @@ export default async function OrderDetailPage({
               </td>
             </tr>
           ) : (
-            lines.map((l) => (
+            lines.map((l, index) => (
               <LineItemRow
                 key={l.id}
                 canEdit={canEditLines}
                 line={{
                   id: l.id,
                   orderId: order.id,
-                  lineNumber: l.lineNumber,
+                  // Display the row's POSITION, not the stored line_number — so the
+                  // numbers stay contiguous (1..N) after a line is removed. The
+                  // stored line_number is just a gap-tolerant ordering key.
+                  lineNumber: index + 1,
                   productName: byId.get(l.productId)?.name ?? l.productId.slice(0, 8),
                   quantity: l.quantity,
                   listPriceCents: l.listPriceCents,

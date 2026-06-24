@@ -102,7 +102,9 @@ export function LineItemRow({
 
   return (
     <tr data-testid="line-row">
-      <td className="py-2 pr-4 font-mono text-xs text-zinc-500">{line.lineNumber}</td>
+      <td data-testid="line-number" className="py-2 pr-4 font-mono text-xs text-zinc-500">
+        {line.lineNumber}
+      </td>
       <td className="py-2 pr-4">{line.productName}</td>
       <td className="py-2 pr-4">
         {canEdit ? (
