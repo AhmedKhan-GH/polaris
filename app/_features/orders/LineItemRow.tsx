@@ -124,6 +124,7 @@ export function LineItemRow({
       <td className="py-2 pr-4">
         {canEdit ? (
           <div className="flex items-baseline gap-2">
+            <span className="text-zinc-500">$</span>
             <input
               type="number"
               min={0}

@@ -64,6 +64,12 @@ describe('LineItemRow (editable)', () => {
     expect(screen.queryByText('$10.00')).not.toBeInTheDocument();
   });
 
+  it('renders a $ adornment to the left of the editable unit-price input', () => {
+    renderRow();
+    const row = screen.getByTestId('line-row');
+    expect(within(row).getByText('$')).toBeInTheDocument();
+  });
+
   it('saves the quantity on blur (partial FormData: just quantity)', () => {
     renderRow();
     const qty = screen.getByLabelText('Quantity for Steel Widget');
