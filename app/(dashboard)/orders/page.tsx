@@ -1,30 +1,33 @@
-import Link from 'next/link';
-
 import { createOrder, getOrders } from '@/app/_features/orders';
 
-/**
- * Orders list — an all-authed surface (the nav entry is ungated). `getOrders` is
- * RLS-scoped: a member sees only their own, owner/admin see all. "New order"
- * creates an empty draft and adds it to the list (open it from its row to add
- * lines) — it does NOT navigate away. Covered by the orders E2E suite (a
- * recorded deviation) rather than a unit test for this async server component.
- */
-const statusChip: Record<string, string> = {
-  draft: 'bg-zinc-200 text-zinc-800',
-  submitted: 'bg-blue-100 text-blue-800',
-  processing: 'bg-amber-100 text-amber-900',
-  completed: 'bg-green-100 text-green-800',
-  cancelled: 'bg-red-100 text-red-800',
-};
+import { OrdersBoardView } from './OrdersBoardView';
+import { OrdersListView } from './OrdersListView';
+import { OrdersStatusView } from './OrdersStatusView';
+import { ViewSwitcher } from './ViewSwitcher';
 
-export default async function OrdersPage() {
+/**
+ * Orders console — one RLS-scoped `getOrders()` feeding three URL-driven views:
+ * List, Board (a column per status), and Status (park on one status and clear
+ * tickets). View + selection live in the query string (`?view`, `?selected`,
+ * `?status`) — shareable and back-button-safe, no client cache. List/Board show
+ * a read-only preview for the selected order and "Open" to the full `/orders/[id]`
+ * page; the Status view edits in place. "New order" creates a draft and stays
+ * here. Covered by the orders E2E suite (async server component).
+ */
+type SearchParams = { view?: string; selected?: string; status?: string };
+
+export default async function OrdersPage({
+  searchParams,
+}: {
+  searchParams: Promise<SearchParams>;
+}) {
+  const { view = 'list', selected, status } = await searchParams;
   const orders = await getOrders();
 
   async function createDraftOrder() {
     'use server';
-    // Create an empty draft and STAY on the list — createOrder revalidates
-    // /orders, so the new draft appears in the table (newest first); open it
-    // from its row to add lines.
+    // Create an empty draft and STAY here — createOrder revalidates /orders, so
+    // the new draft appears (newest first); open it to add lines.
     await createOrder();
   }
 
@@ -42,52 +45,19 @@ export default async function OrdersPage() {
         </form>
       </div>
 
-      <table className="w-full text-left text-sm">
-        <thead>
-          <tr>
-            <th className="py-2 pr-4 font-medium">Order</th>
-            <th className="py-2 pr-4 font-medium">Status</th>
-            <th className="py-2 pr-4 font-medium">Created by</th>
-            <th className="py-2 pr-4 font-medium">Created (UTC)</th>
-            <th className="py-2 pr-4 font-medium"></th>
-          </tr>
-        </thead>
-        <tbody>
-          {orders.length === 0 ? (
-            <tr>
-              <td colSpan={5} className="py-2 text-zinc-500">
-                No orders yet.
-              </td>
-            </tr>
-          ) : (
-            orders.map((o) => (
-              <tr key={o.id} data-testid="order-row">
-                <td className="py-2 pr-4 font-mono">#{o.orderNumber}</td>
-                <td className="py-2 pr-4">
-                  <span
-                    data-testid="order-status"
-                    className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusChip[o.status] ?? 'bg-zinc-200 text-zinc-800'}`}
-                  >
-                    {o.status}
-                  </span>
-                </td>
-                <td
-                  data-testid="order-created-by"
-                  className="py-2 pr-4 font-mono text-xs"
-                >
-                  {o.createdBy}
-                </td>
-                <td className="py-2 pr-4">{o.createdAt.toISOString()}</td>
-                <td className="py-2 pr-4">
-                  <Link href={`/orders/${o.id}`} className="text-blue-700 underline">
-                    Open
-                  </Link>
-                </td>
-              </tr>
-            ))
-          )}
-        </tbody>
-      </table>
+      <ViewSwitcher view={view} selected={selected} status={status} />
+
+      {view === 'board' ? (
+        <OrdersBoardView orders={orders} selected={selected} />
+      ) : view === 'status' ? (
+        <OrdersStatusView
+          orders={orders}
+          status={status ?? 'submitted'}
+          selected={selected}
+        />
+      ) : (
+        <OrdersListView orders={orders} selected={selected} />
+      )}
     </div>
   );
 }

@@ -356,6 +356,7 @@ export { getNotes, createNote } from './actions';
       <tr><td><code>OrderRow</code></td><td><span class="pill">server action</span></td><td></td><td><code>./actions</code></td></tr>
       <tr><td><code>LineRow</code></td><td><span class="pill">server action</span></td><td></td><td><code>./actions</code></td></tr>
       <tr><td><code>getAllowedTransitions</code></td><td><span class="pill">function</span></td><td></td><td><code>./transitions</code></td></tr>
+      <tr><td><code>ORDER_STATUSES</code></td><td><span class="pill">component</span></td><td></td><td><code>./transitions</code></td></tr>
       <tr><td><code>OrderStatus</code></td><td><span class="pill">component</span></td><td></td><td><code>./transitions</code></td></tr>
       <tr><td><code>effectivePriceCents</code></td><td><span class="pill">function</span></td><td></td><td><code>./pricing</code></td></tr>
       <tr><td><code>lineTotalCents</code></td><td><span class="pill">function</span></td><td></td><td><code>./pricing</code></td></tr>
@@ -371,6 +372,10 @@ export { getNotes, createNote } from './actions';
   <table>
     <tr><th>Importing file</th><th>Imports</th></tr>
       <tr><td><code>app/(dashboard)/orders/OrderDetail.tsx</code></td><td><code>LineItemRow</code>, <code>OrderSummary</code>, <code>ProductCombobox</code>, <code>addLine</code>, <code>getAllowedTransitions</code>, <code>getOrder</code>, <code>getOrderLines</code>, <code>transitionOrder</code>, <code>OrderStatus</code></td></tr>
+      <tr><td><code>app/(dashboard)/orders/OrderPreview.tsx</code></td><td><code>LineItemRow</code>, <code>OrderSummary</code>, <code>getOrder</code>, <code>getOrderLines</code></td></tr>
+      <tr><td><code>app/(dashboard)/orders/OrdersBoardView.tsx</code></td><td><code>groupOrdersByStatus</code>, <code>OrderRow</code></td></tr>
+      <tr><td><code>app/(dashboard)/orders/OrdersListView.tsx</code></td><td><code>OrderRow</code></td></tr>
+      <tr><td><code>app/(dashboard)/orders/OrdersStatusView.tsx</code></td><td><code>ORDER_STATUSES</code>, <code>groupOrdersByStatus</code>, <code>OrderRow</code>, <code>OrderStatus</code></td></tr>
       <tr><td><code>app/(dashboard)/orders/page.tsx</code></td><td><code>createOrder</code>, <code>getOrders</code></td></tr>
   </table>
     <p class="featdoc-label"><strong>Other seams</strong></p>
@@ -398,7 +403,7 @@ export { getNotes, createNote } from './actions';
   <span class="tok-k">type</span> <span class="tok-t">OrderRow</span>,
   <span class="tok-k">type</span> <span class="tok-t">LineRow</span>,
 } <span class="tok-k">from</span> <span class="tok-s">'./actions'</span>;
-<span class="tok-k">export</span> { getAllowedTransitions, <span class="tok-k">type</span> <span class="tok-t">OrderStatus</span> } <span class="tok-k">from</span> <span class="tok-s">'./transitions'</span>;
+<span class="tok-k">export</span> { getAllowedTransitions, <span class="tok-t">ORDER_STATUSES</span>, <span class="tok-k">type</span> <span class="tok-t">OrderStatus</span> } <span class="tok-k">from</span> <span class="tok-s">'./transitions'</span>;
 <span class="tok-k">export</span> { effectivePriceCents, lineTotalCents } <span class="tok-k">from</span> <span class="tok-s">'./pricing'</span>;
 <span class="tok-k">export</span> { <span class="tok-t">LineItemRow</span>, <span class="tok-k">type</span> <span class="tok-t">LineItemRowData</span> } <span class="tok-k">from</span> <span class="tok-s">'./LineItemRow'</span>;
 <span class="tok-k">export</span> { <span class="tok-t">ProductCombobox</span>, <span class="tok-k">type</span> <span class="tok-t">ProductOption</span> } <span class="tok-k">from</span> <span class="tok-s">'./ProductCombobox'</span>;
@@ -428,6 +433,7 @@ export { getNotes, createNote } from './actions';
   <table>
     <tr><th>Importing file</th><th>Imports</th></tr>
       <tr><td><code>app/(dashboard)/orders/OrderDetail.tsx</code></td><td><code>getProducts</code></td></tr>
+      <tr><td><code>app/(dashboard)/orders/OrderPreview.tsx</code></td><td><code>getProducts</code></td></tr>
       <tr><td><code>app/(dashboard)/products/page.tsx</code></td><td><code>ProductCreateForm</code>, <code>ProductListRow</code>, <code>getProducts</code>, <code>ProductRow</code></td></tr>
   </table>
     <p class="featdoc-label"><strong>Other seams</strong></p>
