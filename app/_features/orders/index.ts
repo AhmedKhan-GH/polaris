@@ -23,3 +23,4 @@ export { effectivePriceCents, lineTotalCents } from './pricing';
 export { LineItemRow, type LineItemRowData } from './LineItemRow';
 export { ProductCombobox, type ProductOption } from './ProductCombobox';
 export { OrderSummary, type OrderSummaryLine } from './OrderSummary';
+export { groupOrdersByStatus } from './grouping';

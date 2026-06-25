@@ -365,11 +365,12 @@ export { getNotes, createNote } from './actions';
       <tr><td><code>ProductOption</code></td><td><span class="pill">component</span></td><td></td><td><code>./ProductCombobox</code></td></tr>
       <tr><td><code>OrderSummary</code></td><td><span class="pill">component</span></td><td></td><td><code>./OrderSummary</code></td></tr>
       <tr><td><code>OrderSummaryLine</code></td><td><span class="pill">component</span></td><td></td><td><code>./OrderSummary</code></td></tr>
+      <tr><td><code>groupOrdersByStatus</code></td><td><span class="pill">function</span></td><td></td><td><code>./grouping</code></td></tr>
   </table>
     <p class="featdoc-label"><strong>Used by</strong></p>
   <table>
     <tr><th>Importing file</th><th>Imports</th></tr>
-      <tr><td><code>app/(dashboard)/orders/[id]/page.tsx</code></td><td><code>LineItemRow</code>, <code>OrderSummary</code>, <code>ProductCombobox</code>, <code>addLine</code>, <code>getAllowedTransitions</code>, <code>getOrder</code>, <code>getOrderLines</code>, <code>transitionOrder</code>, <code>OrderStatus</code></td></tr>
+      <tr><td><code>app/(dashboard)/orders/OrderDetail.tsx</code></td><td><code>LineItemRow</code>, <code>OrderSummary</code>, <code>ProductCombobox</code>, <code>addLine</code>, <code>getAllowedTransitions</code>, <code>getOrder</code>, <code>getOrderLines</code>, <code>transitionOrder</code>, <code>OrderStatus</code></td></tr>
       <tr><td><code>app/(dashboard)/orders/page.tsx</code></td><td><code>createOrder</code>, <code>getOrders</code></td></tr>
   </table>
     <p class="featdoc-label"><strong>Other seams</strong></p>
@@ -401,7 +402,8 @@ export { getNotes, createNote } from './actions';
 <span class="tok-k">export</span> { effectivePriceCents, lineTotalCents } <span class="tok-k">from</span> <span class="tok-s">'./pricing'</span>;
 <span class="tok-k">export</span> { <span class="tok-t">LineItemRow</span>, <span class="tok-k">type</span> <span class="tok-t">LineItemRowData</span> } <span class="tok-k">from</span> <span class="tok-s">'./LineItemRow'</span>;
 <span class="tok-k">export</span> { <span class="tok-t">ProductCombobox</span>, <span class="tok-k">type</span> <span class="tok-t">ProductOption</span> } <span class="tok-k">from</span> <span class="tok-s">'./ProductCombobox'</span>;
-<span class="tok-k">export</span> { <span class="tok-t">OrderSummary</span>, <span class="tok-k">type</span> <span class="tok-t">OrderSummaryLine</span> } <span class="tok-k">from</span> <span class="tok-s">'./OrderSummary'</span>;</code></pre></figure>
+<span class="tok-k">export</span> { <span class="tok-t">OrderSummary</span>, <span class="tok-k">type</span> <span class="tok-t">OrderSummaryLine</span> } <span class="tok-k">from</span> <span class="tok-s">'./OrderSummary'</span>;
+<span class="tok-k">export</span> { groupOrdersByStatus } <span class="tok-k">from</span> <span class="tok-s">'./grouping'</span>;</code></pre></figure>
     </details>
   </section>
   <section class="featdoc" id="products">
@@ -425,7 +427,7 @@ export { getNotes, createNote } from './actions';
     <p class="featdoc-label"><strong>Used by</strong></p>
   <table>
     <tr><th>Importing file</th><th>Imports</th></tr>
-      <tr><td><code>app/(dashboard)/orders/[id]/page.tsx</code></td><td><code>getProducts</code></td></tr>
+      <tr><td><code>app/(dashboard)/orders/OrderDetail.tsx</code></td><td><code>getProducts</code></td></tr>
       <tr><td><code>app/(dashboard)/products/page.tsx</code></td><td><code>ProductCreateForm</code>, <code>ProductListRow</code>, <code>getProducts</code>, <code>ProductRow</code></td></tr>
   </table>
     <p class="featdoc-label"><strong>Other seams</strong></p>
