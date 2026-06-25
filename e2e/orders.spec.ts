@@ -25,7 +25,8 @@ let productId: string;
 test.beforeAll(async () => {
   pool = new pg.Pool({ connectionString: process.env.MIGRATE_DATABASE_URL });
   await pool.query(
-    `insert into products (name, sku, price_cents) values ('Order E2E Widget', $1, 500)
+    `insert into products (name, sku, price_cents, created_by)
+       values ('Order E2E Widget', $1, 500, gen_random_uuid())
        on conflict (sku) do nothing`,
     [SKU],
   );
@@ -202,5 +203,61 @@ test.describe('orders intake + lifecycle', () => {
     // The remaining two lines renumber to 1, 2 — the gap is closed.
     await expect(page.getByTestId('line-row')).toHaveCount(2);
     await expect(page.getByTestId('line-number')).toHaveText(['1', '2']);
+  });
+});
+
+test.describe('orders console (multi-view)', () => {
+  test('switches views and previews a selected order without leaving the console', async ({
+    page,
+  }) => {
+    await loginViaSupabase(page, 'member@example.com');
+    await page.goto('/orders');
+    await page.getByRole('button', { name: 'New order' }).click();
+    await expect(page.getByTestId('order-row')).toHaveCount(1);
+
+    // Selecting in the list opens the read-only preview at the side (no nav).
+    await page.locator('a[href*="selected="]').first().click();
+    await expect(page).toHaveURL(/selected=/);
+    await expect(page.getByTestId('order-preview')).toBeVisible();
+
+    // The board shows the same order as a card.
+    await page.getByRole('link', { name: 'Board', exact: true }).click();
+    await expect(page).toHaveURL(/view=board/);
+    await expect(page.getByTestId('order-card')).toHaveCount(1);
+
+    // The status view shows the status rail.
+    await page.getByRole('link', { name: 'Status', exact: true }).click();
+    await expect(page.getByTestId('status-rail')).toBeVisible();
+  });
+
+  test('status view opens an order editable in place and clears it on transition', async ({
+    page,
+  }) => {
+    const orderId = (
+      await pool.query(
+        `insert into orders (created_by, status) values (gen_random_uuid(), 'submitted') returning id`,
+      )
+    ).rows[0].id;
+    await pool.query(
+      `insert into order_lines (order_id, line_number, product_id, quantity, list_price_cents)
+         values ($1, 1, $2, 2, 500)`,
+      [orderId, productId],
+    );
+
+    await loginViaSupabase(page, 'admin@example.com');
+    await page.goto('/orders?view=status&status=submitted');
+    await expect(page.getByTestId('status-card')).toHaveCount(1);
+
+    // Selecting opens the EDITABLE detail in the center panel — still in the
+    // console (no navigation to /orders/[id]).
+    await page.getByTestId('status-card').first().click();
+    await expect(page).toHaveURL(/view=status/);
+    const detail = page.getByTestId('status-detail');
+    await expect(detail.getByTestId('order-status')).toHaveText('submitted');
+    await expect(detail.getByTestId('line-row')).toHaveCount(1);
+
+    // Processing it (admin) transitions it — it drops out of the submitted rail.
+    await detail.getByRole('button', { name: 'Process' }).click();
+    await expect(page.getByTestId('status-card')).toHaveCount(0);
   });
 });
