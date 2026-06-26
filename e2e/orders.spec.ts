@@ -230,6 +230,31 @@ test.describe('orders console (multi-view)', () => {
     await expect(page.getByTestId('status-rail')).toBeVisible();
   });
 
+  test('list view filters by status', async ({ page }) => {
+    await pool.query(
+      `insert into orders (created_by, status) values (gen_random_uuid(), 'draft')`,
+    );
+    await pool.query(
+      `insert into orders (created_by, status) values (gen_random_uuid(), 'submitted')`,
+    );
+
+    await loginViaSupabase(page, 'admin@example.com'); // reads all
+    await page.goto('/orders');
+    await expect(page.getByTestId('order-row')).toHaveCount(2);
+
+    // Filter to submitted → only the submitted order remains.
+    await page
+      .getByTestId('list-filters')
+      .getByRole('link', { name: 'submitted', exact: true })
+      .click();
+    await expect(page).toHaveURL(/status=submitted/);
+    await expect(page.getByTestId('order-row')).toHaveCount(1);
+
+    // Clear → both are back.
+    await page.getByRole('link', { name: 'Clear' }).click();
+    await expect(page.getByTestId('order-row')).toHaveCount(2);
+  });
+
   test('status view opens an order editable in place and clears it on transition', async ({
     page,
   }) => {

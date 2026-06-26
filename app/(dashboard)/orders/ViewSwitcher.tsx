@@ -16,10 +16,14 @@ export function ViewSwitcher({
   view,
   selected,
   status,
+  from,
+  to,
 }: {
   view: string;
   selected?: string;
   status?: string;
+  from?: string;
+  to?: string;
 }) {
   return (
     <div className="flex gap-1" data-testid="view-switcher">
@@ -27,6 +31,8 @@ export function ViewSwitcher({
         const params = new URLSearchParams({ view: v.key });
         if (selected) params.set('selected', selected);
         if (status) params.set('status', status);
+        if (from) params.set('from', from);
+        if (to) params.set('to', to);
         const active = v.key === view;
         return (
           <Link

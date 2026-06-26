@@ -14,14 +14,20 @@ import { ViewSwitcher } from './ViewSwitcher';
  * page; the Status view edits in place. "New order" creates a draft and stays
  * here. Covered by the orders E2E suite (async server component).
  */
-type SearchParams = { view?: string; selected?: string; status?: string };
+type SearchParams = {
+  view?: string;
+  selected?: string;
+  status?: string;
+  from?: string;
+  to?: string;
+};
 
 export default async function OrdersPage({
   searchParams,
 }: {
   searchParams: Promise<SearchParams>;
 }) {
-  const { view = 'list', selected, status } = await searchParams;
+  const { view = 'list', selected, status, from, to } = await searchParams;
   const orders = await getOrders();
 
   async function createDraftOrder() {
@@ -45,7 +51,13 @@ export default async function OrdersPage({
         </form>
       </div>
 
-      <ViewSwitcher view={view} selected={selected} status={status} />
+      <ViewSwitcher
+        view={view}
+        selected={selected}
+        status={status}
+        from={from}
+        to={to}
+      />
 
       {view === 'board' ? (
         <OrdersBoardView orders={orders} selected={selected} />
@@ -56,7 +68,13 @@ export default async function OrdersPage({
           selected={selected}
         />
       ) : (
-        <OrdersListView orders={orders} selected={selected} />
+        <OrdersListView
+          orders={orders}
+          selected={selected}
+          status={status}
+          from={from}
+          to={to}
+        />
       )}
     </div>
   );
