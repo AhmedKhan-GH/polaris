@@ -26,6 +26,8 @@ The charter's Iron Rules (`DOMAIN-CHARTER.md` §1) govern structure. Operational
 
 ## 3. Security model — 14 layers, control → file
 
+> Diagrams + per-mechanism detail (threat model, auth/authorization flows, the two-path RLS map, the add-a-feature security flowchart): [`SECURITY-HANDBOOK.md`](SECURITY-HANDBOOK.md).
+
 | # | Layer | Control | File(s) |
 |---|---|---|---|
 | 1 | Authentication | Supabase Auth (GoTrue), login-only | `app/_features/auth/actions.ts`, `app/login/page.tsx`, `lib/supabase/server.ts` |
