@@ -47,3 +47,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# LaTeX build artifacts (archived architecture doc — keep .tex/.pdf, ignore the rest)
+docs/archive/architecture/*.aux
+docs/archive/architecture/*.log
+docs/archive/architecture/*.out
