@@ -8,9 +8,11 @@ async function login(page: Page) {
   await page.locator('input[name="email"]').fill(TEST_EMAIL!);
   await page.locator('input[name="password"]').fill(TEST_PASSWORD!);
   await Promise.all([
-    page.waitForURL("/"),
+    page.waitForURL("**/apps"),
     page.getByRole("button", { name: "Sign in" }).click(),
   ]);
+  await page.goto("/orders");
+  await page.getByRole("tab", { name: "Board" }).click();
 }
 
 async function confirmAction(page: Page, label: string) {
@@ -28,9 +30,7 @@ async function confirmAction(page: Page, label: string) {
 async function createAndOpenDraft(page: Page) {
   await page.getByRole("button", { name: "Draft", exact: true }).click();
 
-  const draftedColumn = page
-    .getByRole("heading", { name: "Drafted", level: 2 })
-    .locator("xpath=ancestor::section[1]");
+  const draftedColumn = page.locator('section[aria-label="Drafted"]');
   const firstCard = draftedColumn.locator(".overflow-y-auto button").first();
   await expect(firstCard).toBeVisible({ timeout: 10_000 });
   await firstCard.click();
@@ -49,9 +49,7 @@ test.describe("reject and void paths", () => {
 
   test("rejecting a submitted order closes the sidebar", async ({ page }) => {
     await login(page);
-    await expect(
-      page.getByRole("heading", { name: "Drafted", level: 2 }),
-    ).toBeVisible();
+    await expect(page.locator('section[aria-label="Drafted"]')).toBeVisible();
 
     await createAndOpenDraft(page);
     await confirmAction(page, "Submit");
@@ -72,9 +70,7 @@ test.describe("reject and void paths", () => {
 
   test("voiding an invoiced order closes the sidebar", async ({ page }) => {
     await login(page);
-    await expect(
-      page.getByRole("heading", { name: "Drafted", level: 2 }),
-    ).toBeVisible();
+    await expect(page.locator('section[aria-label="Drafted"]')).toBeVisible();
 
     await createAndOpenDraft(page);
     await confirmAction(page, "Submit");

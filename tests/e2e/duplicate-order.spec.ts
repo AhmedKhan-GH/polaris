@@ -8,15 +8,21 @@ async function login(page: Page) {
   await page.locator('input[name="email"]').fill(TEST_EMAIL!);
   await page.locator('input[name="password"]').fill(TEST_PASSWORD!);
   await Promise.all([
-    page.waitForURL("/"),
+    page.waitForURL("**/apps"),
     page.getByRole("button", { name: "Sign in" }).click(),
   ]);
+  await page.goto("/orders");
+  await page.getByRole("tab", { name: "Board" }).click();
 }
 
 function draftedCount(page: Page) {
-  return page
-    .getByRole("heading", { name: "Drafted", level: 2 })
+  return draftedColumn(page)
+    .getByText("DRAFTED")
     .locator("xpath=following-sibling::span[1]");
+}
+
+function draftedColumn(page: Page) {
+  return page.locator('section[aria-label="Drafted"]');
 }
 
 test.describe("duplicate order", () => {
@@ -30,19 +36,14 @@ test.describe("duplicate order", () => {
   }) => {
     await login(page);
 
-    const draftedHeading = page.getByRole("heading", {
-      name: "Drafted",
-      level: 2,
-    });
-    await expect(draftedHeading).toBeVisible();
+    await expect(draftedColumn(page)).toBeVisible();
+
+    const initialDraftCount = Number((await draftedCount(page).textContent()) ?? "0");
 
     // Create and submit an order so we have a non-draft to duplicate
     await page.getByRole("button", { name: "Draft", exact: true }).click();
 
-    const draftedColumn = draftedHeading.locator(
-      "xpath=ancestor::section[1]",
-    );
-    const firstCard = draftedColumn.locator(".overflow-y-auto button").first();
+    const firstCard = draftedColumn(page).locator(".overflow-y-auto button").first();
     await expect(firstCard).toBeVisible({ timeout: 10_000 });
     await firstCard.click();
 
@@ -69,9 +70,11 @@ test.describe("duplicate order", () => {
       sidebar.getByRole("button", { name: "Invoice", exact: true }),
     ).toBeVisible({ timeout: 10_000 });
 
-    // Record drafted count before duplicating
-    const beforeText = await draftedCount(page).textContent();
-    const before = Number(beforeText ?? "0");
+    // The submitted source left the Drafted column; wait for that realtime
+    // count before asserting the duplicate adds a fresh draft.
+    await expect(draftedCount(page)).toHaveText(String(initialDraftCount), {
+      timeout: 10_000,
+    });
 
     // Click Duplicate
     const duplicateBtn = sidebar.getByRole("button", {
@@ -89,7 +92,7 @@ test.describe("duplicate order", () => {
     await expect(dupDialog).not.toBeVisible({ timeout: 10_000 });
 
     // The duplicate creates a new draft — count should increment
-    await expect(draftedCount(page)).toHaveText(String(before + 1), {
+    await expect(draftedCount(page)).toHaveText(String(initialDraftCount + 1), {
       timeout: 10_000,
     });
   });

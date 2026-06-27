@@ -52,6 +52,7 @@ export function TimezoneSelector() {
         onChange={(e) => setTimezone(e.target.value)}
         aria-label="Display timezone"
         disabled={!mounted}
+        suppressHydrationWarning
         className="max-w-[14rem] truncate rounded border border-transparent bg-transparent py-0.5 pl-1 pr-5 text-sm text-zinc-300 hover:text-zinc-100 focus:border-zinc-700 focus:outline-none disabled:opacity-60"
       >
         {/* Defensive: include the current value even if it's not in

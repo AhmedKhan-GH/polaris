@@ -8,15 +8,21 @@ async function login(page: Page) {
   await page.locator('input[name="email"]').fill(TEST_EMAIL!);
   await page.locator('input[name="password"]').fill(TEST_PASSWORD!);
   await Promise.all([
-    page.waitForURL("/"),
+    page.waitForURL("**/apps"),
     page.getByRole("button", { name: "Sign in" }).click(),
   ]);
+  await page.goto("/orders");
+  await page.getByRole("tab", { name: "Board" }).click();
 }
 
 function draftedCount(page: Page) {
-  return page
-    .getByRole("heading", { name: "Drafted", level: 2 })
+  return draftedColumn(page)
+    .getByText("DRAFTED")
     .locator("xpath=following-sibling::span[1]");
+}
+
+function draftedColumn(page: Page) {
+  return page.locator('section[aria-label="Drafted"]');
 }
 
 test.describe("discard draft", () => {
@@ -28,11 +34,7 @@ test.describe("discard draft", () => {
   test("discarding a draft removes it from the kanban", async ({ page }) => {
     await login(page);
 
-    const draftedHeading = page.getByRole("heading", {
-      name: "Drafted",
-      level: 2,
-    });
-    await expect(draftedHeading).toBeVisible();
+    await expect(draftedColumn(page)).toBeVisible();
 
     const beforeText = await draftedCount(page).textContent();
     const before = Number(beforeText ?? "0");
@@ -43,10 +45,7 @@ test.describe("discard draft", () => {
       timeout: 10_000,
     });
 
-    const draftedColumn = draftedHeading.locator(
-      "xpath=ancestor::section[1]",
-    );
-    await draftedColumn.locator(".overflow-y-auto button").first().click();
+    await draftedColumn(page).locator(".overflow-y-auto button").first().click();
 
     const sidebar = page.locator("aside");
     await expect(sidebar).toHaveAttribute("aria-hidden", "false", {

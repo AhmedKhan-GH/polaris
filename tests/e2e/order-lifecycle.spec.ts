@@ -8,9 +8,11 @@ async function login(page: Page) {
   await page.locator('input[name="email"]').fill(TEST_EMAIL!);
   await page.locator('input[name="password"]').fill(TEST_PASSWORD!);
   await Promise.all([
-    page.waitForURL("/"),
+    page.waitForURL("**/apps"),
     page.getByRole("button", { name: "Sign in" }).click(),
   ]);
+  await page.goto("/orders");
+  await page.getByRole("tab", { name: "Board" }).click();
 }
 
 async function confirmAction(page: Page, label: string) {
@@ -34,17 +36,11 @@ test.describe("order lifecycle", () => {
   test("draft -> submit -> invoice -> close -> archive", async ({ page }) => {
     await login(page);
 
-    const draftedHeading = page.getByRole("heading", {
-      name: "Drafted",
-      level: 2,
-    });
-    await expect(draftedHeading).toBeVisible();
+    const draftedColumn = page.locator('section[aria-label="Drafted"]');
+    await expect(draftedColumn).toBeVisible();
 
     await page.getByRole("button", { name: "Draft", exact: true }).click();
 
-    const draftedColumn = draftedHeading.locator(
-      "xpath=ancestor::section[1]",
-    );
     const firstCard = draftedColumn.locator(".overflow-y-auto button").first();
     await expect(firstCard).toBeVisible({ timeout: 10_000 });
     await firstCard.click();

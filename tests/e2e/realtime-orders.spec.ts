@@ -23,9 +23,11 @@ async function login(page: Page) {
   await page.locator('input[name="email"]').fill(TEST_EMAIL!);
   await page.locator('input[name="password"]').fill(TEST_PASSWORD!);
   await Promise.all([
-    page.waitForURL("/"),
+    page.waitForURL("**/apps"),
     page.getByRole("button", { name: "Sign in" }).click(),
   ]);
+  await page.goto("/orders");
+  await page.getByRole("tab", { name: "Board" }).click();
 }
 
 // The Drafted column count is rendered as a <span> immediately after
@@ -34,9 +36,13 @@ async function login(page: Page) {
 // markup changes in KanbanColumnShell; if that template moves the
 // badge, update this locator.
 function draftedCount(page: Page) {
-  return page
-    .getByRole("heading", { name: "Drafted", level: 2 })
+  return draftedColumn(page)
+    .getByText("DRAFTED")
     .locator('xpath=following-sibling::span[1]');
+}
+
+function draftedColumn(page: Page) {
+  return page.locator('section[aria-label="Drafted"]');
 }
 
 test.describe("realtime kanban", () => {
@@ -61,12 +67,8 @@ test.describe("realtime kanban", () => {
       // realtime subscription is set up in a useEffect once the orders
       // page mounts, so seeing the column heading is a reasonable
       // proxy for "subscribed and listening".
-      await expect(
-        observer.getByRole("heading", { name: "Drafted", level: 2 }),
-      ).toBeVisible();
-      await expect(
-        actor.getByRole("heading", { name: "Drafted", level: 2 }),
-      ).toBeVisible();
+      await expect(draftedColumn(observer)).toBeVisible();
+      await expect(draftedColumn(actor)).toBeVisible();
 
       // Give the WebSocket a moment to actually open after the page
       // settles. 500ms is empirical; Supabase typically connects in

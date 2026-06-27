@@ -8,9 +8,10 @@ async function login(page: Page) {
   await page.locator('input[name="email"]').fill(TEST_EMAIL!);
   await page.locator('input[name="password"]').fill(TEST_PASSWORD!);
   await Promise.all([
-    page.waitForURL("/"),
+    page.waitForURL("**/apps"),
     page.getByRole("button", { name: "Sign in" }).click(),
   ]);
+  await page.goto("/orders");
 }
 
 test.describe("realtime order line items", () => {
@@ -30,27 +31,26 @@ test.describe("realtime order line items", () => {
       await login(actor);
 
       await actor.getByRole("button", { name: "Draft", exact: true }).click();
-      const orderNumber = await actor
+      const createdOrderButton = actor
         .getByRole("button")
-        .filter({ hasText: /^\d{7}/ })
-        .first()
-        .locator("span")
-        .first()
-        .textContent();
+        .filter({ hasText: /#?\d{7}/ })
+        .first();
+      await expect(createdOrderButton).toBeVisible({ timeout: 10_000 });
+      const orderText = await createdOrderButton.textContent();
+      const orderNumber = orderText?.match(/\d{7}/)?.[0] ?? null;
 
       expect(orderNumber).toBeTruthy();
 
-      await actor.getByRole("button", { name: orderNumber!.trim() }).click();
-      await observer.getByRole("button", { name: orderNumber!.trim() }).click();
+      const orderButtonName = new RegExp(orderNumber!);
+      await actor.getByRole("button", { name: orderButtonName }).click();
+      await observer.getByRole("button", { name: orderButtonName }).click();
 
       await expect(actor.getByRole("heading", { name: "Line items" })).toBeVisible();
       await expect(observer.getByRole("heading", { name: "Line items" })).toBeVisible();
 
       const newSkuButton = actor.getByRole("button", { name: "New SKU" });
-      test.skip(
-        !(await newSkuButton.isVisible()),
-        "The configured E2E user must be admin/owner/system to create a SKU in this UI path.",
-      );
+      await newSkuButton.scrollIntoViewIfNeeded();
+      await expect(newSkuButton).toBeVisible();
 
       const sku = `E2E-${Date.now()}`;
       await actor.getByLabel("New SKU number").fill(sku);
@@ -58,9 +58,9 @@ test.describe("realtime order line items", () => {
       await actor.getByLabel("New SKU unit").fill("case");
       await newSkuButton.click();
 
-      await actor.getByLabel("SKU").fill(`${sku} - Realtime test item`);
+      await actor.getByRole("combobox", { name: "SKU" }).fill(`${sku} - Realtime test item`);
       await actor.getByLabel("Quantity").fill("2");
-      await actor.getByLabel("Unit").fill("case");
+      await actor.getByRole("textbox", { name: "Unit", exact: true }).fill("case");
       await actor.getByRole("button", { name: "Add" }).click();
 
       await expect(observer.getByText(sku)).toBeVisible({ timeout: 10_000 });
