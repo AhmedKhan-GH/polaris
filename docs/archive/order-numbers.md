@@ -1,5 +1,7 @@
 # Order Number System
 
+> **As-built note (2026-06-26):** this archived design proposes a sequence `order_number_seq` starting at **1,000,000**. The shipped code (`drizzle/0006`) instead uses sequence **`orders_order_number_seq` starting at `100000`** (6-digit). The scheme itself — DB-generated `bigint`, no business meaning, gaps OK, monotonic — ships as described; only the name and start value differ.
+
 ## The Core Idea
 
 Every order has two identifiers:

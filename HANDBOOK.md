@@ -64,7 +64,7 @@ The charter's Iron Rules (`DOMAIN-CHARTER.md` §1) govern structure. Operational
 | F | Feature | Status | Notes |
 |---|---|---|---|
 | F1–F5 | Foundation (db, auth, authz, RLS, least-privilege) | ✅ this branch | plus realtime plumbing, shell, harness — commits 1–33 |
-| F6 | **Orders domain** | 🔜 next | copy `app/_features/notes/` per `CONTRIBUTING.md`; order_number sequence, 6-status state machine, line items, instance-level CASL |
+| F6 | **Orders domain** | 🔜 next | copy `app/_features/notes/` per `CONTRIBUTING.md`; order_number sequence, 5-status state machine (draft/submitted/processing/completed/cancelled), line items, instance-level CASL |
 | F7 | Realtime | ✅ | shipped as foundation plumbing (D7) + exemplar proof |
 | F8 | Orders UI | 🔒 after F6 | kanban (drag = transition), list, line-item editor |
 | F9 | Settings + invite provisioning | 🧊 | invite codes, owner role management, last-owner protection, `SUPABASE_SERVICE_ROLE_KEY` returns to t3-env, profiles owner-reads-all (non-recursive) |
