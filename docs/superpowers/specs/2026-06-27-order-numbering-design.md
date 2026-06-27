@@ -1,6 +1,6 @@
-# Order Number System
+# Order Numbering — Design (as-built)
 
-> **As-built note (2026-06-26):** this archived design proposes a sequence `order_number_seq` starting at **1,000,000**. The shipped code (`drizzle/0006`) instead uses sequence **`orders_order_number_seq` starting at `100000`** (6-digit). The scheme itself — DB-generated `bigint`, no business meaning, gaps OK, monotonic — ships as described; only the name and start value differ.
+> **Status:** canonical design for a *shipped* feature. The order-numbering scheme as built in `drizzle/0006`: a DB-generated `bigint order_number` drawn from sequence **`orders_order_number_seq`, starting at `100000`** (6-digit). This records the *why* and the invariants any future change must preserve. (An earlier draft — and some code samples still in the body below — used `order_number_seq` @ `1,000,000`; the as-built values are `orders_order_number_seq` @ `100000`.)
 
 ## The Core Idea
 
@@ -15,14 +15,14 @@ The split matters. `id` is a good database key — random, unguessable, generata
 
 ---
 
-## Current Scheme
+## As-Built Scheme
 
 - **Storage type:** `bigint`
-- **Generator:** Postgres sequence `order_number_seq`, starting at `1000000`
-- **First order number:** `1000000` (one million)
-- **Growth:** monotonically increasing forever. Crosses 7 digits at 10M orders, 8 at 100M, etc. No ceiling that matters — `bigint` goes to `9_223_372_036_854_775_807` (~9.2 × 10¹⁸), which is more orders than the world will ever place.
+- **Generator:** Postgres sequence `orders_order_number_seq`, starting at `100000` (`drizzle/0006`)
+- **First order number:** `100000` (6 digits)
+- **Growth:** monotonically increasing forever. No ceiling that matters — `bigint` goes to `9_223_372_036_854_775_807` (~9.2 × 10¹⁸), more orders than the world will ever place.
 - **Uniqueness:** enforced by a `UNIQUE` constraint on `orders.order_number`
-- **Who sets it:** the database (`DEFAULT nextval('order_number_seq')`). The application never generates order numbers.
+- **Who sets it:** the database (`DEFAULT nextval('orders_order_number_seq')`). The application never generates order numbers.
 
 The counter grows naturally. There is no era allocation, no width juggling, no epoch migration. When the number gets long enough that display starts to matter visually, that is a presentation concern, not a data concern.
 

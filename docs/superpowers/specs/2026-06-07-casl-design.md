@@ -134,7 +134,7 @@ Also indexed in `00-permissions-roadmap.md`.
 
 Built on `feature/orders` (cut from the updated `clean-rewrite` after Part 1 merged). The first feature with an **owner column** (`orders.created_by`) → brings RLS in for real. Scoping is the **rich case**: a user sees **their own** orders, and the **`owner` role sees all** — i.e. *ownership **OR** role*, which is RLS's genuine, non-redundant use (not the trivial own-only case).
 
-> Reuses the archived "base order" shape, **minus order numbers** — UUIDs only for now (`order_number` bigint sequence starting 1,000,000 comes later; see `docs/archive/order-numbers.md`). **Order line items** (project #2) and the **order state machine** (archived plan) are deferred.
+> Reuses the archived "base order" shape, **minus order numbers** — UUIDs only for now (`order_number` bigint sequence comes later; see `docs/superpowers/specs/2026-06-27-order-numbering-design.md`). **Order line items** (project #2) and the **order state machine** are deferred.
 >
 > **Ordering note:** orders ship **before** the `sign_in_log` → Keycloak-events swap, so the DB always has a consumer (orders) and the swap never orphans the DB layer (no dead code).
 
@@ -170,7 +170,7 @@ Policies + the restricted role live in the schema; `drizzle-kit generate` emits 
 | 17 | `created_at` → **timestamptz** + DB default `now()` (both tables) · ✅ DONE (`3720808`) | integration (column type) |
 
 ### Still NOT in scope
-- **`order_number`** (bigint sequence starting 1,000,000) — later; see `docs/archive/order-numbers.md`.
+- **`order_number`** (bigint sequence, DB-generated) — later; see `docs/superpowers/specs/2026-06-27-order-numbering-design.md`.
 - **Order line items** (project #2), **order state machine** (archived plan), other order fields/status.
 - **Customer/org scoping** — swap `app.user_id` for `app.org_id` (Keycloak groups) when orders become customer-specific; reuses this exact plumbing.
 - Edit/delete UI, pagination.
@@ -183,8 +183,8 @@ Builds on the Part 2 scoping foundation. The bare order (`id`, `created_by`, `cr
 
 ### 3a — Order domain · branch `feature/orders-domain`
 Flesh out the order beyond the bare base:
-- **`order_number`** (bigint sequence starting 1,000,000, DB-generated) — `docs/archive/order-numbers.md`
-- **status / state machine** (e.g. drafted → submitted → in-transit → delivered) — archived plan `docs/archive/superpowers/plans/2026-05-28-order-state-machine-refactor.md`
+- **`order_number`** (bigint sequence, DB-generated) — `docs/superpowers/specs/2026-06-27-order-numbering-design.md`
+- **status / state machine** — now shipped as 5 statuses (draft/submitted/processing/completed/cancelled); see `app/_features/orders/transitions.ts`
 - **line items** — the **Order Line Items** project (#2)
 - domain fields (customer/destination, dates, etc. — per the real spec)
 - **Scoping carries over unchanged:** `created_by` stays; owner-sees-all stays; new fields just ride along under the existing CASL/RLS.
