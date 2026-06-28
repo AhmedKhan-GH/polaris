@@ -33,3 +33,33 @@ export function formatTimestamp(
   const period = hour12 ? ` ${get('dayPeriod')}` : '';
   return `${date} · ${time}${period}`;
 }
+
+const FALLBACK_TIME_ZONES = [
+  'UTC',
+  'America/New_York',
+  'America/Chicago',
+  'America/Denver',
+  'America/Los_Angeles',
+  'Europe/London',
+  'Europe/Paris',
+  'Asia/Tokyo',
+  'Asia/Singapore',
+  'Australia/Sydney',
+];
+
+/**
+ * The IANA zones the selector offers. Prefers the runtime's full list
+ * (`Intl.supportedValuesOf`, hundreds of zones); falls back to a small anchor set
+ * on runtimes that lack it, so the dropdown is never empty. `UTC` is guaranteed
+ * present — it is the default preference and must always be selectable, even
+ * though some runtimes omit it from the supported list. Called server-side so the
+ * options reach the client component as data (no SSR/CSR `Intl` divergence).
+ */
+export function listTimeZones(): string[] {
+  const supported = (
+    Intl as { supportedValuesOf?: (key: 'timeZone') => string[] }
+  ).supportedValuesOf;
+  const zones = supported ? supported('timeZone') : FALLBACK_TIME_ZONES;
+  return zones.includes('UTC') ? zones : ['UTC', ...zones];
+}
+

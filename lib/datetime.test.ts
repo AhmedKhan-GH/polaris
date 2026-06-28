@@ -6,7 +6,7 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { formatTimestamp } from '@/lib/datetime';
+import { formatTimestamp, listTimeZones } from '@/lib/datetime';
 
 // Fixed instants (epoch ms), so the expectations don't depend on "now".
 const WINTER = Date.UTC(2026, 0, 15, 12, 30, 45); // 2026-01-15 12:30:45 UTC (EST in NY)
@@ -47,5 +47,17 @@ describe('formatTimestamp', () => {
 
   it('defaults to 24h when hour12 is omitted', () => {
     expect(formatTimestamp(NOON, 'UTC')).toBe('2026-01-15 · 12:00:00');
+  });
+});
+
+describe('listTimeZones', () => {
+  it('returns a non-empty IANA list', () => {
+    expect(listTimeZones().length).toBeGreaterThan(0);
+  });
+
+  it('always offers UTC (the default) and real zones', () => {
+    const zones = listTimeZones();
+    expect(zones).toContain('UTC');
+    expect(zones).toContain('America/New_York');
   });
 });

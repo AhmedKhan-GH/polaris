@@ -13,6 +13,13 @@ vi.mock('../auth/actions', () => ({
   signOutAction: vi.fn(),
 }));
 
+// PreferenceControls is an async server component that reads the DB; stub it so
+// the header's own unit test stays a pure presentational check. Its behaviour is
+// covered by the control + action suites.
+vi.mock('./PreferenceControls', () => ({
+  PreferenceControls: () => null,
+}));
+
 import { PageHeader } from './PageHeader';
 import { branding } from '@/lib/branding';
 
