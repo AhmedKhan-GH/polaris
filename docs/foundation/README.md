@@ -4,8 +4,9 @@ The genesis record of **clean-rewrite-2** — the from-scratch, TDD-built founda
 
 Counterpart to [`docs/future/`](../future/): *where we came from* vs *where we're going.*
 
-## Lineage
+## What's here
 
-- [`CLEAN-REWRITE-1-PLAN.md`](CLEAN-REWRITE-1-PLAN.md) — the **original** plan (Supabase-era), superseded two generations over. Kept for the full story.
 - [`CLEAN-REWRITE-2-PLAN.md`](CLEAN-REWRITE-2-PLAN.md) — the **construction plan** for the foundation that shipped: domain boundaries, the slice model, the disposable `notes` exemplar.
 - [`CLEAN-REWRITE-2-BUILD.md`](CLEAN-REWRITE-2-BUILD.md) — the **task-by-task build record** (33 strictly-TDD, every-commit-green commits).
+
+*(An earlier, twice-superseded Supabase-era plan preceded these; it isn't kept here — the lineage origin is recorded in ADR-0001 and ADR-0004.)*
