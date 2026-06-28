@@ -5,7 +5,7 @@
 
 ## Context
 
-Polaris is multi-tenant Postgres with RLS. An RLS policy is an invisible `WHERE org_id = …` that the planner *sees and combines* with the user's filters, so indexes must be designed with the RLS column in mind, and a faceted filter UI produces multi-`AND` queries. We need an index strategy that keeps tenant-scoped reads fast without index sprawl, plus an explicit ladder for when — if ever — to add search or authorization infrastructure.
+Polaris is multi-tenant Postgres with RLS. An RLS policy is an invisible `WHERE org_id = …` that the planner *sees and combines* with the user's filters, so indexes must be designed with the RLS column in mind, and a faceted filter UI produces multi-`AND` queries. We need an index strategy that keeps tenant-scoped reads fast without index sprawl, plus an explicit ladder for when — if ever — to add search or authorization infrastructure. The full how-to lives in [`docs/reference/rls-indexing-strategy.md`](../reference/rls-indexing-strategy.md).
 
 ## Decision
 
