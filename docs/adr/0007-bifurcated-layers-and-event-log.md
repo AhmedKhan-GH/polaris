@@ -9,7 +9,7 @@ Cold-chain logistics is regulated and dispute-prone: *"who authorized this shipm
 
 ## Decision
 
-Three domain-agnostic principles (orders today; clients, shipments, line items later) — full detail in `docs/archive/architecture/architecture.md`:
+Three domain-agnostic principles (orders today; clients, shipments, line items later):
 
 1. **Bifurcated layers.** The Service sits *above* Domain and Persistence; Domain and Persistence are peers that never import each other. Dependency Inversion at the module level — neither leaf depends downstream, and the Service composes them. One narrow exception: Persistence imports the domain type + projection mapper to shape query results at the boundary (Domain stays pure, so its leaf status holds).
 2. **load → apply → save.** Every mutation: load (persistence) → apply (pure domain function) → save (persistence), sequenced by the Service. Sibling operations differ only in the domain call; if they differ in more, logic has leaked out of the domain.
