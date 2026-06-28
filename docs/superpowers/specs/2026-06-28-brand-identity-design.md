@@ -6,6 +6,15 @@
 > with what the app actually ships. It **extends an existing foundation module** and adds one
 > read-only business feature; **no ADR** is required (no domain boundary, iron rule, or
 > contract signature changes — contrast the time-preferences slice, which did need one).
+>
+> **Update (2026-06-28, later the same day):** the emblem squish was fixed **at the source**.
+> The owner supplied corrected artwork with the emblem as a literal `<circle>` — banner
+> `public/zeefoods_lockup.svg` (viewBox `112.26 × 38.39`, ≈ **2.92 : 1**) and standalone
+> `public/zeefoods_logo.svg` (1 : 1). So the "un-stretch correction" section below is
+> **superseded**: there is nothing to correct, `computeLogoRatios` is a straight read of the
+> geometry, and `branding.logoGeometry.emblem` is a circle radius `{ r: 17.58 }`, not an
+> ellipse `{ rx, ry }`. The section is kept as the design record. Net: lockup **2.92 : 1**,
+> emblem **1 : 1** (a true circle, verified by a Chromium bounding-box render).
 
 ## What it is
 
@@ -27,7 +36,7 @@ notes/products lineage) that consumes those foundation tokens. **Iron Rule 2** i
 it imports foundation, never another feature. This mirrors the time-preferences split —
 foundation data + a thin feature surface — but with no DB, no realtime, and no write path.
 
-## The emblem correction (the one real subtlety)
+## The emblem correction (SUPERSEDED — see the update note above)
 
 `Asset 3222.svg`'s emblem is an **ellipse** — `rx 16.11`, `ry 15.52` — i.e. **1.038 : 1**,
 wider than tall by exactly `rx / ry`. That is the signature of a non-uniform resize that

@@ -25,7 +25,7 @@ test.describe('brand & identity', () => {
 
     await expect(page.getByAltText('Zee Foods')).toBeVisible(); // the lockup
     await expect(page.getByText('#00447c')).toBeVisible(); // Zee Foods Blue
-    await expect(page.getByText('2.80 : 1')).toBeVisible(); // corrected lockup ratio
+    await expect(page.getByText('2.92 : 1')).toBeVisible(); // lockup ratio
     await expect(page.getByText('1 : 1')).toBeVisible(); // the circular emblem
   });
 });

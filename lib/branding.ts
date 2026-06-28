@@ -10,24 +10,24 @@ export const branding = {
   tagline: 'Cold chain logistics platform.',
   logo: { src: '/zeefoods_logo.svg', alt: 'Zee Foods logo', width: 80, height: 80 },
   wordmark: { src: '/zeefoods_letters.svg', alt: 'Zee Foods', width: 200, height: 97 },
-  // The full horizontal lockup (emblem + wordmark), corrected to a true circular
-  // emblem — see public/zeefoods_lockup.svg. Roughly 2.8:1 once un-stretched.
-  lockup: { src: '/zeefoods_lockup.svg', alt: 'Zee Foods', width: 224, height: 80 },
+  // The full horizontal lockup (emblem + wordmark), ~2.92:1. The emblem is a true
+  // circle — see public/zeefoods_lockup.svg.
+  lockup: { src: '/zeefoods_lockup.svg', alt: 'Zee Foods', width: 234, height: 80 },
 
   // Canonical brand palette — one declared value per color, named with its role.
   // These hexes are the source of truth; the lockup SVG and the globals.css
   // @theme vars both match them (the latter proven by a weld test).
   colors: {
     blue: { name: 'Zee Foods Blue', hex: '#00447c', role: 'Primary — wordmark, headings' },
-    green: { name: 'Zee Foods Green', hex: '#67953f', role: 'Accent — emblem mark' },
-    white: { name: 'White', hex: '#ffffff', role: 'Emblem ground / negative space' },
+    green: { name: 'Zee Foods Green', hex: '#67953f', role: 'Accent — emblem circle' },
+    white: { name: 'White', hex: '#ffffff', role: 'Emblem sprout / negative space' },
   },
 
-  // Source emblem + viewBox geometry, straight from the original artwork. Kept as
-  // data so the page DERIVES its proportions (and the circle correction) instead
-  // of hardcoding them — see app/_features/brand/ratios.ts.
+  // Lockup geometry, straight from public/zeefoods_lockup.svg. Kept as data so the
+  // page DERIVES its proportions instead of hardcoding them (see
+  // app/_features/brand/ratios.ts). The emblem is a true circle of radius r.
   logoGeometry: {
-    viewBox: { width: 111.51, height: 38.39 },
-    emblem: { rx: 16.11, ry: 15.52 },
+    viewBox: { width: 112.26, height: 38.39 },
+    emblem: { r: 17.58 },
   },
 } as const;

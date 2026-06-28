@@ -22,7 +22,7 @@ describe('Brand & Identity page', () => {
     render(<BrandPage />);
     expect(screen.getByAltText('Zee Foods')).toBeInTheDocument(); // the lockup <img>
     expect(screen.getByText('#00447c')).toBeInTheDocument(); // Zee Foods Blue
-    expect(screen.getByText('2.80 : 1')).toBeInTheDocument(); // corrected lockup ratio
+    expect(screen.getByText('2.92 : 1')).toBeInTheDocument(); // lockup ratio
     expect(screen.getByText('1 : 1')).toBeInTheDocument(); // the circular emblem
   });
 });

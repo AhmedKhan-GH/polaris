@@ -1,11 +1,11 @@
-// The corrected logo proportions, presented as a small table. Server component;
-// it formats the already-computed ratios (it does no math of its own).
+// The logo proportions, presented as a small table. Server component; it formats
+// the already-computed ratios (it does no math of its own).
 
 import { Fragment } from 'react';
 
 import type { LogoRatios as LogoRatiosData } from './ratios';
 
-/** "2.80 : 1" for non-whole ratios, "1 : 1" for whole ones (the circular emblem). */
+/** "2.92 : 1" for non-whole ratios, "1 : 1" for whole ones (the circular emblem). */
 function formatAspect(n: number): string {
   const rounded = Math.round(n);
   const whole = Math.abs(n - rounded) < 1e-6;
@@ -23,19 +23,13 @@ export function LogoRatios({ ratios }: { ratios: LogoRatiosData }) {
   ];
 
   return (
-    <div className="flex flex-col gap-2">
-      <dl className="grid w-max grid-cols-[auto_auto] gap-x-8 gap-y-1 text-sm">
-        {rows.map((row) => (
-          <Fragment key={row.label}>
-            <dt className="text-zinc-600">{row.label}</dt>
-            <dd className="font-mono">{row.value}</dd>
-          </Fragment>
-        ))}
-      </dl>
-      <p className="text-xs text-zinc-500">
-        Emblem corrected from {formatAspect(ratios.correction.sourceEmblemAspect)} (source) to a
-        true circle.
-      </p>
-    </div>
+    <dl className="grid w-max grid-cols-[auto_auto] gap-x-8 gap-y-1 text-sm">
+      {rows.map((row) => (
+        <Fragment key={row.label}>
+          <dt className="text-zinc-600">{row.label}</dt>
+          <dd className="font-mono">{row.value}</dd>
+        </Fragment>
+      ))}
+    </dl>
   );
 }

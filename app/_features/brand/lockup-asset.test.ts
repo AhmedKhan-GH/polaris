@@ -1,9 +1,9 @@
 // @vitest-environment node
 //
-// The served lockup must be the CORRECTED artwork, not the squished source.
-// These tests weld the asset to the canonical tokens: its viewBox must match the
-// horizontally un-stretched geometry (a true circular emblem), and its fills must
-// be exactly the canonical brand hexes — so a drifted asset fails the build.
+// The served lockup must match the canonical tokens: its emblem must be a TRUE
+// CIRCLE (a literal <circle> whose radius matches the recorded geometry), its
+// viewBox must match, and its fills must be the canonical brand colors — so a
+// drifted or re-squished asset fails the build.
 
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -15,20 +15,23 @@ import { branding } from '@/lib/branding';
 const ASSET = join(process.cwd(), 'public/zeefoods_lockup.svg');
 const svg = existsSync(ASSET) ? readFileSync(ASSET, 'utf8') : '';
 
-describe('public/zeefoods_lockup.svg — the corrected lockup asset', () => {
-  const { viewBox, emblem } = branding.logoGeometry;
-  const scaleX = emblem.ry / emblem.rx; // ~0.9634
-
-  it('un-stretches the source viewBox so the emblem renders as a true circle', () => {
-    const m = svg.match(/viewBox="0 0 ([\d.]+) ([\d.]+)"/);
+describe('public/zeefoods_lockup.svg — the canonical lockup asset', () => {
+  it('draws the emblem as a true circle matching the recorded radius', () => {
+    const m = svg.match(/<circle[^>]*\br="([\d.]+)"/);
     expect(m).not.toBeNull();
-    expect(Number(m![1])).toBeCloseTo(viewBox.width * scaleX, 1); // ~107.43, not the source 111.51
-    expect(Number(m![2])).toBeCloseTo(viewBox.height, 2); // height unchanged
+    expect(Number(m![1])).toBeCloseTo(branding.logoGeometry.emblem.r, 2);
   });
 
-  it('uses only the canonical brand hexes — no drift', () => {
-    expect(svg).toContain(branding.colors.blue.hex);
-    expect(svg).toContain(branding.colors.green.hex);
-    expect(svg).toContain(branding.colors.white.hex);
+  it('has the viewBox the geometry records', () => {
+    const m = svg.match(/viewBox="0 0 ([\d.]+) ([\d.]+)"/);
+    expect(m).not.toBeNull();
+    expect(Number(m![1])).toBeCloseTo(branding.logoGeometry.viewBox.width, 2);
+    expect(Number(m![2])).toBeCloseTo(branding.logoGeometry.viewBox.height, 2);
+  });
+
+  it('uses the canonical brand colors', () => {
+    expect(svg).toContain(branding.colors.blue.hex); // #00447c — the wordmark
+    expect(svg).toContain(branding.colors.green.hex); // #67953f — the emblem circle
+    expect(svg).toMatch(/#fff(fff)?\b/i); // white sprout (#fff or #ffffff)
   });
 });
