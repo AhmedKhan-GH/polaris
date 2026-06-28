@@ -1,9 +1,9 @@
 # Clean-Rewrite-2 Construction Plan
 
-> **Historical foundation record** — the construction plan for `clean-rewrite-2`, the TDD foundation the current system is built on (completed ~2026-06-10). Kept as genesis; the *as-built* reality is the code + [`HANDBOOK.md`](../../HANDBOOK.md) / [`DOMAIN-CHARTER.md`](../../DOMAIN-CHARTER.md) / [`docs/adr/`](../adr/). (The status line below is from when it was written.)
+> **Historical foundation record** — the construction plan for `clean-rewrite-2`, the TDD foundation the current system is built on (completed ~2026-06-10). Kept as genesis; the *as-built* reality is the code + [`HANDBOOK.md`](../../HANDBOOK.md) / [`CHARTER.md`](../../CHARTER.md) / [`docs/adr/`](../adr/). (The status line below is from when it was written.)
 
 **Status:** draft, pending review · **Date:** 2026-06-09
-**Companion to:** `DOMAIN-CHARTER.md` (the boundaries this plan builds) · cites `SECURITY-HANDBOOK.md` for mechanics.
+**Companion to:** `CHARTER.md` (the boundaries this plan builds) · cites `SECURITY.md` for mechanics.
 **Outcome:** branch `clean-rewrite-2` — a pure foundation with a linear, every-commit-green, TDD-per-commit history; no business vocabulary except the disposable `notes` exemplar.
 
 ---
@@ -94,7 +94,7 @@ Per commit: **message** · delivers · *red test that demands it* · **Spec** = 
 
 1. **`chore: pin toolchain and refresh scaffold`** — Next 16.2.x / React 19.2 / TS 5 current, fresh lockfile, Tailwind v4, ESLint flat config, `postcss.config.mjs`. Spec: version set from HEAD's `package.json` (configuration — version pins are not code).
 2. **`chore: repo hygiene`** — untrack `.idea/` and ignore it; ensure `docs/` is tracked (never re-add the `/docs` ignore); delete unused scaffold SVGs; `.gitignore` final form. Spec: novel.
-3. **`docs(governance): adopt DOMAIN-CHARTER and founding ADRs`** — `DOMAIN-CHARTER.md` (v1.0); `docs/adr/0001-supabase-auth-not-keycloak.md` (rationale lifted from the 2026-06-09 reversal spec: SSO/federation/UMA unused, Keycloak broke Supabase Realtime, two extra containers, CI flakes); `0002-channel-layer-realtime.md` (the 0021 scar: row-RLS cannot gate streamed tables — neither `auth.uid()` nor app GUCs resolve in the realtime context; gate at `realtime.messages`); `0003-login-only-provisioning.md`; `0004-fresh-derivation.md` (this plan: `clean-rewrite` serves as specification and decision record for `clean-rewrite-2`; no code copied; where the audit lives; deletion-rehearsal record). ADR template. Spec: distilled from the reversal spec, Plan-1, and the handbooks.
+3. **`docs(governance): adopt DOMAIN-CHARTER and founding ADRs`** — `CHARTER.md` (v1.0); `docs/adr/0001-supabase-auth-not-keycloak.md` (rationale lifted from the 2026-06-09 reversal spec: SSO/federation/UMA unused, Keycloak broke Supabase Realtime, two extra containers, CI flakes); `0002-channel-layer-realtime.md` (the 0021 scar: row-RLS cannot gate streamed tables — neither `auth.uid()` nor app GUCs resolve in the realtime context; gate at `realtime.messages`); `0003-login-only-provisioning.md`; `0004-fresh-derivation.md` (this plan: `clean-rewrite` serves as specification and decision record for `clean-rewrite-2`; no code copied; where the audit lives; deletion-rehearsal record). ADR template. Spec: distilled from the reversal spec, Plan-1, and the handbooks.
 
 ### Phase 1 — Verification skeleton + CI first
 
@@ -153,7 +153,7 @@ Per commit: **message** · delivers · *red test that demands it* · **Spec** = 
 
 ### Phase 10 — Governance close
 
-32. **`docs(governance): HANDBOOK — single tracked source of truth`** — merged from the three drifted handbooks; httpOnly fact correct (cookie deliberately readable for Realtime auth; XSS answered by CSP at deploy); profiles write-lock documented; control→file map on the -2 layout; roadmap F6+ naming `notes` as the template; supersession banners on nothing (one doc). `SECURITY-HANDBOOK.md` remains the security-mechanics canon; charter remains boundaries. Spec: merge of the three handbooks.
+32. **`docs(governance): HANDBOOK — single tracked source of truth`** — merged from the three drifted handbooks; httpOnly fact correct (cookie deliberately readable for Realtime auth; XSS answered by CSP at deploy); profiles write-lock documented; control→file map on the -2 layout; roadmap F6+ naming `notes` as the template; supersession banners on nothing (one doc). `SECURITY.md` remains the security-mechanics canon; charter remains boundaries. Spec: merge of the three handbooks.
 33. **`docs(governance): feature playbook + PR conventions`** — Charter §5 expanded into concrete commands; PR template with "ADR required if `lib/**` touched outside registries" gate; branch naming; rebase + fast-forward merge convention. Spec: novel.
 
 ## 4. Gates per point in history

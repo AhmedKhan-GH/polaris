@@ -1,10 +1,10 @@
 # Clean-Rewrite-2 Build Instructions
 
-> **Historical foundation record** — the task-by-task build of `clean-rewrite-2` (33 TDD commits, completed ~2026-06-10), the foundation the current system stands on. Kept as genesis; the *as-built* reality is the code + [`HANDBOOK.md`](../../HANDBOOK.md) / [`DOMAIN-CHARTER.md`](../../DOMAIN-CHARTER.md) / [`docs/adr/`](../adr/).
+> **Historical foundation record** — the task-by-task build of `clean-rewrite-2` (33 TDD commits, completed ~2026-06-10), the foundation the current system stands on. Kept as genesis; the *as-built* reality is the code + [`HANDBOOK.md`](../../HANDBOOK.md) / [`CHARTER.md`](../../CHARTER.md) / [`docs/adr/`](../adr/).
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Construct branch `clean-rewrite-2` — 33 linear, every-commit-green, strictly TDD commits building the Polaris foundation per `DOMAIN-CHARTER.md` and `CLEAN-REWRITE-2-PLAN.md`.
+**Goal:** Construct branch `clean-rewrite-2` — 33 linear, every-commit-green, strictly TDD commits building the Polaris foundation per `CHARTER.md` and `CLEAN-REWRITE-2-PLAN.md`.
 
 **Architecture:** Next.js 16 App Router monolith; Supabase Auth + Realtime; Drizzle-managed Postgres with two RLS identity paths (`app_user` GUC path, `auth.uid()` path); CASL-over-registry authorization; feature folders wired through four composition roots; disposable `notes` exemplar.
 
@@ -57,7 +57,7 @@
 - [ ] Commit: `chore: repo hygiene — untrack .idea, keep docs tracked, scrub scaffold assets`
 
 ### Task 3 — `docs(governance): adopt DOMAIN-CHARTER and founding ADRs`
-**Files:** Create `DOMAIN-CHARTER.md` (carry over from `clean-rewrite` working tree — doc exception), `docs/adr/template.md`, `docs/adr/0001-supabase-auth-not-keycloak.md`, `docs/adr/0002-channel-layer-realtime.md`, `docs/adr/0003-login-only-provisioning.md`, `docs/adr/0004-fresh-derivation.md`.
+**Files:** Create `CHARTER.md` (carry over from `clean-rewrite` working tree — doc exception), `docs/adr/template.md`, `docs/adr/0001-supabase-auth-not-keycloak.md`, `docs/adr/0002-channel-layer-realtime.md`, `docs/adr/0003-login-only-provisioning.md`, `docs/adr/0004-fresh-derivation.md`.
 - [ ] ADR template sections: Status / Context / Decision / Consequences.
 - [ ] 0001 content: Keycloak's justifying capabilities (multi-app SSO, federation, UMA, IdP tenancy) unused; it broke Supabase Realtime (forced a Centrifugo plan), added two containers, two-step logout, claims validation, CI flakes; Supabase Auth covers login + brute-force + role source AND restores native Realtime. Decision: Supabase Auth permanently; revisit only if multi-app SSO becomes real.
 - [ ] 0002 content: the 0021 scar — Supabase Realtime's Postgres-Changes row authorizer does not reliably resolve `auth.uid()` and can never see `app.*` GUCs, so row-RLS on a streamed table silently drops all events. Decision: per-user delivery is enforced at the channel layer — DB trigger calls `realtime.broadcast_changes()` to `{domain}:{userId}` + `{domain}:all`; an RLS policy on `realtime.messages` (where subscription auth runs with the subscriber's JWT) gates topics. Never row-RLS for delivery.

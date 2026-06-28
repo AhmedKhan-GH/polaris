@@ -32,7 +32,7 @@ Every feature under `app/_features/<name>/` exposes its dev API through
 (`@/app/_features/<name>`) and nothing deeper. Anything not exported from the
 index is private to the feature.
 
-This becomes **Iron Rule 8** in `DOMAIN-CHARTER.md` §1, enforced as **Rule D**
+This becomes **Iron Rule 8** in `CHARTER.md` §1, enforced as **Rule D**
 in `import-boundaries.test.ts`.
 
 ### Two seams, two consumers — manifests stay out of the index
@@ -93,13 +93,13 @@ a feature index that exports plain server-only functions (e.g. activity's
 
 ## Doc amendments (same PR, per charter change-control line 9)
 
-1. `DOMAIN-CHARTER.md` §1: new Iron Rule 8 — "Features expose a dev API.
+1. `CHARTER.md` §1: new Iron Rule 8 — "Features expose a dev API.
    Outsiders import `app/_features/<name>` (the index) only; everything not
    exported there is private. Manifests remain registry-only (Rule 3)."
-2. `DOMAIN-CHARTER.md` §1 enforcement clause: correct to "ESLint zones encode
+2. `CHARTER.md` §1 enforcement clause: correct to "ESLint zones encode
    rule 1; the D9 verification test encodes rules 1–3 and 8."
-3. `DOMAIN-CHARTER.md` §4: add `index.ts` dev-API seam to the exemplar list.
-4. `DOMAIN-CHARTER.md` §5 step 2: rename list gains `index.ts`.
+3. `CHARTER.md` §4: add `index.ts` dev-API seam to the exemplar list.
+4. `CHARTER.md` §5 step 2: rename list gains `index.ts`.
 5. `CONTRIBUTING.md` step 2: "your `index.ts` is your dev API — outsiders
    import nothing else."
 6. `HANDBOOK.md` (root) §7 decision log: ADR-0005 row.

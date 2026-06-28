@@ -1,6 +1,6 @@
 # Contributing to Polaris
 
-Read `DOMAIN-CHARTER.md` first (the law), then `HANDBOOK.md` (the system). This file is the *how*: adding a feature, passing the gates, landing the branch.
+Read `CHARTER.md` first (the law), then `HANDBOOK.md` (the system). This file is the *how*: adding a feature, passing the gates, landing the branch.
 
 ## Adding a feature (the playbook — Charter §5)
 

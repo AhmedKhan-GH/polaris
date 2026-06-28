@@ -39,7 +39,7 @@ A security-first foundation, born test-first and governed by a written constitut
 ## Reading order
 
 1. **[HANDBOOK.md](HANDBOOK.md)** — the system: security model, RLS paths, roadmap, known follow-ups
-2. **[DOMAIN-CHARTER.md](DOMAIN-CHARTER.md)** — the law: domains, Iron Rules, composition roots, the disposable-exemplar contract
+2. **[CHARTER.md](CHARTER.md)** — the law: domains, Iron Rules, composition roots, the disposable-exemplar contract
 3. **[CONTRIBUTING.md](CONTRIBUTING.md)** — the practice: the feature playbook (copy `notes`, rename, register three lines), gates, conventions
 4. **[docs/adr/](docs/adr/)** — the why: four founding decisions
 

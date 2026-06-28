@@ -1,7 +1,7 @@
 # Polaris Handbook
 
 **Status:** living document — THE single tracked source of truth for identity, security model, and roadmap.
-**Boundaries** live in `DOMAIN-CHARTER.md` (the constitution). **Decisions** live in `docs/adr/`. This handbook cites both; it does not restate them. One fact, one home.
+**Boundaries** live in `CHARTER.md` (the constitution). **Decisions** live in `docs/adr/`. This handbook cites both; it does not restate them. One fact, one home.
 
 ---
 
@@ -13,7 +13,7 @@ An internal cold-chain logistics order-management tool for the people running th
 
 ## 2. Principles
 
-The charter's Iron Rules (`DOMAIN-CHARTER.md` §1) govern structure. Operationally:
+The charter's Iron Rules (`CHARTER.md` §1) govern structure. Operationally:
 
 1. **Fail closed** — no session → throw; empty ability registry → no permissions; missing GUC → RLS denies.
 2. **Defense in depth** — CASL (action layer) AND RLS (row layer); the proxy gates routes, but every server action self-guards (Server Action POSTs can bypass proxy matchers).
@@ -26,7 +26,7 @@ The charter's Iron Rules (`DOMAIN-CHARTER.md` §1) govern structure. Operational
 
 ## 3. Security model — 14 layers, control → file
 
-> Diagrams + per-mechanism detail (threat model, auth/authorization flows, the two-path RLS map, the add-a-feature security flowchart): [`SECURITY-HANDBOOK.md`](SECURITY-HANDBOOK.md).
+> Diagrams + per-mechanism detail (threat model, auth/authorization flows, the two-path RLS map, the add-a-feature security flowchart): [`SECURITY.md`](SECURITY.md).
 
 | # | Layer | Control | File(s) |
 |---|---|---|---|
@@ -43,7 +43,7 @@ The charter's Iron Rules (`DOMAIN-CHARTER.md` §1) govern structure. Operational
 | 11 | Supply chain | Dependabot + `npm audit --audit-level=high` gate | `.github/dependabot.yml`, `.github/workflows/ci.yml` |
 | 12 | Resilience | Stale-chunk auto-reload with cooldown | `app/_features/shell/ChunkErrorReloader.tsx` |
 | 13 | Verification | 3-tier harness + boundary/confinement law + live hard-fail gate | `vitest*.mts`, `lib/verification/*`, `lib/db/__tests__/live-db.ts`, `playwright.config.ts` |
-| 14 | Structure | Domain charter, mechanically enforced | `DOMAIN-CHARTER.md`, ESLint zones + scanner |
+| 14 | Structure | Domain charter, mechanically enforced | `CHARTER.md`, ESLint zones + scanner |
 
 **Session cookie truth:** the Supabase JWT cookie is deliberately **not httpOnly** — the browser client must read it for Realtime channel auth. XSS exfiltration is answered at layer 8 (CSP enforce + nonce, a deploy-time task), not by pretending the cookie is httpOnly.
 

@@ -1,7 +1,7 @@
 # Polaris Security Handbook
 
 **Status:** living document — the **diagrams and per-mechanism detail** behind the security model.
-The 14-layer overview and the control → file map live in [`HANDBOOK.md`](HANDBOOK.md) §3; the boundaries / Iron Rules in [`DOMAIN-CHARTER.md`](DOMAIN-CHARTER.md); the decisions in [`docs/adr/`](docs/adr/). This document holds the pictures. One fact, one home — where they overlap, the handbook's terse statement is authoritative.
+The 14-layer overview and the control → file map live in [`HANDBOOK.md`](HANDBOOK.md) §3; the boundaries / Iron Rules in [`CHARTER.md`](CHARTER.md); the decisions in [`docs/adr/`](docs/adr/). This document holds the pictures. One fact, one home — where they overlap, the handbook's terse statement is authoritative.
 
 ---
 

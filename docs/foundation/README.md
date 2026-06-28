@@ -1,6 +1,6 @@
 # Foundation
 
-The genesis record of **clean-rewrite-2** — the from-scratch, TDD-built foundation the current Polaris system stands on (completed ~2026-06-10). These are *historical* build documents, kept because they are where the architecture came from. The **as-built** reality lives in the code + [`HANDBOOK.md`](../../HANDBOOK.md), [`DOMAIN-CHARTER.md`](../../DOMAIN-CHARTER.md), and [`docs/adr/`](../adr/).
+The genesis record of **clean-rewrite-2** — the from-scratch, TDD-built foundation the current Polaris system stands on (completed ~2026-06-10). These are *historical* build documents, kept because they are where the architecture came from. The **as-built** reality lives in the code + [`HANDBOOK.md`](../../HANDBOOK.md), [`CHARTER.md`](../../CHARTER.md), and [`docs/adr/`](../adr/).
 
 Counterpart to [`docs/future/`](../future/): *where we came from* vs *where we're going.*
 

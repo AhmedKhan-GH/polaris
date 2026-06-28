@@ -1,6 +1,6 @@
 # Security Checklist
 
-> **Reference** — the generic web-security how-to: the Server-Actions-vs-API-Routes decision guide, the per-change checklists, and the pre-deploy list. The *Polaris-specific* security model — the 14 layers, RLS/CASL, the `app_user` GUC, the diagrams — is [`SECURITY-HANDBOOK.md`](../../SECURITY-HANDBOOK.md); this is the underlying practice it assumes.
+> **Reference** — the generic web-security how-to: the Server-Actions-vs-API-Routes decision guide, the per-change checklists, and the pre-deploy list. The *Polaris-specific* security model — the 14 layers, RLS/CASL, the `app_user` GUC, the diagrams — is [`SECURITY.md`](../../SECURITY.md); this is the underlying practice it assumes.
 
 > **If every rule in this document is followed, you are secure for your current stage.** This is the complete set. Nothing is implicit, nothing is "also consider." When in doubt, re-read this document and do exactly what it says.
 
