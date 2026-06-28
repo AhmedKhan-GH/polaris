@@ -1,5 +1,6 @@
 import { createNote, getNotes, NotesLive } from '@/app/_features/notes';
 import { getSessionUser } from '@/lib/auth/session';
+import { getPreferences } from '@/lib/preferences';
 
 /**
  * The notes page — an all-authed-users surface (the nav entry is ungated). It
@@ -24,6 +25,7 @@ export default async function NotesPage() {
     body: n.body,
     createdAt: n.createdAt.toISOString(),
   }));
+  const { timezone, hour12 } = await getPreferences();
 
   return (
     <div className="flex flex-col gap-6">
@@ -42,7 +44,12 @@ export default async function NotesPage() {
           New note
         </button>
       </form>
-      <NotesLive userId={session!.userId} initial={rows} />
+      <NotesLive
+        userId={session!.userId}
+        initial={rows}
+        timezone={timezone}
+        hour12={hour12}
+      />
     </div>
   );
 }

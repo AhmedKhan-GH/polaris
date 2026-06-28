@@ -2,7 +2,9 @@ import { redirect } from 'next/navigation';
 
 import { getSignInLog } from '@/app/_features/activity';
 import { getSessionUser } from '@/lib/auth/session';
+import { formatTimestamp } from '@/lib/datetime';
 import { buildAbility } from '@/lib/permissions/ability';
+import { getPreferences } from '@/lib/preferences';
 
 /**
  * The sign-in log viewer — an owner-only observability surface (Domain Charter
@@ -23,6 +25,7 @@ export default async function ActivityPage() {
   if (!ability.can('read', 'SignInLog')) redirect('/dashboard');
 
   const rows = await getSignInLog();
+  const { timezone, hour12 } = await getPreferences();
 
   return (
     <div className="flex flex-col gap-6">
@@ -32,7 +35,7 @@ export default async function ActivityPage() {
           <tr>
             <th className="py-2 pr-4 font-medium">Email</th>
             <th className="py-2 pr-4 font-medium">User</th>
-            <th className="py-2 pr-4 font-medium">When (UTC)</th>
+            <th className="py-2 pr-4 font-medium">When</th>
           </tr>
         </thead>
         <tbody>
@@ -47,7 +50,9 @@ export default async function ActivityPage() {
               <tr key={row.id}>
                 <td className="py-2 pr-4">{row.email}</td>
                 <td className="py-2 pr-4">{row.userId ?? '—'}</td>
-                <td className="py-2 pr-4">{row.createdAt.toISOString()}</td>
+                <td className="py-2 pr-4">
+                  {formatTimestamp(row.createdAt.getTime(), timezone, hour12)}
+                </td>
               </tr>
             ))
           )}

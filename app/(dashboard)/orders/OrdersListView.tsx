@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { filterOrders, type OrderRow } from '@/app/_features/orders';
+import { formatTimestamp } from '@/lib/datetime';
 
 import { ListFilters } from './ListFilters';
 import { OrderPreview } from './OrderPreview';
@@ -18,12 +19,16 @@ export function OrdersListView({
   status,
   from,
   to,
+  timezone,
+  hour12,
 }: {
   orders: OrderRow[];
   selected?: string;
   status?: string;
   from?: string;
   to?: string;
+  timezone: string;
+  hour12: boolean;
 }) {
   const filtered = filterOrders(orders, { status, from, to });
   const isFiltered = Boolean(status || from || to);
@@ -47,7 +52,7 @@ export function OrdersListView({
               <th className="py-2 pr-4 font-medium">Order</th>
               <th className="py-2 pr-4 font-medium">Status</th>
               <th className="py-2 pr-4 font-medium">Created by</th>
-              <th className="py-2 pr-4 font-medium">Created (UTC)</th>
+              <th className="py-2 pr-4 font-medium">Created</th>
               <th className="py-2 pr-4 font-medium"></th>
             </tr>
           </thead>
@@ -78,7 +83,9 @@ export function OrdersListView({
                   >
                     {o.createdBy}
                   </td>
-                  <td className="py-2 pr-4">{o.createdAt.toISOString()}</td>
+                  <td className="py-2 pr-4">
+                    {formatTimestamp(o.createdAt.getTime(), timezone, hour12)}
+                  </td>
                   <td className="py-2 pr-4">
                     <Link href={`/orders/${o.id}`} className="text-blue-700 underline">
                       Open

@@ -1,4 +1,5 @@
 import { createOrder, getOrders } from '@/app/_features/orders';
+import { getPreferences } from '@/lib/preferences';
 
 import { OrdersBoardView } from './OrdersBoardView';
 import { OrdersListView } from './OrdersListView';
@@ -29,6 +30,7 @@ export default async function OrdersPage({
 }) {
   const { view = 'list', selected, status, from, to } = await searchParams;
   const orders = await getOrders();
+  const { timezone, hour12 } = await getPreferences();
 
   async function createDraftOrder() {
     'use server';
@@ -74,6 +76,8 @@ export default async function OrdersPage({
           status={status}
           from={from}
           to={to}
+          timezone={timezone}
+          hour12={hour12}
         />
       )}
     </div>

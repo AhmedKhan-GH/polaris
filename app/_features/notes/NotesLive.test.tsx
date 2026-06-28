@@ -25,7 +25,7 @@ afterEach(cleanup);
 describe('app/_features/notes NotesLive', () => {
   it('renders the empty-state paragraph when there are no rows', () => {
     hookRows = [];
-    render(<NotesLive userId="u1" initial={[]} />);
+    render(<NotesLive userId="u1" initial={[]} timezone="UTC" hour12={false} />);
 
     expect(screen.getByTestId('no-notes')).toHaveTextContent('No notes yet.');
     expect(screen.queryByTestId('note-row')).toBeNull();
@@ -37,14 +37,15 @@ describe('app/_features/notes NotesLive', () => {
       { id: 'b', createdBy: 'u2', body: 'second', createdAt: '2026-02-02T00:00:00.000Z' },
       { id: 'a', createdBy: 'u1', body: 'first', createdAt: '2026-01-01T00:00:00.000Z' },
     ];
-    render(<NotesLive userId="u1" initial={hookRows} />);
+    render(<NotesLive userId="u1" initial={hookRows} timezone="UTC" hour12={true} />);
 
     expect(screen.queryByTestId('no-notes')).toBeNull();
     const rows = screen.getAllByTestId('note-row');
     expect(rows).toHaveLength(2);
     expect(rows[0]).toHaveTextContent('second');
     expect(rows[1]).toHaveTextContent('first');
-    // The When column renders the createdAt as a normalized ISO instant.
-    expect(rows[1]).toHaveTextContent('2026-01-01T00:00:00.000Z');
+    // The When column formats createdAt through the shared formatter, honoring
+    // the preferences passed in (here UTC + 12h) — proving the wiring, not raw ISO.
+    expect(rows[1]).toHaveTextContent('2026-01-01 · 12:00:00 AM');
   });
 });

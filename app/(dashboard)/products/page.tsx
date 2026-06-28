@@ -5,17 +5,23 @@ import {
   type ProductRow,
 } from '@/app/_features/products';
 import { getSessionUser } from '@/lib/auth/session';
+import { formatTimestamp } from '@/lib/datetime';
 import { buildAbility } from '@/lib/permissions/ability';
+import { getPreferences } from '@/lib/preferences';
 
 /** A catalog table (header + rows), shared by the active and retired lists. */
 function ProductTable({
   rows,
   canManage,
   emptyText,
+  timezone,
+  hour12,
 }: {
   rows: ProductRow[];
   canManage: boolean;
   emptyText: string;
+  timezone: string;
+  hour12: boolean;
 }) {
   return (
     <table className="w-full text-left text-sm">
@@ -26,7 +32,7 @@ function ProductTable({
           <th className="py-2 pr-4 font-medium">Price</th>
           <th className="py-2 pr-4 font-medium">Status</th>
           <th className="py-2 pr-4 font-medium">Created by</th>
-          <th className="py-2 pr-4 font-medium">Created (UTC)</th>
+          <th className="py-2 pr-4 font-medium">Created</th>
           {canManage && <th className="py-2 pr-4 font-medium">Manage</th>}
         </tr>
       </thead>
@@ -41,7 +47,10 @@ function ProductTable({
           rows.map((p) => (
             <ProductListRow
               key={p.id}
-              product={{ ...p, createdAt: p.createdAt.toISOString() }}
+              product={{
+                ...p,
+                createdAt: formatTimestamp(p.createdAt.getTime(), timezone, hour12),
+              }}
               canManage={canManage}
             />
           ))
@@ -73,6 +82,7 @@ export default async function ProductsPage() {
   }).can('manage', 'Product');
 
   const products = await getProducts();
+  const { timezone, hour12 } = await getPreferences();
   const active = products.filter((p) => !p.retired);
   const retired = products.filter((p) => p.retired);
 
@@ -82,14 +92,26 @@ export default async function ProductsPage() {
 
       {canManage && <ProductCreateForm />}
 
-      <ProductTable rows={active} canManage={canManage} emptyText="No products yet." />
+      <ProductTable
+        rows={active}
+        canManage={canManage}
+        emptyText="No products yet."
+        timezone={timezone}
+        hour12={hour12}
+      />
 
       {canManage && retired.length > 0 && (
         <section className="flex flex-col gap-2">
           <h2 className="text-lg font-medium tracking-tight text-zinc-600">
             Retired
           </h2>
-          <ProductTable rows={retired} canManage={canManage} emptyText="" />
+          <ProductTable
+            rows={retired}
+            canManage={canManage}
+            emptyText=""
+            timezone={timezone}
+            hour12={hour12}
+          />
         </section>
       )}
     </div>

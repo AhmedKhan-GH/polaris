@@ -1,5 +1,7 @@
 'use client';
 
+import { formatTimestamp } from '@/lib/datetime';
+
 import { useNotesRealtime, type NoteRowView } from './use-notes-realtime';
 
 /**
@@ -15,9 +17,13 @@ import { useNotesRealtime, type NoteRowView } from './use-notes-realtime';
 export function NotesLive({
   userId,
   initial,
+  timezone,
+  hour12,
 }: {
   userId: string;
   initial: NoteRowView[];
+  timezone: string;
+  hour12: boolean;
 }) {
   const rows = useNotesRealtime(userId, initial);
 
@@ -31,7 +37,7 @@ export function NotesLive({
         <tr>
           <th className="py-2 pr-4 font-medium">Note</th>
           <th className="py-2 pr-4 font-medium">Created by</th>
-          <th className="py-2 pr-4 font-medium">When (UTC)</th>
+          <th className="py-2 pr-4 font-medium">When</th>
         </tr>
       </thead>
       <tbody>
@@ -39,7 +45,9 @@ export function NotesLive({
           <tr key={row.id} data-testid="note-row">
             <td className="py-2 pr-4">{row.body}</td>
             <td className="py-2 pr-4">{row.createdBy}</td>
-            <td className="py-2 pr-4">{new Date(row.createdAt).toISOString()}</td>
+            <td className="py-2 pr-4">
+              {formatTimestamp(new Date(row.createdAt).getTime(), timezone, hour12)}
+            </td>
           </tr>
         ))}
       </tbody>
