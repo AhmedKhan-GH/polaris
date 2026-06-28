@@ -9,5 +9,6 @@ Long-horizon vision — the directions Polaris is headed *beyond* the current bu
 ## What's here
 
 - [`domain-growth-schema.md`](domain-growth-schema.md) — how Polaris grows from an order app into a multi-domain **operations platform** (intake → fulfillment → routing → assets → accounting), with the order as the central "spine." The post-F12 direction.
+- [`public-facing-service.md`](public-facing-service.md) — the **SaaS product vision**: if/when Polaris goes external-facing (customer self-service, multi-tenancy, billing) for Bay Area cold-chain logistics.
 
 Add long-range vision docs here as they emerge; promote one into `specs/` (with a date + TDD plan) when its domain actually comes on deck.

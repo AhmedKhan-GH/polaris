@@ -1,5 +1,7 @@
 # Polaris: Public-Facing Cold Chain Logistics Service
 
+> **Status:** long-horizon product vision — if/when Polaris goes external-facing (customer self-service, multi-tenancy, billing). Beyond the current internal-tool roadmap ([`HANDBOOK.md`](../../HANDBOOK.md) §6); deferral triggers live in [`tasks/shelved.md`](../tasks/shelved.md). Not built, not scheduled.
+
 ## Vision
 
 Polaris becomes a public-facing platform for small parcel cold chain logistics in the San Francisco Bay Area. Businesses that ship temperature-sensitive goods (food, pharmaceuticals, biotech samples, floral) can create accounts, submit shipments, and track their parcels through the cold chain in real time.
