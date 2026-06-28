@@ -15,6 +15,7 @@ import { activityAbilities } from '@/app/_features/activity/permissions';
 import { notesAbilities } from '@/app/_features/notes/permissions';
 import { ordersAbilities } from '@/app/_features/orders/permissions';
 import { productsAbilities } from '@/app/_features/products/permissions';
+import { shellAbilities } from '@/app/_features/shell/permissions';
 import type { AbilityContributor } from '@/lib/permissions/ability';
 
 export const abilityContributors: AbilityContributor[] = [
@@ -22,4 +23,5 @@ export const abilityContributors: AbilityContributor[] = [
   notesAbilities,
   ordersAbilities,
   productsAbilities,
+  shellAbilities,
 ];
