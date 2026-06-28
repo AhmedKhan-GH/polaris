@@ -21,4 +21,4 @@ Run both, each for its own purpose:
 
 - A business action writes on two unrelated paths (a Pino line for ops, an event row for the record); the two are never reconciled.
 - The audit/analytics trail lives in our own database — queryable by SQL, retained forever, no third-party data egress.
-- Revisit PostHog only if Polaris becomes external-facing and needs funnels, retention, session replay, or feature flags without building dashboards. Full comparison in `docs/event-tracking-vs-logging.md`.
+- Revisit PostHog only if Polaris becomes external-facing and needs funnels, retention, session replay, or feature flags without building dashboards. Full comparison in `docs/reference/event-tracking-vs-logging.md`.
