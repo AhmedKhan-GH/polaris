@@ -43,6 +43,55 @@
       "when": 1781854801865,
       "tag": "0005_brief_lord_tyger",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1782127650205,
+      "tag": "0006_normal_firelord",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1782128058241,
+      "tag": "0007_big_the_stranger",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1782128374306,
+      "tag": "0008_orders_update_rls",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1782160561611,
+      "tag": "0009_little_thanos",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1782253738920,
+      "tag": "0010_orders_line_price_override",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1782296880180,
+      "tag": "0011_curly_bastion",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1782334166191,
+      "tag": "0012_orders_open_read",
+      "breakpoints": true
     }
   ]
 }

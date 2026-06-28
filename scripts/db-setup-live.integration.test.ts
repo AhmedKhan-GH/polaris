@@ -8,17 +8,17 @@ import {
   liveDbGate,
 } from '@/lib/db/__tests__/live-db';
 
-import { seedDemoUsers } from './db-setup';
+import { seedDemoUsers } from './seed-dev';
 
 /**
- * The live-stack half of the `db:setup` contract: a clean build must end with
- * accounts someone can actually log in with. GoTrue exists only on the real
- * stack (the testcontainer half of the contract lives in
- * db-setup.integration.test.ts), so this suite reaches `:54321`/`:54322`
- * directly and gates on reachability exactly like the realtime/profiles
- * live suites.
+ * The live-stack half of the demo-user seeding contract (`db:seed-dev`): the
+ * dev/test fixtures must end with accounts someone can actually log in with.
+ * GoTrue exists only on the real stack (the testcontainer half of db:setup's
+ * provisioning contract lives in db-setup.integration.test.ts), so this suite
+ * reaches `:54321`/`:54322` directly and gates on reachability exactly like the
+ * realtime/profiles live suites.
  *
- * Before seeding, the two demo users are DELETED — without that, state left
+ * Before seeding, the three demo users are DELETED — without that, state left
  * by any earlier e2e run would make a do-nothing seeder look green; deleting
  * first proves `seedDemoUsers` itself creates them.
  */
@@ -34,10 +34,10 @@ const ANON_KEY =
 const SERVICE_ROLE_KEY =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU';
 const PASSWORD = 'test-password-123';
-const EMAILS = ['owner@example.com', 'member@example.com'];
+const EMAILS = ['owner@example.com', 'member@example.com', 'admin@example.com'];
 
 (mode === 'run' ? describe : describe.skip)(
-  'db:setup seeds login-able demo users on the live stack',
+  'db:seed-dev seeds login-able demo users on the live stack',
   () => {
     let admin: pg.Client;
 
@@ -64,20 +64,21 @@ const EMAILS = ['owner@example.com', 'member@example.com'];
       await admin.end();
     });
 
-    it('creates both GoTrue users', async () => {
+    it('creates all three GoTrue users', async () => {
       const { rows } = await admin.query(
         'select count(*)::int as n from auth.users where email = any($1)',
         [EMAILS],
       );
-      expect(rows[0].n).toBe(2);
+      expect(rows[0].n).toBe(3);
     });
 
-    it('mirrors their roles into profiles (owner/member)', async () => {
+    it('mirrors their roles into profiles (owner/member/admin)', async () => {
       const { rows } = await admin.query(
         'select email, role from public.profiles where email = any($1) order by email',
         [EMAILS],
       );
       expect(rows).toEqual([
+        { email: 'admin@example.com', role: 'admin' },
         { email: 'member@example.com', role: 'member' },
         { email: 'owner@example.com', role: 'owner' },
       ]);
@@ -107,7 +108,7 @@ const EMAILS = ['owner@example.com', 'member@example.com'];
         'select count(*)::int as n from auth.users where email = any($1)',
         [EMAILS],
       );
-      expect(rows[0].n).toBe(2);
+      expect(rows[0].n).toBe(3);
     });
   },
 );

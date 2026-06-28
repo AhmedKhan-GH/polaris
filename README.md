@@ -39,7 +39,7 @@ A security-first foundation, born test-first and governed by a written constitut
 ## Reading order
 
 1. **[HANDBOOK.md](HANDBOOK.md)** — the system: security model, RLS paths, roadmap, known follow-ups
-2. **[DOMAIN-CHARTER.md](DOMAIN-CHARTER.md)** — the law: domains, Iron Rules, composition roots, the disposable-exemplar contract
+2. **[CHARTER.md](CHARTER.md)** — the law: domains, Iron Rules, composition roots, the disposable-exemplar contract
 3. **[CONTRIBUTING.md](CONTRIBUTING.md)** — the practice: the feature playbook (copy `notes`, rename, register three lines), gates, conventions
 4. **[docs/adr/](docs/adr/)** — the why: four founding decisions
 
@@ -51,13 +51,14 @@ Prerequisites: Node 24 (`.nvmrc`), Docker, the Supabase CLI.
 npm ci
 npx supabase start -x studio,imgproxy,inbucket,edge-runtime,functions,vector,analytics,meta,storage
 cp .env.test .env.local   # local demo keys + dev DB URLs (never production values)
-npm run db:setup          # migrations + app_user login + demo users; self-verifying, idempotent
+npm run db:setup          # migrations + app_user login; self-verifying, idempotent (prod-safe: no example accounts)
+npm run db:seed-dev       # dev/test fixtures: demo logins + dummy SKUs (never run against prod)
 npm run dev               # http://localhost:3000 — log in: owner@example.com / test-password-123
 ```
 
-Broke your local data? `npm run db:reset` wipes the database and re-provisions it end to end (schema, `app_user` login, demo users) — never run a bare `supabase db reset`, which leaves the DB unprovisioned.
+Broke your local data? `npm run db:reset` wipes the database and re-provisions it (schema + `app_user` login) — never run a bare `supabase db reset`, which leaves the DB unprovisioned. Re-run `db:seed-dev` afterward for the demo logins and dummy catalog.
 
-There is no sign-up page (by design). `db:setup` already seeded two demo accounts — `owner@example.com` and `member@example.com`, both with password `test-password-123`. For anything else:
+There is no sign-up page (by design). `db:seed-dev` seeds three demo accounts — `owner@example.com`, `member@example.com`, and `admin@example.com`, all with password `test-password-123`. These are **dev-only** and live solely behind `db:seed-dev`; `db:setup` (the provisioning path a real environment runs) never creates them. For anything else — including a real environment's first owner:
 
 - **Custom user:** `db:create-user` does both halves in one verb — mints the GoTrue account via the admin API and assigns its role in `profiles` as a privileged DB role (the write-lock prevents any logged-in user from touching roles — that's the point). `--role` defaults to `member`; it reads the same `.env.local` / `.env.test` as `db:setup`, so no exporting keys by hand:
 

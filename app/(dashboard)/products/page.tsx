@@ -1,11 +1,55 @@
 import {
-  createProduct,
+  ProductCreateForm,
+  ProductListRow,
   getProducts,
-  retireProduct,
-  updateProduct,
+  type ProductRow,
 } from '@/app/_features/products';
 import { getSessionUser } from '@/lib/auth/session';
 import { buildAbility } from '@/lib/permissions/ability';
+
+/** A catalog table (header + rows), shared by the active and retired lists. */
+function ProductTable({
+  rows,
+  canManage,
+  emptyText,
+}: {
+  rows: ProductRow[];
+  canManage: boolean;
+  emptyText: string;
+}) {
+  return (
+    <table className="w-full text-left text-sm">
+      <thead>
+        <tr>
+          <th className="py-2 pr-4 font-medium">Name</th>
+          <th className="py-2 pr-4 font-medium">SKU</th>
+          <th className="py-2 pr-4 font-medium">Price</th>
+          <th className="py-2 pr-4 font-medium">Status</th>
+          <th className="py-2 pr-4 font-medium">Created by</th>
+          <th className="py-2 pr-4 font-medium">Created (UTC)</th>
+          {canManage && <th className="py-2 pr-4 font-medium">Manage</th>}
+        </tr>
+      </thead>
+      <tbody>
+        {rows.length === 0 ? (
+          <tr>
+            <td colSpan={canManage ? 7 : 6} className="py-2 text-zinc-500">
+              {emptyText}
+            </td>
+          </tr>
+        ) : (
+          rows.map((p) => (
+            <ProductListRow
+              key={p.id}
+              product={{ ...p, createdAt: p.createdAt.toISOString() }}
+              canManage={canManage}
+            />
+          ))
+        )}
+      </tbody>
+    </table>
+  );
+}
 
 /**
  * The products catalog — an all-authed-users surface (the nav entry is ungated).
@@ -13,7 +57,11 @@ import { buildAbility } from '@/lib/permissions/ability';
  * the management controls. Authorization is enforced on BOTH sides: this in-page
  * `can('manage', 'Product')` check hides the create/edit/retire UI from members,
  * and each action re-guards its write with `withPermission` + the owner-only RLS
- * policy (the security boundary a hidden form could not bypass). The page render
+ * policy (the security boundary a hidden form could not bypass).
+ *
+ * Active and retired products are shown as SEPARATE lists. Retiring is a
+ * reversible hide, so the retired list (with a Restore action) is shown only to
+ * managers — to everyone else a retired product is simply absent. The page render
  * is covered by the products E2E suite, a recorded deviation, rather than a unit
  * test for this async server component.
  */
@@ -25,126 +73,25 @@ export default async function ProductsPage() {
   }).can('manage', 'Product');
 
   const products = await getProducts();
-  const usd = (cents: number) => `$${(cents / 100).toFixed(2)}`;
+  const active = products.filter((p) => !p.retired);
+  const retired = products.filter((p) => p.retired);
 
   return (
     <div className="flex flex-col gap-6">
       <h1 className="text-2xl font-semibold tracking-tight">Products</h1>
 
-      {canManage && (
-        <form action={createProduct} className="flex flex-wrap gap-2">
-          <input
-            name="name"
-            required
-            aria-label="Product name"
-            placeholder="Name"
-            className="flex-1 rounded border border-zinc-300 px-3 py-2 text-sm"
-          />
-          <input
-            name="sku"
-            required
-            aria-label="SKU"
-            placeholder="SKU"
-            className="w-40 rounded border border-zinc-300 px-3 py-2 text-sm"
-          />
-          <input
-            name="priceCents"
-            type="number"
-            min={0}
-            required
-            aria-label="Price (cents)"
-            placeholder="Price (cents)"
-            className="w-40 rounded border border-zinc-300 px-3 py-2 text-sm"
-          />
-          <button
-            type="submit"
-            className="rounded bg-zinc-900 px-4 py-2 text-sm font-medium text-white"
-          >
-            Add product
-          </button>
-        </form>
-      )}
+      {canManage && <ProductCreateForm />}
 
-      <table className="w-full text-left text-sm">
-        <thead>
-          <tr>
-            <th className="py-2 pr-4 font-medium">Name</th>
-            <th className="py-2 pr-4 font-medium">SKU</th>
-            <th className="py-2 pr-4 font-medium">Price</th>
-            <th className="py-2 pr-4 font-medium">Status</th>
-            {canManage && <th className="py-2 pr-4 font-medium">Manage</th>}
-          </tr>
-        </thead>
-        <tbody>
-          {products.length === 0 ? (
-            <tr>
-              <td colSpan={canManage ? 5 : 4} className="py-2 text-zinc-500">
-                No products yet.
-              </td>
-            </tr>
-          ) : (
-            products.map((p) => (
-              <tr key={p.id} data-testid="product-row">
-                <td className="py-2 pr-4">{p.name}</td>
-                <td className="py-2 pr-4">{p.sku}</td>
-                <td className="py-2 pr-4">{usd(p.priceCents)}</td>
-                <td className="py-2 pr-4 text-zinc-500">
-                  {p.retired ? 'Retired' : 'Active'}
-                </td>
-                {canManage && (
-                  <td className="flex flex-wrap items-center gap-2 py-2 pr-4">
-                    {!p.retired && (
-                      <>
-                        <form action={updateProduct} className="flex gap-1">
-                          <input type="hidden" name="id" value={p.id} />
-                          <input
-                            name="name"
-                            defaultValue={p.name}
-                            required
-                            aria-label={`Edit name for ${p.sku}`}
-                            className="w-28 rounded border border-zinc-300 px-2 py-1 text-xs"
-                          />
-                          <input
-                            name="sku"
-                            defaultValue={p.sku}
-                            required
-                            aria-label={`Edit SKU for ${p.sku}`}
-                            className="w-24 rounded border border-zinc-300 px-2 py-1 text-xs"
-                          />
-                          <input
-                            name="priceCents"
-                            type="number"
-                            min={0}
-                            defaultValue={p.priceCents}
-                            required
-                            aria-label={`Edit price for ${p.sku}`}
-                            className="w-24 rounded border border-zinc-300 px-2 py-1 text-xs"
-                          />
-                          <button
-                            type="submit"
-                            className="rounded border border-zinc-300 px-2 py-1 text-xs font-medium"
-                          >
-                            Save
-                          </button>
-                        </form>
-                        <form action={retireProduct}>
-                          <input type="hidden" name="id" value={p.id} />
-                          <button
-                            type="submit"
-                            className="rounded border border-zinc-300 px-2 py-1 text-xs font-medium text-red-700"
-                          >
-                            Retire
-                          </button>
-                        </form>
-                      </>
-                    )}
-                  </td>
-                )}
-              </tr>
-            ))
-          )}
-        </tbody>
-      </table>
+      <ProductTable rows={active} canManage={canManage} emptyText="No products yet." />
+
+      {canManage && retired.length > 0 && (
+        <section className="flex flex-col gap-2">
+          <h2 className="text-lg font-medium tracking-tight text-zinc-600">
+            Retired
+          </h2>
+          <ProductTable rows={retired} canManage={canManage} emptyText="" />
+        </section>
+      )}
     </div>
   );
 }

@@ -1,7 +1,7 @@
 # Polaris Handbook
 
 **Status:** living document — THE single tracked source of truth for identity, security model, and roadmap.
-**Boundaries** live in `DOMAIN-CHARTER.md` (the constitution). **Decisions** live in `docs/adr/`. This handbook cites both; it does not restate them. One fact, one home.
+**Boundaries** live in `CHARTER.md` (the constitution). **Decisions** live in `docs/adr/`. This handbook cites both; it does not restate them. One fact, one home.
 
 ---
 
@@ -13,7 +13,7 @@ An internal cold-chain logistics order-management tool for the people running th
 
 ## 2. Principles
 
-The charter's Iron Rules (`DOMAIN-CHARTER.md` §1) govern structure. Operationally:
+The charter's Iron Rules (`CHARTER.md` §1) govern structure. Operationally:
 
 1. **Fail closed** — no session → throw; empty ability registry → no permissions; missing GUC → RLS denies.
 2. **Defense in depth** — CASL (action layer) AND RLS (row layer); the proxy gates routes, but every server action self-guards (Server Action POSTs can bypass proxy matchers).
@@ -25,6 +25,8 @@ The charter's Iron Rules (`DOMAIN-CHARTER.md` §1) govern structure. Operational
 8. **Security rides with features** — gate each surface as it lands; never ship a surface ungated.
 
 ## 3. Security model — 14 layers, control → file
+
+> Diagrams + per-mechanism detail (threat model, auth/authorization flows, the two-path RLS map, the add-a-feature security flowchart): [`SECURITY.md`](SECURITY.md).
 
 | # | Layer | Control | File(s) |
 |---|---|---|---|
@@ -41,7 +43,7 @@ The charter's Iron Rules (`DOMAIN-CHARTER.md` §1) govern structure. Operational
 | 11 | Supply chain | Dependabot + `npm audit --audit-level=high` gate | `.github/dependabot.yml`, `.github/workflows/ci.yml` |
 | 12 | Resilience | Stale-chunk auto-reload with cooldown | `app/_features/shell/ChunkErrorReloader.tsx` |
 | 13 | Verification | 3-tier harness + boundary/confinement law + live hard-fail gate | `vitest*.mts`, `lib/verification/*`, `lib/db/__tests__/live-db.ts`, `playwright.config.ts` |
-| 14 | Structure | Domain charter, mechanically enforced | `DOMAIN-CHARTER.md`, ESLint zones + scanner |
+| 14 | Structure | Domain charter, mechanically enforced | `CHARTER.md`, ESLint zones + scanner |
 
 **Session cookie truth:** the Supabase JWT cookie is deliberately **not httpOnly** — the browser client must read it for Realtime channel auth. XSS exfiltration is answered at layer 8 (CSP enforce + nonce, a deploy-time task), not by pretending the cookie is httpOnly.
 
@@ -62,7 +64,7 @@ The charter's Iron Rules (`DOMAIN-CHARTER.md` §1) govern structure. Operational
 | F | Feature | Status | Notes |
 |---|---|---|---|
 | F1–F5 | Foundation (db, auth, authz, RLS, least-privilege) | ✅ this branch | plus realtime plumbing, shell, harness — commits 1–33 |
-| F6 | **Orders domain** | 🔜 next | copy `app/_features/notes/` per `CONTRIBUTING.md`; order_number sequence, 6-status state machine, line items, instance-level CASL |
+| F6 | **Orders domain** | 🔜 next | copy `app/_features/notes/` per `CONTRIBUTING.md`; order_number sequence, 5-status state machine (draft/submitted/processing/completed/cancelled), line items, instance-level CASL |
 | F7 | Realtime | ✅ | shipped as foundation plumbing (D7) + exemplar proof |
 | F8 | Orders UI | 🔒 after F6 | kanban (drag = transition), list, line-item editor |
 | F9 | Settings + invite provisioning | 🧊 | invite codes, owner role management, last-owner protection, `SUPABASE_SERVICE_ROLE_KEY` returns to t3-env, profiles owner-reads-all (non-recursive) |

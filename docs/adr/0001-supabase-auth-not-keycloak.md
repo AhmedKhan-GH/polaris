@@ -19,3 +19,4 @@ Supabase Auth (GoTrue via `@supabase/ssr`) is the identity provider, permanently
 - Realtime authorization is reconstructed at the channel layer (ADR-0002), which only works against Supabase-shaped JWTs — Supabase Auth and Supabase Realtime are a package deal.
 - No public registration surface (ADR-0003).
 - Revisit trigger: a second first-party application needing SSO, or a real enterprise-federation requirement. Until one exists, any IdP migration proposal must account for the full knock-on cost recorded here.
+- Prior art, if ever revisited: the one Keycloak capability with a concrete Polaris design was **Authorization Services as a runtime policy decision point** — to let non-developers change permissions without a redeploy, Keycloak would return grants (`response_mode=permissions`) that map into CASL. Captured here because that design lived only in the now-removed `keycloak-authz-services` spec; today the same need is served statically by CASL + Postgres RLS.

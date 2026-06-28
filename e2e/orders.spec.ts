@@ -1,0 +1,288 @@
+import { expect, test } from '@playwright/test';
+import pg from 'pg';
+
+import { loginViaSupabase } from './helpers';
+
+/**
+ * Orders intake + lifecycle, end to end against the live local stack.
+ *
+ * Proves the role split the CASL + RLS + state-machine layers enforce, through
+ * the real pages: a contractor (member) records (duplicate SKUs allowed, each its
+ * own line) and confirms their OWN order but cannot process it; the office (admin)
+ * sees every
+ * order (read-all) and drives a submitted one through to completion.
+ *
+ * Each test is INDEPENDENT: `beforeEach` truncates orders so a retry (or a prior
+ * test) never leaks state, and the admin test SEEDS its own submitted order
+ * rather than depending on the member test. The product is seeded once and
+ * cleaned up, so this suite never pollutes the products-table counts.
+ */
+const SKU = 'SKU-OE2E';
+const PRODUCT_NAME = 'Order E2E Widget';
+let pool: pg.Pool;
+let productId: string;
+
+test.beforeAll(async () => {
+  pool = new pg.Pool({ connectionString: process.env.MIGRATE_DATABASE_URL });
+  await pool.query(
+    `insert into products (name, sku, price_cents, created_by)
+       values ('Order E2E Widget', $1, 500, gen_random_uuid())
+       on conflict (sku) do nothing`,
+    [SKU],
+  );
+  productId = (await pool.query('select id from products where sku = $1', [SKU]))
+    .rows[0].id;
+});
+
+test.beforeEach(async () => {
+  // Clean orders before every test so each one is self-contained (retry-safe).
+  await pool.query('TRUNCATE order_lines, orders');
+});
+
+test.afterAll(async () => {
+  await pool.query('TRUNCATE order_lines, orders');
+  await pool.query('delete from products where sku = $1', [SKU]);
+  await pool.end();
+});
+
+test.describe('orders intake + lifecycle', () => {
+  test('a contractor records an order, adds a duplicate-SKU line, and confirms it', async ({
+    page,
+  }) => {
+    await loginViaSupabase(page, 'member@example.com');
+    await page.goto('/orders');
+    await expect(page.getByTestId('order-row')).toHaveCount(0);
+
+    // Creating an order adds a draft to the LIST (no navigation); open it to edit.
+    await page.getByRole('button', { name: 'New order' }).click();
+    await expect(page.getByTestId('order-row')).toHaveCount(1);
+    // The list shows who created each order (the creator's id).
+    await expect(page.getByTestId('order-created-by')).toHaveText(/[0-9a-f-]{36}/);
+    await page.getByRole('link', { name: 'Open' }).click();
+    await expect(page).toHaveURL(/\/orders\/[0-9a-f-]+$/);
+    await expect(page.getByTestId('order-status')).toHaveText('draft');
+
+    // Add a line; the total uses the snapshot price (500c × 3 = $15.00).
+    // `exact: true` — once a line exists, its inline edit field is also labelled
+    // "Quantity for <product>", which a substring match would collide with.
+    await page.getByLabel('Product').fill(PRODUCT_NAME);
+    await page.getByRole('option', { name: new RegExp(PRODUCT_NAME) }).click();
+    await page.getByLabel('Quantity', { exact: true }).fill('3');
+    await page.getByRole('button', { name: 'Add line' }).click();
+    await expect(page.getByTestId('line-row')).toHaveCount(1);
+    await expect(page.getByTestId('line-row').getByText('$15.00')).toBeVisible();
+
+    // Re-adding the SAME product appends a SECOND line (no merge) — duplicate
+    // SKUs are allowed, each line its own row/price.
+    await page.getByLabel('Product').fill(PRODUCT_NAME);
+    await page.getByRole('option', { name: new RegExp(PRODUCT_NAME) }).click();
+    await page.getByLabel('Quantity', { exact: true }).fill('2');
+    await page.getByRole('button', { name: 'Add line' }).click();
+    await expect(page.getByTestId('line-row')).toHaveCount(2);
+
+    // A member can submit but NEVER process.
+    await expect(page.getByRole('button', { name: 'Process' })).toHaveCount(0);
+    await page.getByRole('button', { name: 'Submit' }).click();
+    await expect(page.getByTestId('order-status')).toHaveText('submitted');
+    await expect(page.getByRole('button', { name: 'Process' })).toHaveCount(0);
+  });
+
+  test('the office (admin) sees a submitted order and processes it to completion', async ({
+    page,
+  }) => {
+    // Seed a submitted order owned by some user (created_by is a bare uuid; the
+    // admin reads ALL orders) so this test never depends on the member test.
+    const orderId = (
+      await pool.query(
+        `insert into orders (created_by, status) values (gen_random_uuid(), 'submitted') returning id`,
+      )
+    ).rows[0].id;
+    await pool.query(
+      `insert into order_lines (order_id, line_number, product_id, quantity, list_price_cents)
+         values ($1, 1, $2, 2, 500)`,
+      [orderId, productId],
+    );
+
+    await loginViaSupabase(page, 'admin@example.com');
+    await page.goto('/orders');
+
+    // Read-all: the order is visible to the admin even though they don't own it.
+    await expect(page.getByTestId('order-row')).toHaveCount(1);
+    await page.getByRole('link', { name: 'Open' }).click();
+    await expect(page.getByTestId('order-status')).toHaveText('submitted');
+
+    await page.getByRole('button', { name: 'Process' }).click();
+    await expect(page.getByTestId('order-status')).toHaveText('processing');
+
+    await page.getByRole('button', { name: 'Complete' }).click();
+    await expect(page.getByTestId('order-status')).toHaveText('completed');
+  });
+
+  test('inline price override auto-saves on blur (no Save button) and reverts when cleared', async ({
+    page,
+  }) => {
+    await loginViaSupabase(page, 'member@example.com');
+    await page.goto('/orders');
+    await page.getByRole('button', { name: 'New order' }).click();
+    await expect(page.getByTestId('order-row')).toHaveCount(1);
+    await page.getByRole('link', { name: 'Open' }).click();
+
+    // Add one line at the list price (500c × 1 = $5.00).
+    await page.getByLabel('Product').fill(PRODUCT_NAME);
+    await page.getByRole('option', { name: new RegExp(PRODUCT_NAME) }).click();
+    await page.getByLabel('Quantity', { exact: true }).fill('1');
+    await page.getByRole('button', { name: 'Add line' }).click();
+
+    const row = page.getByTestId('line-row');
+    await expect(row.getByText('$5.00')).toBeVisible();
+    // Editing is inline — there is no per-row Save button.
+    await expect(row.getByRole('button', { name: 'Save' })).toHaveCount(0);
+
+    // Override the price to $4.00 and blur: the total follows the override and
+    // the frozen list price ($5.00) is shown struck-through.
+    const price = page.getByLabel(`Unit price for ${PRODUCT_NAME}`);
+    await price.fill('4.00');
+    await price.blur();
+    await expect(row.getByText('$4.00')).toBeVisible(); // line total = override × 1
+    await expect(row.locator('.line-through')).toHaveText('$5.00');
+
+    // Clearing the override reverts the line to its list price.
+    await price.fill('');
+    await price.blur();
+    await expect(row.getByText('$5.00')).toBeVisible();
+    await expect(row.locator('.line-through')).toHaveCount(0);
+
+    // Override again, then type the LIST price ($5.00) back in: that is not an
+    // off-list price, so the override is cleared — no strikethrough lingers.
+    await price.fill('4.00');
+    await price.blur();
+    await expect(row.locator('.line-through')).toHaveText('$5.00');
+    await price.fill('5.00');
+    await price.blur();
+    await expect(row.getByText('$5.00')).toBeVisible();
+    await expect(row.locator('.line-through')).toHaveCount(0);
+  });
+
+  test('a contractor can cancel their own draft', async ({ page }) => {
+    await loginViaSupabase(page, 'member@example.com');
+    await page.goto('/orders');
+    await page.getByRole('button', { name: 'New order' }).click();
+    await expect(page.getByTestId('order-row')).toHaveCount(1);
+    await page.getByRole('link', { name: 'Open' }).click();
+    await expect(page.getByTestId('order-status')).toHaveText('draft');
+
+    await page.getByRole('button', { name: 'Cancel' }).click();
+    await expect(page.getByTestId('order-status')).toHaveText('cancelled');
+  });
+
+  test('removing a line renumbers the remaining lines (no gaps)', async ({ page }) => {
+    await loginViaSupabase(page, 'member@example.com');
+    await page.goto('/orders');
+    await page.getByRole('button', { name: 'New order' }).click();
+    await expect(page.getByTestId('order-row')).toHaveCount(1);
+    await page.getByRole('link', { name: 'Open' }).click();
+
+    // Three lines of the same product (allowed on separate lines) → #1, #2, #3.
+    for (let i = 1; i <= 3; i++) {
+      await page.getByLabel('Product').fill(PRODUCT_NAME);
+      await page.getByRole('option', { name: new RegExp(PRODUCT_NAME) }).click();
+      await page.getByLabel('Quantity', { exact: true }).fill('1');
+      await page.getByRole('button', { name: 'Add line' }).click();
+      await expect(page.getByTestId('line-row')).toHaveCount(i);
+    }
+    await expect(page.getByTestId('line-number')).toHaveText(['1', '2', '3']);
+
+    // Remove the MIDDLE line (its confirm dialog → Confirm).
+    await page
+      .getByTestId('line-row')
+      .nth(1)
+      .getByRole('button', { name: 'Remove' })
+      .click();
+    await page.getByRole('button', { name: 'Confirm' }).click();
+
+    // The remaining two lines renumber to 1, 2 — the gap is closed.
+    await expect(page.getByTestId('line-row')).toHaveCount(2);
+    await expect(page.getByTestId('line-number')).toHaveText(['1', '2']);
+  });
+});
+
+test.describe('orders console (multi-view)', () => {
+  test('switches views and previews a selected order without leaving the console', async ({
+    page,
+  }) => {
+    await loginViaSupabase(page, 'member@example.com');
+    await page.goto('/orders');
+    await page.getByRole('button', { name: 'New order' }).click();
+    await expect(page.getByTestId('order-row')).toHaveCount(1);
+
+    // Selecting in the list opens the read-only preview at the side (no nav).
+    await page.locator('a[href*="selected="]').first().click();
+    await expect(page).toHaveURL(/selected=/);
+    await expect(page.getByTestId('order-preview')).toBeVisible();
+
+    // The board shows the same order as a card.
+    await page.getByRole('link', { name: 'Board', exact: true }).click();
+    await expect(page).toHaveURL(/view=board/);
+    await expect(page.getByTestId('order-card')).toHaveCount(1);
+
+    // The status view shows the status rail.
+    await page.getByRole('link', { name: 'Status', exact: true }).click();
+    await expect(page.getByTestId('status-rail')).toBeVisible();
+  });
+
+  test('list view filters by status', async ({ page }) => {
+    await pool.query(
+      `insert into orders (created_by, status) values (gen_random_uuid(), 'draft')`,
+    );
+    await pool.query(
+      `insert into orders (created_by, status) values (gen_random_uuid(), 'submitted')`,
+    );
+
+    await loginViaSupabase(page, 'admin@example.com'); // reads all
+    await page.goto('/orders');
+    await expect(page.getByTestId('order-row')).toHaveCount(2);
+
+    // Filter to submitted → only the submitted order remains.
+    await page
+      .getByTestId('list-filters')
+      .getByRole('link', { name: 'submitted', exact: true })
+      .click();
+    await expect(page).toHaveURL(/status=submitted/);
+    await expect(page.getByTestId('order-row')).toHaveCount(1);
+
+    // Clear → both are back.
+    await page.getByRole('link', { name: 'Clear' }).click();
+    await expect(page.getByTestId('order-row')).toHaveCount(2);
+  });
+
+  test('status view opens an order editable in place and clears it on transition', async ({
+    page,
+  }) => {
+    const orderId = (
+      await pool.query(
+        `insert into orders (created_by, status) values (gen_random_uuid(), 'submitted') returning id`,
+      )
+    ).rows[0].id;
+    await pool.query(
+      `insert into order_lines (order_id, line_number, product_id, quantity, list_price_cents)
+         values ($1, 1, $2, 2, 500)`,
+      [orderId, productId],
+    );
+
+    await loginViaSupabase(page, 'admin@example.com');
+    await page.goto('/orders?view=status&status=submitted');
+    await expect(page.getByTestId('status-card')).toHaveCount(1);
+
+    // Selecting opens the EDITABLE detail in the center panel — still in the
+    // console (no navigation to /orders/[id]).
+    await page.getByTestId('status-card').first().click();
+    await expect(page).toHaveURL(/view=status/);
+    const detail = page.getByTestId('status-detail');
+    await expect(detail.getByTestId('order-status')).toHaveText('submitted');
+    await expect(detail.getByTestId('line-row')).toHaveCount(1);
+
+    // Processing it (admin) transitions it — it drops out of the submitted rail.
+    await detail.getByRole('button', { name: 'Process' }).click();
+    await expect(page.getByTestId('status-card')).toHaveCount(0);
+  });
+});

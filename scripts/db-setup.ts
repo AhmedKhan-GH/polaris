@@ -85,44 +85,9 @@ async function cli(): Promise<void> {
   } finally {
     await probe.end();
   }
-
-  // Demo accounts: a clean build must end with someone to log in as (no
-  // sign-up page by design, ADR-0003). Seed when the GoTrue env is present —
-  // the committed .env.test always carries it locally and in CI; skip loudly
-  // otherwise so pointing db:setup at a bare Postgres still provisions.
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  const password = process.env.TEST_USER_PASSWORD;
-  if (supabaseUrl && serviceKey && password) {
-    await seedDemoUsers({ adminUrl, supabaseUrl, serviceKey, password });
-    console.log(
-      'db:setup ✓ demo users seeded: owner@example.com, member@example.com (password: TEST_USER_PASSWORD)',
-    );
-  } else {
-    console.log(
-      'db:setup — GoTrue env absent; demo-user seeding skipped (needs ' +
-        'NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, TEST_USER_PASSWORD)',
-    );
-  }
-}
-
-/**
- * Seeds the two canonical demo accounts a clean build can log in with —
- * owner@example.com (role `owner`) and member@example.com (role `member`) —
- * and mirrors their roles into `profiles` (the app's role source of truth).
- * Idempotent: an existing user is reconciled, never duplicated. There is no
- * sign-up page by design (ADR-0003), so without this a fresh stack has nobody
- * to log in as.
- */
-export async function seedDemoUsers(opts: {
-  adminUrl: string;
-  supabaseUrl: string;
-  serviceKey: string;
-  password: string;
-}): Promise<void> {
-  const admin = createSupabaseAdmin(opts.supabaseUrl, opts.serviceKey);
-  await seedUser(admin, opts.adminUrl, opts.password, 'owner@example.com', 'owner');
-  await seedUser(admin, opts.adminUrl, opts.password, 'member@example.com', 'member');
+  // Demo accounts are NOT seeded here — db:setup is the prod-safe provisioning
+  // path and knows nothing about example logins. Run `npm run db:seed-dev` for
+  // dev/test fixtures; a real environment's owner comes from `db:create-user`.
 }
 
 /**

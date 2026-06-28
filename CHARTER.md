@@ -4,7 +4,7 @@
 **Audience:** every human and agent who writes code in this repo.
 **Purpose:** the constitution of domain boundaries. Each domain below is *ironclad*: it owns named files, exposes a named contract, and has explicit "never" rules. Anything that violates a "never" is a bug, even if it works.
 
-This document owns **boundaries only**. Security mechanics live in `SECURITY-HANDBOOK.md`; roadmap and decision history live in the project handbook. One fact, one home — this charter cites, it does not restate.
+This document owns **boundaries only**. Security mechanics live in `SECURITY.md`; roadmap and decision history live in the project handbook. One fact, one home — this charter cites, it does not restate.
 
 **Change control:** changing a domain boundary, an iron rule, or a contract signature requires an ADR (`docs/adr/`) in the same PR as the change, and the import-boundary enforcement config must be updated in that same PR. Law and enforcement never drift apart.
 
@@ -26,8 +26,8 @@ The rules:
 3. **Composition roots are the only wiring points.** Only files in §3 may import business-feature manifests, and they may import *manifests only* (`schema.ts`, `permissions.ts`, `nav.ts`) — never actions or components. A composition root is a flat list with zero logic.
 4. **One reader / one resolver / one authority.** Exactly one `process.env` reader (D1), one identity resolver (D3's `getSessionUser`), one migration authority (D2: drizzle-kit; `supabase/migrations/` must not exist).
 5. **Server actions self-guard.** Next 16 `proxy.ts` matchers do not see Server Action POSTs to excluded paths; the proxy is route hygiene, never an authorization layer. Every action wraps `withPermission` (D4) and reaches data only through `withUserContext` (D2).
-6. **Two RLS identity paths, never mixed.** Tables read via Drizzle/`app_user` get GUC policies (`app.user_id` / `app.user_roles`); tables read via the Supabase client get `auth.uid()` policies. A policy written for one path is blind to the other (see SECURITY-HANDBOOK §5).
-7. **Streamed data is gated at the channel layer.** Never row-RLS on the streamed table for delivery filtering — the 0021 scar (SECURITY-HANDBOOK §9; realtime identity context cannot see app GUCs and does not reliably resolve `auth.uid()` row-by-row).
+6. **Two RLS identity paths, never mixed.** Tables read via Drizzle/`app_user` get GUC policies (`app.user_id` / `app.user_roles`); tables read via the Supabase client get `auth.uid()` policies. A policy written for one path is blind to the other (see `SECURITY.md` → RLS model).
+7. **Streamed data is gated at the channel layer.** Never row-RLS on the streamed table for delivery filtering — the 0021 scar (`SECURITY.md` → RLS model; realtime identity context cannot see app GUCs and does not reliably resolve `auth.uid()` row-by-row).
 8. **Features expose a dev API.** Outsiders import `app/_features/<name>` (the feature's `index.ts`) and nothing deeper; anything not exported from the index is private to the feature. The index never re-exports manifests — manifests remain the registry-only seam (rule 3). Exemptions: intra-feature imports, registry→manifest edges. "Dev API" is the TypeScript import surface, not a web API (ADR-0005).
 
 **Enforcement is mechanical, not cultural:** the ESLint import-boundary zone encodes rule 1 as editor-time feedback; the Verification-domain test (D9) walks the import graph (all of `app/` and `lib/`) and fails on violations of rules 1–3 and 8. The exemplar's feature-confinement test (§4) proves rule 1 continuously.
@@ -64,7 +64,7 @@ Format per domain: **Mission** (the one question it answers) · **Owns** (files,
 - **Owns:** `lib/permissions/ability.ts` (`buildAbility` — composes CASL rules from the registry's contributors; **owns no feature subjects itself**), `lib/permissions/guard.ts` (`withPermission(action, subject, fn)` — resolves identity once via D3, throws fail-closed, logs denials via D5), `lib/permissions/routes.ts` (public-path policy consumed by D8's proxy).
 - **Provides:** `withPermission`, the `AbilityContributor` type (the seam every feature implements), route policy predicates.
 - **Never:** a feature subject named in foundation code — `'Note'`, `'Order'` etc. arrive only via contributors (this inverts clean-rewrite's #1 weld). Never authorize without a session (no anonymous ability). Never trust the proxy for authz (Iron Rule 5).
-- **Proven by:** unit tests for fail-closed behavior, denial logging, and contributor composition; integration tests proving CASL and RLS agree (defense in depth, two layers — SECURITY-HANDBOOK §2).
+- **Proven by:** unit tests for fail-closed behavior, denial logging, and contributor composition; integration tests proving CASL and RLS agree (defense in depth, two layers — `SECURITY.md` → the defense-in-depth stack).
 
 ### D5 — Observability & Audit
 - **Mission:** "What happened?"
@@ -162,7 +162,7 @@ Adding a feature touches exactly these files plus the feature's own folder — n
 
 ## 6. Security-layer ↔ domain cross-reference
 
-The 14-layer security model (mechanics in SECURITY-HANDBOOK §3) maps onto domains as:
+The 14-layer security model (table in `HANDBOOK.md` §3; diagrams in `SECURITY.md`) maps onto domains as:
 
 | Layers | Owner |
 |---|---|

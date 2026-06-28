@@ -35,7 +35,7 @@ Two real decision points were surfaced as plain-language choices, not buried in 
 
 **Move:** when a shortcut around a discipline is tempting, present the honest cost in plain words. People pick rigor when they can actually see the trade — and jargon hides it.
 
-## 3. Write the constitution before any code (`DOMAIN-CHARTER.md`).
+## 3. Write the constitution before any code (`CHARTER.md`).
 
 The design wasn't a sketch; it was **law**:
 
@@ -207,4 +207,4 @@ Part I's discipline produces Part II's properties. Test-first authoring is *why*
 
 ---
 
-*This document is a process-and-practice artifact, not a spec. The system it produced is described in `HANDBOOK.md`; the rules it follows are in `DOMAIN-CHARTER.md`; the feature workflow is in `CONTRIBUTING.md`.*
+*This document is a process-and-practice artifact, not a spec. The system it produced is described in `HANDBOOK.md`; the rules it follows are in `CHARTER.md`; the feature workflow is in `CONTRIBUTING.md`.*

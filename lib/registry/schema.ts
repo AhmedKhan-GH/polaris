@@ -11,4 +11,5 @@
 // feature is one deleted line here — the foundation stays green.
 
 export * from '@/app/_features/notes/schema';
+export * from '@/app/_features/orders/schema';
 export * from '@/app/_features/products/schema';

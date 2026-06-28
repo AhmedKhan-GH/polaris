@@ -15,6 +15,7 @@
 
 import { activityNav } from '@/app/_features/activity/nav';
 import { notesNav } from '@/app/_features/notes/nav';
+import { ordersNav } from '@/app/_features/orders/nav';
 import { productsNav } from '@/app/_features/products/nav';
 
 /** A single dashboard navigation entry. `permission`, when present, gates it. */
@@ -24,4 +25,4 @@ export type NavItem = {
   permission?: { action: string; subject: string };
 };
 
-export const navItems: NavItem[] = [activityNav, notesNav, productsNav];
+export const navItems: NavItem[] = [activityNav, notesNav, ordersNav, productsNav];

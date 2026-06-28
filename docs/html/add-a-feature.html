@@ -142,6 +142,7 @@
           <li><a href="#auth">auth</a></li>
           <li><a href="#landing">landing</a></li>
           <li><a href="#notes">notes</a></li>
+          <li><a href="#orders">orders</a></li>
           <li><a href="#products">products</a></li>
           <li><a href="#shell">shell</a></li>
 <!-- END GENERATED feature-toc -->
@@ -163,7 +164,7 @@
   exemplar, build under TDD, and publish exactly what outsiders may import.</p>
   <p class="muted" style="font-size: var(--text-sm); margin-top: var(--space-4)">
   Companion to <code>CONTRIBUTING.md</code> — the tracked markdown
-  (<code>DOMAIN-CHARTER.md</code> → <code>HANDBOOK.md</code> →
+  (<code>CHARTER.md</code> → <code>HANDBOOK.md</code> →
   <code>CONTRIBUTING.md</code>) remains the source of truth.</p>
 </header>
 
@@ -337,6 +338,83 @@ export { getNotes, createNote } from './actions';
 <span class="tok-k">export</span> { getNotes, createNote } <span class="tok-k">from</span> <span class="tok-s">'./actions'</span>;</code></pre></figure>
     </details>
   </section>
+  <section class="featdoc" id="orders">
+    <h3 class="featdoc-title">orders</h3>
+    <p>Orders dev API (Iron Rule 8, ADR-0005) — the ONLY surface outsiders may import; the boundary law (rule D) fails the build on anything deeper. Exactly what the route pages consume, one deliberate export per line.</p>
+    <p>NOT exported on purpose: the manifests `schema`/`permissions`/`nav` (the registry's seam, rule C — never re-export manifests through the index).</p>
+    <p class="muted featdoc-import">Import surface: <code>@/app/_features/orders</code> — everything else in the folder is private (rule&nbsp;D).</p>
+  <table>
+    <tr><th>Export</th><th>Kind</th><th>Description</th><th>Source module</th></tr>
+      <tr><td><code>createOrder</code></td><td><span class="pill">server action</span></td><td></td><td><code>./actions</code></td></tr>
+      <tr><td><code>getOrders</code></td><td><span class="pill">server action</span></td><td></td><td><code>./actions</code></td></tr>
+      <tr><td><code>getOrder</code></td><td><span class="pill">server action</span></td><td></td><td><code>./actions</code></td></tr>
+      <tr><td><code>getOrderLines</code></td><td><span class="pill">server action</span></td><td></td><td><code>./actions</code></td></tr>
+      <tr><td><code>addLine</code></td><td><span class="pill">server action</span></td><td></td><td><code>./actions</code></td></tr>
+      <tr><td><code>updateLine</code></td><td><span class="pill">server action</span></td><td></td><td><code>./actions</code></td></tr>
+      <tr><td><code>removeLine</code></td><td><span class="pill">server action</span></td><td></td><td><code>./actions</code></td></tr>
+      <tr><td><code>transitionOrder</code></td><td><span class="pill">server action</span></td><td></td><td><code>./actions</code></td></tr>
+      <tr><td><code>OrderRow</code></td><td><span class="pill">server action</span></td><td></td><td><code>./actions</code></td></tr>
+      <tr><td><code>LineRow</code></td><td><span class="pill">server action</span></td><td></td><td><code>./actions</code></td></tr>
+      <tr><td><code>getAllowedTransitions</code></td><td><span class="pill">function</span></td><td></td><td><code>./transitions</code></td></tr>
+      <tr><td><code>ORDER_STATUSES</code></td><td><span class="pill">component</span></td><td></td><td><code>./transitions</code></td></tr>
+      <tr><td><code>OrderStatus</code></td><td><span class="pill">component</span></td><td></td><td><code>./transitions</code></td></tr>
+      <tr><td><code>effectivePriceCents</code></td><td><span class="pill">function</span></td><td></td><td><code>./pricing</code></td></tr>
+      <tr><td><code>lineTotalCents</code></td><td><span class="pill">function</span></td><td></td><td><code>./pricing</code></td></tr>
+      <tr><td><code>LineItemRow</code></td><td><span class="pill">component</span></td><td></td><td><code>./LineItemRow</code></td></tr>
+      <tr><td><code>LineItemRowData</code></td><td><span class="pill">component</span></td><td></td><td><code>./LineItemRow</code></td></tr>
+      <tr><td><code>ProductCombobox</code></td><td><span class="pill">component</span></td><td></td><td><code>./ProductCombobox</code></td></tr>
+      <tr><td><code>ProductOption</code></td><td><span class="pill">component</span></td><td></td><td><code>./ProductCombobox</code></td></tr>
+      <tr><td><code>OrderSummary</code></td><td><span class="pill">component</span></td><td></td><td><code>./OrderSummary</code></td></tr>
+      <tr><td><code>OrderSummaryLine</code></td><td><span class="pill">component</span></td><td></td><td><code>./OrderSummary</code></td></tr>
+      <tr><td><code>groupOrdersByStatus</code></td><td><span class="pill">function</span></td><td></td><td><code>./grouping</code></td></tr>
+      <tr><td><code>filterOrders</code></td><td><span class="pill">function</span></td><td></td><td><code>./filtering</code></td></tr>
+      <tr><td><code>OrderFilters</code></td><td><span class="pill">component</span></td><td></td><td><code>./filtering</code></td></tr>
+  </table>
+    <p class="featdoc-label"><strong>Used by</strong></p>
+  <table>
+    <tr><th>Importing file</th><th>Imports</th></tr>
+      <tr><td><code>app/(dashboard)/orders/ListFilters.tsx</code></td><td><code>ORDER_STATUSES</code></td></tr>
+      <tr><td><code>app/(dashboard)/orders/OrderDetail.tsx</code></td><td><code>LineItemRow</code>, <code>OrderSummary</code>, <code>ProductCombobox</code>, <code>addLine</code>, <code>getAllowedTransitions</code>, <code>getOrder</code>, <code>getOrderLines</code>, <code>transitionOrder</code>, <code>OrderStatus</code></td></tr>
+      <tr><td><code>app/(dashboard)/orders/OrderPreview.tsx</code></td><td><code>LineItemRow</code>, <code>OrderSummary</code>, <code>getOrder</code>, <code>getOrderLines</code></td></tr>
+      <tr><td><code>app/(dashboard)/orders/OrdersBoardView.tsx</code></td><td><code>groupOrdersByStatus</code>, <code>OrderRow</code></td></tr>
+      <tr><td><code>app/(dashboard)/orders/OrdersListView.tsx</code></td><td><code>filterOrders</code>, <code>OrderRow</code></td></tr>
+      <tr><td><code>app/(dashboard)/orders/OrdersStatusView.tsx</code></td><td><code>ORDER_STATUSES</code>, <code>groupOrdersByStatus</code>, <code>OrderRow</code>, <code>OrderStatus</code></td></tr>
+      <tr><td><code>app/(dashboard)/orders/page.tsx</code></td><td><code>createOrder</code>, <code>getOrders</code></td></tr>
+  </table>
+    <p class="featdoc-label"><strong>Other seams</strong></p>
+  <p><strong>Manifests</strong> (registry-only, rule C): <code>nav.ts</code> · <code>permissions.ts</code> · <code>schema.ts</code></p>
+    <details class="contract">
+      <summary>The contract, verbatim — <code>app/_features/orders/index.ts</code></summary>
+      <figure class="snippet"><figcaption>app/_features/orders/index.ts</figcaption>
+      <pre><code><span class="tok-c">/**
+ * Orders dev API (Iron Rule 8, ADR-0005) — the ONLY surface outsiders may
+ * import; the boundary law (rule D) fails the build on anything deeper. Exactly
+ * what the route pages consume, one deliberate export per line.
+ *
+ * NOT exported on purpose: the manifests `schema`/`permissions`/`nav` (the
+ * registry's seam, rule C — never re-export manifests through the index).
+ */</span>
+<span class="tok-k">export</span> {
+  createOrder,
+  getOrders,
+  getOrder,
+  getOrderLines,
+  addLine,
+  updateLine,
+  removeLine,
+  transitionOrder,
+  <span class="tok-k">type</span> <span class="tok-t">OrderRow</span>,
+  <span class="tok-k">type</span> <span class="tok-t">LineRow</span>,
+} <span class="tok-k">from</span> <span class="tok-s">'./actions'</span>;
+<span class="tok-k">export</span> { getAllowedTransitions, <span class="tok-t">ORDER_STATUSES</span>, <span class="tok-k">type</span> <span class="tok-t">OrderStatus</span> } <span class="tok-k">from</span> <span class="tok-s">'./transitions'</span>;
+<span class="tok-k">export</span> { effectivePriceCents, lineTotalCents } <span class="tok-k">from</span> <span class="tok-s">'./pricing'</span>;
+<span class="tok-k">export</span> { <span class="tok-t">LineItemRow</span>, <span class="tok-k">type</span> <span class="tok-t">LineItemRowData</span> } <span class="tok-k">from</span> <span class="tok-s">'./LineItemRow'</span>;
+<span class="tok-k">export</span> { <span class="tok-t">ProductCombobox</span>, <span class="tok-k">type</span> <span class="tok-t">ProductOption</span> } <span class="tok-k">from</span> <span class="tok-s">'./ProductCombobox'</span>;
+<span class="tok-k">export</span> { <span class="tok-t">OrderSummary</span>, <span class="tok-k">type</span> <span class="tok-t">OrderSummaryLine</span> } <span class="tok-k">from</span> <span class="tok-s">'./OrderSummary'</span>;
+<span class="tok-k">export</span> { groupOrdersByStatus } <span class="tok-k">from</span> <span class="tok-s">'./grouping'</span>;
+<span class="tok-k">export</span> { filterOrders, <span class="tok-k">type</span> <span class="tok-t">OrderFilters</span> } <span class="tok-k">from</span> <span class="tok-s">'./filtering'</span>;</code></pre></figure>
+    </details>
+  </section>
   <section class="featdoc" id="products">
     <h3 class="featdoc-title">products</h3>
     <p>Products dev API (Iron Rule 8, ADR-0005) — the ONLY surface outsiders may import; the boundary law (rule D) fails the build on anything deeper. Exactly what the route page consumes, one deliberate export per line.</p>
@@ -348,12 +426,19 @@ export { getNotes, createNote } from './actions';
       <tr><td><code>createProduct</code></td><td><span class="pill">server action</span></td><td></td><td><code>./actions</code></td></tr>
       <tr><td><code>updateProduct</code></td><td><span class="pill">server action</span></td><td></td><td><code>./actions</code></td></tr>
       <tr><td><code>retireProduct</code></td><td><span class="pill">server action</span></td><td></td><td><code>./actions</code></td></tr>
+      <tr><td><code>restoreProduct</code></td><td><span class="pill">server action</span></td><td></td><td><code>./actions</code></td></tr>
       <tr><td><code>ProductRow</code></td><td><span class="pill">server action</span></td><td></td><td><code>./actions</code></td></tr>
+      <tr><td><code>CreateProductResult</code></td><td><span class="pill">server action</span></td><td></td><td><code>./actions</code></td></tr>
+      <tr><td><code>ProductListRow</code></td><td><span class="pill">component</span></td><td></td><td><code>./ProductListRow</code></td></tr>
+      <tr><td><code>ProductListRowData</code></td><td><span class="pill">component</span></td><td></td><td><code>./ProductListRow</code></td></tr>
+      <tr><td><code>ProductCreateForm</code></td><td><span class="pill">component</span></td><td></td><td><code>./ProductCreateForm</code></td></tr>
   </table>
     <p class="featdoc-label"><strong>Used by</strong></p>
   <table>
     <tr><th>Importing file</th><th>Imports</th></tr>
-      <tr><td><code>app/(dashboard)/products/page.tsx</code></td><td><code>createProduct</code>, <code>getProducts</code>, <code>retireProduct</code>, <code>updateProduct</code></td></tr>
+      <tr><td><code>app/(dashboard)/orders/OrderDetail.tsx</code></td><td><code>getProducts</code></td></tr>
+      <tr><td><code>app/(dashboard)/orders/OrderPreview.tsx</code></td><td><code>getProducts</code></td></tr>
+      <tr><td><code>app/(dashboard)/products/page.tsx</code></td><td><code>ProductCreateForm</code>, <code>ProductListRow</code>, <code>getProducts</code>, <code>ProductRow</code></td></tr>
   </table>
     <p class="featdoc-label"><strong>Other seams</strong></p>
   <p><strong>Manifests</strong> (registry-only, rule C): <code>nav.ts</code> · <code>permissions.ts</code> · <code>schema.ts</code></p>
@@ -374,16 +459,21 @@ export { getNotes, createNote } from './actions';
   createProduct,
   updateProduct,
   retireProduct,
+  restoreProduct,
   <span class="tok-k">type</span> <span class="tok-t">ProductRow</span>,
-} <span class="tok-k">from</span> <span class="tok-s">'./actions'</span>;</code></pre></figure>
+  <span class="tok-k">type</span> <span class="tok-t">CreateProductResult</span>,
+} <span class="tok-k">from</span> <span class="tok-s">'./actions'</span>;
+<span class="tok-k">export</span> { <span class="tok-t">ProductListRow</span>, <span class="tok-k">type</span> <span class="tok-t">ProductListRowData</span> } <span class="tok-k">from</span> <span class="tok-s">'./ProductListRow'</span>;
+<span class="tok-k">export</span> { <span class="tok-t">ProductCreateForm</span> } <span class="tok-k">from</span> <span class="tok-s">'./ProductCreateForm'</span>;</code></pre></figure>
     </details>
   </section>
   <section class="featdoc" id="shell">
     <h3 class="featdoc-title">shell</h3>
-    <p>Shell dev API (Iron Rule 8, ADR-0005): the dashboard chrome the root and dashboard layouts/pages compose. All three components are intentionally public — shell is a foundation surface whose whole job is to be rendered by routes.</p>
+    <p>Shell dev API (Iron Rule 8, ADR-0005): the dashboard chrome the root and dashboard layouts/pages compose. All components are intentionally public — shell is a foundation surface whose whole job is to be rendered by routes.</p>
     <p class="muted featdoc-import">Import surface: <code>@/app/_features/shell</code> — everything else in the folder is private (rule&nbsp;D).</p>
   <table>
     <tr><th>Export</th><th>Kind</th><th>Description</th><th>Source module</th></tr>
+      <tr><td><code>BackButton</code></td><td><span class="pill">component</span></td><td></td><td><code>./BackButton</code></td></tr>
       <tr><td><code>ChunkErrorReloader</code></td><td><span class="pill">component</span></td><td></td><td><code>./ChunkErrorReloader</code></td></tr>
       <tr><td><code>DashboardNav</code></td><td><span class="pill">component</span></td><td></td><td><code>./DashboardNav</code></td></tr>
       <tr><td><code>PageHeader</code></td><td><span class="pill">component</span></td><td></td><td><code>./PageHeader</code></td></tr>
@@ -392,7 +482,7 @@ export { getNotes, createNote } from './actions';
   <table>
     <tr><th>Importing file</th><th>Imports</th></tr>
       <tr><td><code>app/(dashboard)/dashboard/page.tsx</code></td><td><code>DashboardNav</code></td></tr>
-      <tr><td><code>app/(dashboard)/layout.tsx</code></td><td><code>PageHeader</code></td></tr>
+      <tr><td><code>app/(dashboard)/layout.tsx</code></td><td><code>BackButton</code>, <code>PageHeader</code></td></tr>
       <tr><td><code>app/layout.tsx</code></td><td><code>ChunkErrorReloader</code></td></tr>
       <tr><td><code>app/page.tsx</code></td><td><code>PageHeader</code></td></tr>
   </table>
@@ -401,10 +491,10 @@ export { getNotes, createNote } from './actions';
       <figure class="snippet"><figcaption>app/_features/shell/index.ts</figcaption>
       <pre><code><span class="tok-c">/**
  * Shell dev API (Iron Rule 8, ADR-0005): the dashboard chrome the root and
- * dashboard layouts/pages compose. All three components are intentionally
- * public — shell is a foundation surface whose whole job is to be rendered
- * by routes.
+ * dashboard layouts/pages compose. All components are intentionally public —
+ * shell is a foundation surface whose whole job is to be rendered by routes.
  */</span>
+<span class="tok-k">export</span> { <span class="tok-t">BackButton</span> } <span class="tok-k">from</span> <span class="tok-s">'./BackButton'</span>;
 <span class="tok-k">export</span> { <span class="tok-t">ChunkErrorReloader</span> } <span class="tok-k">from</span> <span class="tok-s">'./ChunkErrorReloader'</span>;
 <span class="tok-k">export</span> { <span class="tok-t">DashboardNav</span> } <span class="tok-k">from</span> <span class="tok-s">'./DashboardNav'</span>;
 <span class="tok-k">export</span> { <span class="tok-t">PageHeader</span> } <span class="tok-k">from</span> <span class="tok-s">'./PageHeader'</span>;</code></pre></figure>
