@@ -1,4 +1,6 @@
-# Polaris Domain Growth And Schema Direction
+# Polaris Domain Growth & Schema Direction
+
+> **Status:** long-horizon vision — the platform direction *beyond* the current F1–F12 roadmap ([`HANDBOOK.md`](../../HANDBOOK.md) §6). Not built, not scheduled; revisit when the post-orders domains (fulfillment, routing, assets, accounting) come on deck. ⚠️ The order-status examples below use the old 8-status names (`drafted/invoiced/closed/…`); the shipped model is **5 statuses** (draft/submitted/processing/completed/cancelled) — the *schema direction* stands, the status vocabulary is illustrative only.
 
 This note captures the long-term schema direction discussed for growing Polaris from a single order process into a broader operations platform covering intake, fulfillment, routing, assets, and accounting.
 
