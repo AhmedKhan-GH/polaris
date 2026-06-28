@@ -83,7 +83,7 @@ export function OrdersListView({
                   >
                     {o.createdBy}
                   </td>
-                  <td className="py-2 pr-4">
+                  <td className="py-2 pr-4" data-testid="order-created">
                     {formatTimestamp(o.createdAt.getTime(), timezone, hour12)}
                   </td>
                   <td className="py-2 pr-4">
