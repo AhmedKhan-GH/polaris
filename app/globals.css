@@ -10,6 +10,13 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  /* Canonical Zee Foods brand palette — welded to lib/branding.ts by a unit test,
+     so the app can style brand surfaces by NAME (e.g. bg-brand-blue / text-brand-blue)
+     and never hardcode a hex. Change a value here and in lib/branding together. */
+  --color-brand-blue: #00447c;
+  --color-brand-green: #67953f;
+  --color-brand-white: #ffffff;
 }
 
 @media (prefers-color-scheme: dark) {
