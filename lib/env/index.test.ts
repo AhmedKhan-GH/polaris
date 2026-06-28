@@ -19,6 +19,7 @@ beforeEach(() => {
   // Baseline for the now-required vars so each cycle exercises only the variable
   // under test. Cases that probe a specific var override or delete it.
   process.env.DATABASE_URL = 'postgres://x';
+  process.env.GOOGLE_MAPS_SERVER_KEY = 'server-key';
   process.env.NEXT_PUBLIC_SUPABASE_URL = 'http://127.0.0.1:54321';
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'anon-key';
 });
@@ -34,6 +35,12 @@ describe('lib/env', () => {
     process.env.DATABASE_URL = 'postgres://x';
     const { env } = await import('./index');
     expect(env.DATABASE_URL).toBe('postgres://x');
+  });
+
+  it('exposes the Google Maps server key only through server env', async () => {
+    process.env.GOOGLE_MAPS_SERVER_KEY = 'server-key';
+    const { env } = await import('./index');
+    expect(env.GOOGLE_MAPS_SERVER_KEY).toBe('server-key');
   });
 
   it('exposes a valid LOG_LEVEL value', async () => {
@@ -61,6 +68,11 @@ describe('lib/env', () => {
 
   it('fails closed when DATABASE_URL is missing', async () => {
     delete process.env.DATABASE_URL;
+    await expect(import('./index')).rejects.toThrow();
+  });
+
+  it('fails closed when GOOGLE_MAPS_SERVER_KEY is missing', async () => {
+    delete process.env.GOOGLE_MAPS_SERVER_KEY;
     await expect(import('./index')).rejects.toThrow();
   });
 

@@ -17,6 +17,7 @@ export const env = createEnv({
     // NOT validated here — it is consumed only by drizzle.config.ts at CLI time
     // (Charter D1 build-time exception), never by running application code.
     DATABASE_URL: z.string().min(1),
+    GOOGLE_MAPS_SERVER_KEY: z.string().min(1),
   },
   client: {
     // Browser-exposed Supabase project endpoint and anon key. Both are required
@@ -28,6 +29,7 @@ export const env = createEnv({
   runtimeEnv: {
     LOG_LEVEL: process.env.LOG_LEVEL,
     DATABASE_URL: process.env.DATABASE_URL,
+    GOOGLE_MAPS_SERVER_KEY: process.env.GOOGLE_MAPS_SERVER_KEY,
     NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
     NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
   },

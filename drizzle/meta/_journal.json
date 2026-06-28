@@ -85,6 +85,13 @@
       "when": 1782263533192,
       "tag": "0011_list_org_members",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1782675297296,
+      "tag": "0012_addresses_org_rls",
+      "breakpoints": true
     }
   ]
 }
