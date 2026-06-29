@@ -74,7 +74,6 @@ export default function BrandPage() {
           node: mk(lockup, 'h-6', { filter: 'brightness(0) invert(1)' }),
         },
         { ok: false, caption: 'Recolored', node: mk(lockup, 'h-6', { filter: 'hue-rotate(150deg) saturate(1.4)' }) },
-        { ok: false, caption: 'Recolored', node: mk(lockup, 'h-6', { filter: 'hue-rotate(75deg) saturate(1.6)' }) },
         { ok: false, caption: 'Tinted', node: mk(lockup, 'h-6', { filter: 'sepia(1) saturate(6) hue-rotate(-20deg)' }) },
         { ok: false, caption: 'Greyed (use solid black)', node: mk(lockup, 'h-6', { filter: 'grayscale(1)' }) },
         { ok: false, caption: 'Low contrast', node: mk(lockup, 'h-6', { opacity: 0.25 }) },
