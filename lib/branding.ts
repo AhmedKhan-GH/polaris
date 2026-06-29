@@ -41,15 +41,10 @@ export const branding = {
   naming: {
     legalName: 'Zee Foods, LLC.',
     forms: [
-      {
-        name: 'Zee Foods, LLC.',
-        use: 'Legal reference, official communications, and social media profile pages.',
-      },
-      {
-        name: 'Zeefoods / zeefoods',
-        use: 'Casual reference, or wherever the name must be one word (no space).',
-      },
-      { name: 'zeefoods.com', use: 'The domain — also a valid reference.' },
+      { name: 'Zeefoods', use: 'Social media and casual reference.' },
+      { name: 'Zee Foods, LLC.', use: 'Legal reference and LinkedIn.' },
+      { name: 'zeefoods.com', use: 'The domain.' },
+      { name: '@zeefoods.com', use: 'Email addresses.' },
     ],
   },
 } as const;

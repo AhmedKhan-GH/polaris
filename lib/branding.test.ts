@@ -44,10 +44,10 @@ describe('branding brand tokens', () => {
 
   it('records the legal name and the written-name forms', () => {
     expect(branding.naming.legalName).toBe('Zee Foods, LLC.');
-    expect(branding.naming.forms.length).toBeGreaterThanOrEqual(3);
     const names = branding.naming.forms.map((f) => f.name);
-    expect(names).toContain('Zee Foods, LLC.');
-    expect(names.some((n) => n.includes('zeefoods.com'))).toBe(true);
+    expect(names).toEqual(
+      expect.arrayContaining(['Zeefoods', 'Zee Foods, LLC.', 'zeefoods.com', '@zeefoods.com']),
+    );
     for (const f of branding.naming.forms) {
       expect(f.use.length).toBeGreaterThan(0);
     }
