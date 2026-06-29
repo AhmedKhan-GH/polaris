@@ -48,6 +48,7 @@ describe('Brand & Identity page', () => {
       'One mark per piece',
       'Keep the proportions',
       "Don't split the lockup",
+      'Placement',
     ]) {
       expect(screen.getByRole('heading', { name })).toBeInTheDocument();
     }

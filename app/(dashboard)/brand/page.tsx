@@ -48,6 +48,15 @@ export default function BrandPage() {
     <img src={src} alt="" className={`${h} w-auto`} style={style} />
   );
 
+  // A stack of placeholder text lines, for the placement mockups.
+  const body = (widths: string[]): ReactNode => (
+    <div className="flex w-full flex-col gap-1">
+      {widths.map((w, i) => (
+        <div key={i} className={`h-1 rounded-full bg-zinc-200 ${w}`} />
+      ))}
+    </div>
+  );
+
   type Ex = { ok: boolean; caption: string; dark?: boolean; node: ReactNode };
   const cases: Array<{ title: string; desc: string; examples: Ex[] }> = [
     {
@@ -156,6 +165,73 @@ export default function BrandPage() {
             <div className="flex items-center gap-6">
               {mk(emblem, 'h-7')}
               {mk(wordmark, 'h-3')}
+            </div>
+          ),
+        },
+      ],
+    },
+    {
+      title: 'Placement',
+      desc: 'Place the mark at the top of the piece, before the text — aligned left, center, or right. Never set it in the middle of the text, after the text, or at the bottom.',
+      examples: [
+        {
+          ok: true,
+          caption: 'Top, left',
+          node: (
+            <div className="flex h-full w-full flex-col gap-2">
+              <img src={emblem} alt="" className="h-6 w-auto self-start" />
+              {body(['w-full', 'w-full', 'w-3/4'])}
+            </div>
+          ),
+        },
+        {
+          ok: true,
+          caption: 'Top, centered',
+          node: (
+            <div className="flex h-full w-full flex-col gap-2">
+              <img src={emblem} alt="" className="h-6 w-auto self-center" />
+              {body(['w-full', 'w-full', 'w-3/4'])}
+            </div>
+          ),
+        },
+        {
+          ok: true,
+          caption: 'Top, right',
+          node: (
+            <div className="flex h-full w-full flex-col gap-2">
+              <img src={emblem} alt="" className="h-6 w-auto self-end" />
+              {body(['w-full', 'w-full', 'w-3/4'])}
+            </div>
+          ),
+        },
+        {
+          ok: false,
+          caption: 'In the middle of the text',
+          node: (
+            <div className="flex h-full w-full flex-col gap-2">
+              {body(['w-full', 'w-5/6'])}
+              <img src={emblem} alt="" className="h-6 w-auto self-center" />
+              {body(['w-full', 'w-3/4'])}
+            </div>
+          ),
+        },
+        {
+          ok: false,
+          caption: 'After the text',
+          node: (
+            <div className="flex h-full w-full flex-col gap-2">
+              {body(['w-full', 'w-full', 'w-full', 'w-2/3'])}
+              <img src={emblem} alt="" className="h-6 w-auto self-start" />
+            </div>
+          ),
+        },
+        {
+          ok: false,
+          caption: 'At the bottom',
+          node: (
+            <div className="flex h-full w-full flex-col gap-2">
+              {body(['w-full', 'w-5/6'])}
+              <img src={emblem} alt="" className="mt-auto h-6 w-auto self-center" />
             </div>
           ),
         },
