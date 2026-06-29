@@ -35,4 +35,21 @@ export const branding = {
     viewBox: { width: 112.13, height: 38.4 },
     emblem: { cx: 17.6, cy: 17.6, r: 17.6 },
   },
+
+  // How the name is WRITTEN (distinct from the logo). `legalName` is the registered
+  // entity; `forms` lists each accepted spelling and when to use it.
+  naming: {
+    legalName: 'Zee Foods, LLC.',
+    forms: [
+      {
+        name: 'Zee Foods, LLC.',
+        use: 'Legal reference, official communications, and social media profile pages.',
+      },
+      {
+        name: 'Zeefoods / zeefoods',
+        use: 'Casual reference, or wherever the name must be one word (no space).',
+      },
+      { name: 'zeefoods.com', use: 'The domain — also a valid reference.' },
+    ],
+  },
 } as const;

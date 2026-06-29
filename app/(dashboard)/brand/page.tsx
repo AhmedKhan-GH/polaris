@@ -73,16 +73,7 @@ export default function BrandPage() {
           dark: true,
           node: mk(lockup, 'h-6', { filter: 'brightness(0) invert(1)' }),
         },
-        {
-          ok: false,
-          caption: 'Colors swapped',
-          node: (
-            <div className="flex items-center gap-1">
-              <img src={emblem} alt="" className="h-8 w-auto" style={{ filter: 'hue-rotate(115deg)' }} />
-              <img src={wordmark} alt="" className="h-3.5 w-auto" style={{ filter: 'hue-rotate(-115deg) saturate(1.6)' }} />
-            </div>
-          ),
-        },
+        { ok: false, caption: 'Colors swapped', node: mk(lockup, 'h-6', { filter: 'url(#brand-swap)' }) },
         { ok: false, caption: 'Recolored', node: mk(lockup, 'h-6', { filter: 'hue-rotate(150deg) saturate(1.4)' }) },
         { ok: false, caption: 'Tinted', node: mk(lockup, 'h-6', { filter: 'sepia(1) saturate(6) hue-rotate(-20deg)' }) },
         { ok: false, caption: 'Greyed (use solid black)', node: mk(lockup, 'h-6', { filter: 'grayscale(1)' }) },
@@ -297,6 +288,19 @@ export default function BrandPage() {
 
   return (
     <div className="flex flex-col gap-12">
+      {/* Color-swap filter for the "Colors swapped" Don't: maps the brand green↔blue
+          in sRGB, so the real lockup renders with its two colors reversed (keeping
+          the lockup's exact shape). */}
+      <svg aria-hidden width="0" height="0" className="absolute">
+        <defs>
+          <filter id="brand-swap" colorInterpolationFilters="sRGB">
+            <feColorMatrix
+              type="matrix"
+              values="0 -0.458 1.083 0 0  0 -0.067 1.238 0 0  0 0.804 0.067 0 0  0 0 0 1 0"
+            />
+          </filter>
+        </defs>
+      </svg>
       <div className="flex flex-col gap-1">
         <h1 className="text-2xl font-semibold tracking-tight">Brand &amp; Identity</h1>
         <p className="text-sm text-zinc-600">
@@ -324,6 +328,26 @@ export default function BrandPage() {
             <ColorSwatch key={color.hex} color={color} />
           ))}
         </div>
+      </section>
+
+      <section className="flex flex-col gap-4">
+        <div className="flex flex-col gap-1">
+          <h2 className="text-lg font-medium tracking-tight">Naming</h2>
+          <p className="text-sm text-zinc-600">How to write the name in text — distinct from the logo.</p>
+        </div>
+        <dl className="overflow-hidden rounded-lg border border-zinc-200">
+          {branding.naming.forms.map((f, i) => (
+            <div
+              key={f.name}
+              className={`flex flex-col gap-0.5 p-4 sm:flex-row sm:items-baseline sm:gap-4 ${
+                i > 0 ? 'border-t border-zinc-200' : ''
+              }`}
+            >
+              <dt className="font-mono text-sm font-medium text-brand-blue sm:w-44 sm:shrink-0">{f.name}</dt>
+              <dd className="text-sm text-zinc-600">{f.use}</dd>
+            </div>
+          ))}
+        </dl>
       </section>
 
       {cases.map((c) => (

@@ -41,6 +41,13 @@ describe('Brand & Identity page', () => {
     }
   });
 
+  it('shows the naming guide with the legal name and domain', () => {
+    render(<BrandPage />);
+    expect(screen.getByRole('heading', { name: 'Naming' })).toBeInTheDocument();
+    expect(screen.getByText('Zee Foods, LLC.')).toBeInTheDocument();
+    expect(screen.getByText('zeefoods.com')).toBeInTheDocument();
+  });
+
   it('documents the usage rules, one section each', () => {
     render(<BrandPage />);
     for (const name of [

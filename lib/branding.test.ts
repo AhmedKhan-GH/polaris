@@ -41,4 +41,15 @@ describe('branding brand tokens', () => {
     expect(branding.cutout.src).toBe('/zeefoods_cutout.svg');
     expect(branding.leaf.src).toBe('/zeefoods_leaf.svg');
   });
+
+  it('records the legal name and the written-name forms', () => {
+    expect(branding.naming.legalName).toBe('Zee Foods, LLC.');
+    expect(branding.naming.forms.length).toBeGreaterThanOrEqual(3);
+    const names = branding.naming.forms.map((f) => f.name);
+    expect(names).toContain('Zee Foods, LLC.');
+    expect(names.some((n) => n.includes('zeefoods.com'))).toBe(true);
+    for (const f of branding.naming.forms) {
+      expect(f.use.length).toBeGreaterThan(0);
+    }
+  });
 });
