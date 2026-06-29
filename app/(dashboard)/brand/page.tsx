@@ -171,7 +171,7 @@ export default function BrandPage() {
     },
     {
       title: 'Placement',
-      desc: 'Place the mark at the top-left of the piece, before the text — the emblem on its own, or the full lockup. Never set it in the middle of the text, after the text, or at the bottom.',
+      desc: 'Place the mark at the top-left of the piece, before the text — the emblem on its own, or the full lockup. Never center it, set it on the right, or put it in the middle of the text, after the text, or at the bottom.',
       examples: [
         {
           ok: true,
@@ -189,6 +189,26 @@ export default function BrandPage() {
           node: (
             <div className="flex h-full w-full flex-col gap-2">
               <img src={lockup} alt="" className="h-4 w-auto self-start" />
+              {body(['w-full', 'w-full', 'w-3/4'])}
+            </div>
+          ),
+        },
+        {
+          ok: false,
+          caption: 'Lockup on the right',
+          node: (
+            <div className="flex h-full w-full flex-col gap-2">
+              <img src={lockup} alt="" className="h-4 w-auto self-end" />
+              {body(['w-full', 'w-full', 'w-3/4'])}
+            </div>
+          ),
+        },
+        {
+          ok: false,
+          caption: 'Logo centered',
+          node: (
+            <div className="flex h-full w-full flex-col gap-2">
+              <img src={emblem} alt="" className="h-6 w-auto self-center" />
               {body(['w-full', 'w-full', 'w-3/4'])}
             </div>
           ),
