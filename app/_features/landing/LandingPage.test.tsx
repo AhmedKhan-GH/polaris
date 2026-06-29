@@ -52,9 +52,8 @@ describe('LandingPage', () => {
     expect(dashboard.closest('main')).not.toBeNull();
   });
 
-  // Brand rule (see /brand → "Don't split the lockup"): use the combined lockup —
-  // the emblem and wordmark together as one mark — never placed separately on the
-  // same piece of media.
+  // Brand rule (see /brand → "Don't split the lockup"): use the combined lockup,
+  // not the emblem and wordmark placed separately on the same piece of media.
   it('uses the combined lockup, not a split emblem + wordmark', () => {
     const { container } = render(<LandingPage user={null} />);
     const imgs = container.querySelectorAll('img');

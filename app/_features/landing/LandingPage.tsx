@@ -20,9 +20,9 @@ import { branding } from '@/lib/branding';
 export function LandingPage({ user }: { user: AuthUser | null }) {
   return (
     <main className="flex flex-1 flex-col items-center justify-center gap-6 px-6 py-24 text-center">
-      {/* The combined lockup (emblem + wordmark together, at their set proportions);
-          on this light hero the emblem's leaf reads white. The brand guide forbids
-          splitting the emblem and wordmark on one piece of media — see /brand. */}
+      {/* The combined lockup (emblem + wordmark together, at their set proportions).
+          The brand guide forbids splitting them on one piece of media — see
+          /brand → "Don't split the lockup". */}
       {/* eslint-disable-next-line @next/next/no-img-element -- static SVG brand asset; next/image adds nothing for an unoptimizable vector */}
       <img
         src={branding.lockup.src}
