@@ -1,12 +1,15 @@
 /* eslint-disable @next/next/no-img-element -- static brand SVGs; next/image adds nothing for unoptimizable vectors */
+import type { CSSProperties, ReactNode } from 'react';
+
 import { BrandAsset, ColorSwatch, UsageExample, versionedAssetSrc } from '@/app/_features/brand';
 import { branding } from '@/lib/branding';
 
 /**
  * Brand & Identity — the canonical brand reference: downloadable logo assets, the
- * color palette, and usage guidance (one Do/Don't section per rule). A SYNC server
- * component; every value reads from `lib/branding` (the single source of truth,
- * Charter D8). Ungated; the `(dashboard)` authed gate is the only guard it needs.
+ * color palette, and a Do/Don't usage guide (one section per rule, each with many
+ * compact examples). A SYNC server component; every value reads from `lib/branding`
+ * (the single source of truth, Charter D8). Ungated; the `(dashboard)` authed gate
+ * is the only guard it needs.
  */
 export default function BrandPage() {
   const colors = [branding.colors.blue, branding.colors.green, branding.colors.white];
@@ -19,6 +22,7 @@ export default function BrandPage() {
   });
   const lockup = versionedAssetSrc(branding.lockup.src);
   const emblem = versionedAssetSrc(branding.logo.src);
+  const cutout = versionedAssetSrc(branding.cutout.src); // leaf is knockout — survives a flat fill
   const wordmark = versionedAssetSrc(branding.wordmark.src);
 
   const assets: Array<{
@@ -37,6 +41,126 @@ export default function BrandPage() {
     },
     { asset: ver(branding.leaf), label: 'Leaf', note: 'White leaf only', preview: 'dark' },
     { asset: ver(branding.wordmark), label: 'Wordmark' },
+  ];
+
+  // A brand mark image, optionally recolored/transformed to demonstrate (mis)use.
+  const mk = (src: string, h: string, style?: CSSProperties): ReactNode => (
+    <img src={src} alt="" className={`${h} w-auto`} style={style} />
+  );
+
+  type Ex = { ok: boolean; caption: string; dark?: boolean; node: ReactNode };
+  const cases: Array<{ title: string; desc: string; examples: Ex[] }> = [
+    {
+      title: 'Color use',
+      desc: "Use only the brand colors — blue, green, and white — or solid black on black-and-white media. Black fills and reversed white are fine; recoloring, tints, greys, and low contrast are not.",
+      examples: [
+        { ok: true, caption: 'Brand colors', node: mk(lockup, 'h-6') },
+        { ok: true, caption: 'Emblem, brand colors', node: mk(emblem, 'h-10') },
+        { ok: true, caption: 'One-color black', node: mk(lockup, 'h-6', { filter: 'brightness(0)' }) },
+        { ok: true, caption: 'Black emblem', node: mk(cutout, 'h-10', { filter: 'brightness(0)' }) },
+        {
+          ok: true,
+          caption: 'Reversed white on dark',
+          dark: true,
+          node: mk(lockup, 'h-6', { filter: 'brightness(0) invert(1)' }),
+        },
+        { ok: false, caption: 'Recolored', node: mk(lockup, 'h-6', { filter: 'hue-rotate(150deg) saturate(1.4)' }) },
+        { ok: false, caption: 'Recolored', node: mk(lockup, 'h-6', { filter: 'hue-rotate(75deg) saturate(1.6)' }) },
+        { ok: false, caption: 'Tinted', node: mk(lockup, 'h-6', { filter: 'sepia(1) saturate(6) hue-rotate(-20deg)' }) },
+        { ok: false, caption: 'Greyed (use solid black)', node: mk(lockup, 'h-6', { filter: 'grayscale(1)' }) },
+        { ok: false, caption: 'Low contrast', node: mk(lockup, 'h-6', { opacity: 0.25 }) },
+      ],
+    },
+    {
+      title: 'One mark per piece',
+      desc: 'Use the logo or wordmark once on a given piece of media — never repeat, tile, or stack marks.',
+      examples: [
+        { ok: true, caption: 'A single mark', node: mk(lockup, 'h-6') },
+        { ok: true, caption: 'Emblem, once', node: mk(emblem, 'h-10') },
+        {
+          ok: false,
+          caption: 'Repeated',
+          node: (
+            <div className="flex flex-col items-center gap-1">
+              {mk(lockup, 'h-3')}
+              {mk(lockup, 'h-3')}
+              {mk(lockup, 'h-3')}
+            </div>
+          ),
+        },
+        {
+          ok: false,
+          caption: 'Tiled',
+          node: (
+            <div className="flex flex-wrap items-center justify-center gap-1.5">
+              {mk(emblem, 'h-5')}
+              {mk(emblem, 'h-5')}
+              {mk(emblem, 'h-5')}
+              {mk(emblem, 'h-5')}
+            </div>
+          ),
+        },
+        {
+          ok: false,
+          caption: 'Two marks at once',
+          node: (
+            <div className="flex items-center gap-2">
+              {mk(emblem, 'h-8')}
+              {mk(lockup, 'h-4')}
+            </div>
+          ),
+        },
+      ],
+    },
+    {
+      title: 'Keep the proportions',
+      desc: "Keep the lockup's set proportions — never stretch, squish, rotate, or re-space the emblem and wordmark.",
+      examples: [
+        { ok: true, caption: 'Set proportions', node: mk(lockup, 'h-6') },
+        { ok: false, caption: 'Stretched', node: mk(lockup, 'h-6', { transform: 'scaleX(1.6)' }) },
+        { ok: false, caption: 'Squished', node: mk(lockup, 'h-8', { transform: 'scaleX(0.5)' }) },
+        {
+          ok: false,
+          caption: 'Rescaled & re-spaced',
+          node: (
+            <div className="flex items-center gap-3">
+              {mk(emblem, 'h-11')}
+              {mk(wordmark, 'h-3')}
+            </div>
+          ),
+        },
+        { ok: false, caption: 'Rotated', node: mk(lockup, 'h-6', { transform: 'rotate(8deg)' }) },
+      ],
+    },
+    {
+      title: "Don't split the lockup",
+      desc: 'Use the emblem and wordmark together (the lockup), or each on its own piece — never split them across the same piece.',
+      examples: [
+        { ok: true, caption: 'Together (the lockup)', node: mk(lockup, 'h-6') },
+        { ok: true, caption: 'Emblem alone', node: mk(emblem, 'h-10') },
+        { ok: true, caption: 'Wordmark alone', node: mk(wordmark, 'h-4') },
+        {
+          ok: false,
+          caption: 'Split to corners',
+          node: (
+            <div className="relative h-full w-full">
+              <img src={emblem} alt="" className="absolute left-0 top-0 h-7 w-auto" />
+              <img src={wordmark} alt="" className="absolute bottom-0 right-0 h-3.5 w-auto" />
+            </div>
+          ),
+        },
+        {
+          ok: false,
+          caption: 'Split, side by side',
+          node: (
+            <div className="flex items-center gap-6">
+              {mk(emblem, 'h-7')}
+              {mk(wordmark, 'h-3')}
+            </div>
+          ),
+        },
+      ],
+    },
   ];
 
   return (
@@ -70,83 +194,21 @@ export default function BrandPage() {
         </div>
       </section>
 
-      <section className="flex flex-col gap-4">
-        <h2 className="text-lg font-medium tracking-tight">Color use</h2>
-        <p className="text-sm text-zinc-600">
-          Use only the brand colors — Zee Foods Blue, Green, and White, or black on
-          black-and-white media. Never recolor the logo.
-        </p>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <UsageExample ok caption="Brand colors (or black on B&amp;W)">
-            <img src={lockup} alt="" className="max-h-12 w-auto" />
-          </UsageExample>
-          <UsageExample ok={false} caption="Off-brand recolor">
-            <img
-              src={lockup}
-              alt=""
-              className="max-h-12 w-auto"
-              style={{ filter: 'hue-rotate(150deg) saturate(1.3)' }}
-            />
-          </UsageExample>
-        </div>
-      </section>
-
-      <section className="flex flex-col gap-4">
-        <h2 className="text-lg font-medium tracking-tight">One mark per piece</h2>
-        <p className="text-sm text-zinc-600">
-          Place the logo or wordmark once on a given piece of media — don&apos;t repeat it.
-        </p>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <UsageExample ok caption="A single mark">
-            <img src={lockup} alt="" className="max-h-12 w-auto" />
-          </UsageExample>
-          <UsageExample ok={false} caption="The same mark repeated">
-            <div className="flex flex-col items-center gap-3">
-              <img src={lockup} alt="" className="h-7 w-auto" />
-              <img src={lockup} alt="" className="h-7 w-auto" />
-              <img src={lockup} alt="" className="h-7 w-auto" />
-            </div>
-          </UsageExample>
-        </div>
-      </section>
-
-      <section className="flex flex-col gap-4">
-        <h2 className="text-lg font-medium tracking-tight">Keep the proportions</h2>
-        <p className="text-sm text-zinc-600">
-          When the emblem and wordmark appear together, keep the lockup&apos;s set proportions —
-          don&apos;t rescale or re-space them.
-        </p>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <UsageExample ok caption="The lockup's set proportions">
-            <img src={lockup} alt="" className="max-h-12 w-auto" />
-          </UsageExample>
-          <UsageExample ok={false} caption="Rescaled and re-spaced">
-            <div className="flex items-center gap-5">
-              <img src={emblem} alt="" className="h-14 w-auto" />
-              <img src={wordmark} alt="" className="h-4 w-auto" />
-            </div>
-          </UsageExample>
-        </div>
-      </section>
-
-      <section className="flex flex-col gap-4">
-        <h2 className="text-lg font-medium tracking-tight">Don&apos;t split the lockup</h2>
-        <p className="text-sm text-zinc-600">
-          On one piece of media, use the emblem and wordmark together (the lockup) — or each on
-          its own piece. Don&apos;t split them across the same piece.
-        </p>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <UsageExample ok caption="Together as the lockup">
-            <img src={lockup} alt="" className="max-h-12 w-auto" />
-          </UsageExample>
-          <UsageExample ok={false} caption="Split across one piece">
-            <div className="relative h-full w-full">
-              <img src={emblem} alt="" className="absolute left-1 top-1 h-9 w-auto" />
-              <img src={wordmark} alt="" className="absolute bottom-1 right-1 h-5 w-auto" />
-            </div>
-          </UsageExample>
-        </div>
-      </section>
+      {cases.map((c) => (
+        <section key={c.title} className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1">
+            <h2 className="text-lg font-medium tracking-tight">{c.title}</h2>
+            <p className="max-w-3xl text-sm text-zinc-600">{c.desc}</p>
+          </div>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+            {c.examples.map((ex, i) => (
+              <UsageExample key={`${c.title}-${i}`} ok={ex.ok} caption={ex.caption} dark={ex.dark}>
+                {ex.node}
+              </UsageExample>
+            ))}
+          </div>
+        </section>
+      ))}
     </div>
   );
 }
