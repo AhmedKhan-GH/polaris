@@ -51,4 +51,13 @@ describe('LandingPage', () => {
     expect(dashboard).toHaveAttribute('href', '/dashboard');
     expect(dashboard.closest('main')).not.toBeNull();
   });
+
+  // Brand rule (see /brand → "Don't split the lockup"): use the combined lockup,
+  // not the emblem and wordmark placed separately on the same piece of media.
+  it('uses the combined lockup, not a split emblem + wordmark', () => {
+    const { container } = render(<LandingPage user={null} />);
+    const imgs = container.querySelectorAll('img');
+    expect(imgs).toHaveLength(1);
+    expect(imgs[0]?.getAttribute('src')).toBe('/zeefoods_lockup.svg');
+  });
 });
