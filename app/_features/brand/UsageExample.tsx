@@ -4,26 +4,31 @@ import type { ReactNode } from 'react';
  * A single, compact brand-usage example: a framed "piece of media" tagged Do or
  * Don't, with a short caption. A Don't is struck through with one red diagonal from
  * the top-right to the bottom-left corner (the Stanford identity-guide convention);
- * a Do gets a small green check. `dark` flips the panel for reversed/white marks.
+ * a Do gets a small green check. `ground` sets the panel — white (default), a very light
+ * grey (to show a mark holds up on a light, non-white ground), or dark (for reversed marks).
  * Presentational — the media content is passed in, so each case shows many of them.
  */
 export function UsageExample({
   ok,
   caption,
-  dark = false,
+  ground = 'white',
   children,
 }: {
   ok: boolean;
   caption: string;
-  dark?: boolean;
+  ground?: 'white' | 'grey' | 'dark';
   children?: ReactNode;
 }) {
+  const panel =
+    ground === 'dark'
+      ? 'border-zinc-700 bg-zinc-900'
+      : ground === 'grey'
+        ? 'border-zinc-200 bg-zinc-100'
+        : 'border-zinc-200 bg-white';
   return (
     <figure className="flex flex-col gap-1.5">
       <div
-        className={`relative flex aspect-[4/3] items-center justify-center overflow-hidden rounded-md border p-3 ${
-          dark ? 'border-zinc-700 bg-zinc-900' : 'border-zinc-200 bg-white'
-        }`}
+        className={`relative flex aspect-[4/3] items-center justify-center overflow-hidden rounded-md border p-3 ${panel}`}
       >
         {children}
         {ok ? (

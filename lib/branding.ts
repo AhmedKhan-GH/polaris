@@ -8,33 +8,30 @@
 export const branding = {
   productName: 'Polaris',
   tagline: 'Cold chain logistics platform.',
-  // Each mark also ships one-color `black` (for light backgrounds) and `white`
-  // (reversed, for dark backgrounds) SVGs, recolored from the source files. The
-  // emblem's black/white point at the knockout cutout: the logo's SOLID white leaf
-  // can't reverse to white-on-dark (it would vanish on a white disc), but the
-  // cutout's transparent leaf recolors cleanly.
+  // Each mark also ships one-color `black` (light grounds) and `white` (reversed, dark
+  // grounds) SVGs. Both one-color forms are PUNCHOUTS — a disc with the sprout knocked out
+  // (transparent), so the sprout takes the ground (`/zeefoods_logo_black.svg`,
+  // `/zeefoods_logo_white.svg`). Only the full-COLOR mark paints the sprout solid white
+  // (the green disc is the real brand mark). The lockup also ships `onDark` (colored
+  // emblem + reversed white wordmark) for dark grounds.
   logo: {
     src: '/zeefoods_logo.svg',
     alt: 'Zee Foods logo',
     width: 80,
     height: 80,
-    black: '/zeefoods_cutout_black.svg',
-    white: '/zeefoods_cutout_white.svg',
+    black: '/zeefoods_logo_black.svg',
+    white: '/zeefoods_logo_white.svg',
   },
-  // Emblem variants for varied backgrounds: `cutout` is the green disc with the
-  // leaf knocked out (transparent — the background shows through); `leaf` is the
-  // white leaf alone (for when only the mark should show).
-  cutout: {
-    src: '/zeefoods_cutout.svg',
-    alt: 'Zee Foods emblem, knockout',
-    width: 80,
-    height: 80,
-    black: '/zeefoods_cutout_black.svg',
-    white: '/zeefoods_cutout_white.svg',
+  // The leaf (sprout) is white by nature (the dark-ground form); it also ships `black`
+  // (light grounds) and `green` (the brand color).
+  leaf: {
+    src: '/zeefoods_leaf.svg',
+    alt: 'Zee Foods leaf',
+    width: 79,
+    height: 70,
+    black: '/zeefoods_leaf_black.svg',
+    green: '/zeefoods_leaf_green.svg',
   },
-  // The leaf is white by nature (the dark-background form); it ships a `black` for
-  // light backgrounds.
-  leaf: { src: '/zeefoods_leaf.svg', alt: 'Zee Foods leaf', width: 79, height: 70, black: '/zeefoods_leaf_black.svg' },
   wordmark: {
     src: '/zeefoods_letters.svg',
     alt: 'Zee Foods',
@@ -43,13 +40,16 @@ export const branding = {
     black: '/zeefoods_letters_black.svg',
     white: '/zeefoods_letters_white.svg',
   },
-  // The full horizontal lockup (emblem + wordmark), ~2.92:1. The emblem is a true
-  // circle — see public/zeefoods_lockup.svg.
+  // The full horizontal lockup (emblem + wordmark), ~2.92:1. The emblem is a true circle
+  // — see public/zeefoods_lockup.svg. Dark-ground forms: `onDark` keeps the emblem in
+  // color and reverses the wordmark to white; `white` is the fully reversed mark — a white
+  // disc with the sprout punched out, plus a white wordmark.
   lockup: {
     src: '/zeefoods_lockup.svg',
     alt: 'Zee Foods',
     width: 234,
     height: 80,
+    onDark: '/zeefoods_lockup_ondark.svg',
     black: '/zeefoods_lockup_black.svg',
     white: '/zeefoods_lockup_white.svg',
   },
@@ -76,10 +76,9 @@ export const branding = {
   naming: {
     legalName: 'Zee Foods, LLC.',
     forms: [
-      { name: 'Zeefoods', use: 'Social media and casual reference.' },
-      { name: 'Zee Foods, LLC.', use: 'Legal reference and LinkedIn.' },
-      { name: 'zeefoods.com', use: 'The domain.' },
-      { name: '@zeefoods.com', use: 'Email addresses.' },
+      { name: 'Zee Foods, LLC.', use: 'Legal reference and LinkedIn — the only spaced, capitalized form, used only with LLC.' },
+      { name: 'zeefoods.com', use: 'The domain — always lowercase.' },
+      { name: 'ZeeFoods', use: 'Social media and casual reference — always capitalize the start of each word.' },
     ],
   },
 } as const;

@@ -21,8 +21,14 @@ export default function BrandPage() {
     src: versionedAssetSrc(a.src),
   });
   const lockup = versionedAssetSrc(branding.lockup.src);
+  const lockupOnDark = versionedAssetSrc(branding.lockup.onDark); // green emblem, white wordmark
+  const lockupBlack = versionedAssetSrc(branding.lockup.black); // punchout: black disc, knocked-out sprout
+  // A deliberately MIS-colored lockup — brand green/blue swapped, sprout still white —
+  // used only to demonstrate the "colors swapped" Don't below. Not a brand asset.
+  const lockupSwapped = versionedAssetSrc('/zeefoods_lockup_swapped.svg');
   const emblem = versionedAssetSrc(branding.logo.src);
-  const cutout = versionedAssetSrc(branding.cutout.src); // leaf is knockout — survives a flat fill
+  const emblemBlack = versionedAssetSrc(branding.logo.black); // punchout: black disc, knocked-out sprout
+  const leafBlack = versionedAssetSrc(branding.leaf.black); // solid black sprout — faint = a grey watermark
   const wordmark = versionedAssetSrc(branding.wordmark.src);
 
   // A versioned colorway option.
@@ -39,6 +45,7 @@ export default function BrandPage() {
       label: 'Lockup',
       variants: [
         dl('Color', branding.lockup.src),
+        dl('On Dark', branding.lockup.onDark),
         dl('Black', branding.lockup.black),
         dl('White', branding.lockup.white),
       ],
@@ -54,20 +61,14 @@ export default function BrandPage() {
       ],
     },
     {
-      asset: ver(branding.cutout),
-      label: 'Emblem — knockout',
-      note: 'Transparent leaf, for varied backgrounds',
-      variants: [
-        dl('Color', branding.cutout.src),
-        dl('Black', branding.cutout.black),
-        dl('White', branding.cutout.white),
-      ],
-    },
-    {
       asset: ver(branding.leaf),
       label: 'Leaf',
-      note: 'White (for dark) + black',
-      variants: [dl('White', branding.leaf.src), dl('Black', branding.leaf.black)],
+      note: 'White (for dark), black, and green',
+      variants: [
+        dl('Color', branding.leaf.green),
+        dl('White', branding.leaf.src),
+        dl('Black', branding.leaf.black),
+      ],
     },
     {
       asset: ver(branding.wordmark),
@@ -94,41 +95,30 @@ export default function BrandPage() {
     </div>
   );
 
-  type Ex = { ok: boolean; caption: string; dark?: boolean; node: ReactNode };
+  type Ex = { ok: boolean; caption: string; ground?: 'white' | 'grey' | 'dark'; node: ReactNode };
   const cases: Array<{ title: string; desc: string; examples: Ex[] }> = [
     {
       title: 'Color use',
-      desc: "Use only the brand colors — blue, green, and white — or solid black on black-and-white media. Black fills and reversed white are fine; recoloring, tints, greys, and low contrast are not.",
+      desc: 'The lockup and the emblem are both valid in the brand colors. Use the one-color black mark on light grounds only, and the On Dark lockup on dark grounds only. Never swap or recolor the marks, tint or grey them, or drop the contrast.',
       examples: [
-        { ok: true, caption: 'Brand colors', node: mk(lockup, 'h-6') },
-        { ok: true, caption: 'Emblem, brand colors', node: mk(emblem, 'h-10') },
-        { ok: true, caption: 'One-color black', node: mk(lockup, 'h-6', { filter: 'brightness(0)' }) },
-        { ok: true, caption: 'Black emblem', node: mk(cutout, 'h-10', { filter: 'brightness(0)' }) },
-        {
-          ok: true,
-          caption: 'Reversed white on dark',
-          dark: true,
-          node: mk(lockup, 'h-6', { filter: 'brightness(0) invert(1)' }),
-        },
-        {
-          ok: true,
-          caption: 'White emblem on dark',
-          dark: true,
-          node: mk(cutout, 'h-10', { filter: 'brightness(0) invert(1)' }),
-        },
-        { ok: false, caption: 'Colors swapped', node: mk(lockup, 'h-6', { filter: 'url(#brand-swap)' }) },
-        { ok: false, caption: 'Recolored', node: mk(lockup, 'h-6', { filter: 'hue-rotate(180deg) saturate(8)' }) },
+        { ok: true, caption: 'Lockup', node: mk(lockup, 'h-6') },
+        { ok: true, caption: 'Emblem', node: mk(emblem, 'h-10') },
+        { ok: true, caption: 'Black — light grounds only', ground: 'grey', node: mk(lockupBlack, 'h-6') },
+        { ok: true, caption: 'Black emblem — light grounds only', ground: 'grey', node: mk(emblemBlack, 'h-10') },
+        { ok: true, caption: 'On Dark — dark grounds only', ground: 'dark', node: mk(lockupOnDark, 'h-6') },
+        { ok: false, caption: 'Colors swapped', node: mk(lockupSwapped, 'h-6') },
+        { ok: false, caption: 'Recolored', node: mk(emblem, 'h-10', { filter: 'hue-rotate(210deg) saturate(4)' }) },
         { ok: false, caption: 'Tinted', node: mk(lockup, 'h-6', { filter: 'grayscale(1) sepia(1) saturate(12)' }) },
         { ok: false, caption: 'Greyed (use solid black)', node: mk(lockup, 'h-6', { filter: 'grayscale(1)' }) },
         { ok: false, caption: 'Low contrast', node: mk(lockup, 'h-6', { opacity: 0.25 }) },
       ],
     },
     {
-      title: 'One mark per piece',
-      desc: 'Use the logo or wordmark once on a given piece of media — never repeat, tile, or stack marks.',
+      title: 'Using the mark',
+      desc: 'Use the lockup, or the emblem on its own, as a single whole unit. One mark per piece — never repeat, tile, or stack. Keep the set proportions — never stretch, squish, rotate, or re-space. Never split the lockup, use the wordmark by itself, or break it apart.',
       examples: [
-        { ok: true, caption: 'A single mark', node: mk(lockup, 'h-6') },
-        { ok: true, caption: 'Emblem, once', node: mk(emblem, 'h-10') },
+        { ok: true, caption: 'The lockup', node: mk(lockup, 'h-6') },
+        { ok: true, caption: 'Emblem alone', node: mk(emblem, 'h-10') },
         {
           ok: false,
           caption: 'Repeated',
@@ -162,18 +152,10 @@ export default function BrandPage() {
             </div>
           ),
         },
-      ],
-    },
-    {
-      title: 'Keep the proportions',
-      desc: "Keep the lockup's set proportions — never stretch, squish, rotate, or re-space the emblem and wordmark.",
-      examples: [
-        { ok: true, caption: 'Set proportions', node: mk(lockup, 'h-6') },
-        { ok: false, caption: 'Stretched', node: mk(lockup, 'h-6', { transform: 'scaleX(1.6)' }) },
-        { ok: false, caption: 'Squished', node: mk(lockup, 'h-8', { transform: 'scaleX(0.5)' }) },
+        { ok: false, caption: 'Stretched (preserve aspect ratio)', node: mk(lockup, 'h-6', { transform: 'scaleX(1.6)' }) },
         {
           ok: false,
-          caption: 'Rescaled & re-spaced',
+          caption: 'Rescaled separately',
           node: (
             <div className="flex items-center gap-3">
               {mk(emblem, 'h-11')}
@@ -182,32 +164,14 @@ export default function BrandPage() {
           ),
         },
         { ok: false, caption: 'Rotated', node: mk(lockup, 'h-6', { transform: 'rotate(8deg)' }) },
-      ],
-    },
-    {
-      title: "Don't split the lockup",
-      desc: 'Use the emblem and wordmark together as the lockup, or the emblem on its own. Never use the wordmark by itself, split the lockup across one piece, or break the wordmark into two words.',
-      examples: [
-        { ok: true, caption: 'Together (the lockup)', node: mk(lockup, 'h-6') },
-        { ok: true, caption: 'Emblem alone', node: mk(emblem, 'h-10') },
         { ok: false, caption: 'Wordmark by itself', node: mk(wordmark, 'h-4') },
-        {
-          ok: false,
-          caption: 'Split to corners',
-          node: (
-            <div className="relative h-full w-full">
-              <img src={emblem} alt="" className="absolute left-0 top-0 h-7 w-auto" />
-              <img src={wordmark} alt="" className="absolute bottom-0 right-0 h-3.5 w-auto" />
-            </div>
-          ),
-        },
         {
           ok: false,
           caption: 'Split, side by side',
           node: (
             <div className="flex items-center gap-6">
-              {mk(emblem, 'h-7')}
-              {mk(wordmark, 'h-3')}
+              {mk(emblem, 'h-9')}
+              {mk(wordmark, 'h-9')}
             </div>
           ),
         },
@@ -229,7 +193,7 @@ export default function BrandPage() {
     },
     {
       title: 'Placement',
-      desc: 'Place the mark at the top-left of the piece, before the text — the emblem on its own, or the full lockup. Never center it, put it on the right, or set it in the middle of the text, after it, or at the bottom.',
+      desc: 'Place the mark at the top-left of the piece, before any text — the emblem on its own, or the full lockup. Never center it, put it on the right, place it after any other text, or set it at the bottom.',
       examples: [
         {
           ok: true,
@@ -273,22 +237,12 @@ export default function BrandPage() {
         },
         {
           ok: false,
-          caption: 'In the middle of the text',
+          caption: 'After other text',
           node: (
             <div className="flex h-full w-full flex-col gap-2">
               {body(['w-full', 'w-5/6'])}
-              <img src={emblem} alt="" className="h-6 w-auto self-center" />
-              {body(['w-full', 'w-3/4'])}
-            </div>
-          ),
-        },
-        {
-          ok: false,
-          caption: 'After the text',
-          node: (
-            <div className="flex h-full w-full flex-col gap-2">
-              {body(['w-full', 'w-full', 'w-full', 'w-2/3'])}
               <img src={emblem} alt="" className="h-6 w-auto self-start" />
+              {body(['w-full', 'w-3/4'])}
             </div>
           ),
         },
@@ -298,7 +252,81 @@ export default function BrandPage() {
           node: (
             <div className="flex h-full w-full flex-col gap-2">
               {body(['w-full', 'w-5/6'])}
-              <img src={emblem} alt="" className="mt-auto h-6 w-auto self-center" />
+              <img src={lockup} alt="" className="mt-auto h-4 w-auto self-start" />
+            </div>
+          ),
+        },
+      ],
+    },
+    {
+      title: 'Background watermark',
+      desc: 'For more official documents, a very faint grey leaf may sit centered behind the content — alongside the mark in its usual top-left spot. Use the leaf alone — never the emblem, lockup, or wordmark — keep it centered, and keep it faint enough never to compete with the text.',
+      examples: [
+        {
+          ok: true,
+          caption: 'Faint leaf watermark',
+          node: (
+            <div className="relative h-full w-full overflow-hidden">
+              <img
+                src={leafBlack}
+                alt=""
+                className="pointer-events-none absolute left-1/2 top-1/2 h-24 w-auto -translate-x-1/2 -translate-y-1/2 opacity-[0.12]"
+              />
+              <div className="relative flex h-full w-full flex-col gap-2">
+                <img src={lockup} alt="" className="h-4 w-auto self-start" />
+                {body(['w-full', 'w-full', 'w-3/4'])}
+              </div>
+            </div>
+          ),
+        },
+        {
+          ok: false,
+          caption: 'The circle emblem',
+          node: (
+            <div className="relative h-full w-full overflow-hidden">
+              <img
+                src={emblemBlack}
+                alt=""
+                className="pointer-events-none absolute left-1/2 top-1/2 h-24 w-auto -translate-x-1/2 -translate-y-1/2 opacity-[0.12]"
+              />
+              <div className="relative flex h-full w-full flex-col gap-2">
+                <img src={lockup} alt="" className="h-4 w-auto self-start" />
+                {body(['w-full', 'w-full', 'w-3/4'])}
+              </div>
+            </div>
+          ),
+        },
+        {
+          ok: false,
+          caption: 'The lockup or wordmark',
+          node: (
+            <div className="relative h-full w-full overflow-hidden">
+              <img
+                src={lockupBlack}
+                alt=""
+                className="pointer-events-none absolute left-1/2 top-1/2 h-10 w-auto -translate-x-1/2 -translate-y-1/2 opacity-[0.12]"
+              />
+              <div className="relative flex h-full w-full flex-col gap-2">
+                <img src={lockup} alt="" className="h-4 w-auto self-start" />
+                {body(['w-full', 'w-full', 'w-3/4'])}
+              </div>
+            </div>
+          ),
+        },
+        {
+          ok: false,
+          caption: 'Off-center',
+          node: (
+            <div className="relative h-full w-full overflow-hidden">
+              <img
+                src={leafBlack}
+                alt=""
+                className="pointer-events-none absolute -bottom-3 -right-3 h-20 w-auto opacity-[0.12]"
+              />
+              <div className="relative flex h-full w-full flex-col gap-2">
+                <img src={lockup} alt="" className="h-4 w-auto self-start" />
+                {body(['w-full', 'w-full', 'w-3/4'])}
+              </div>
             </div>
           ),
         },
@@ -308,19 +336,6 @@ export default function BrandPage() {
 
   return (
     <div className="flex flex-col gap-12">
-      {/* Color-swap filter for the "Colors swapped" Don't: maps the brand green↔blue
-          in sRGB, so the real lockup renders with its two colors reversed (keeping
-          the lockup's exact shape). */}
-      <svg aria-hidden width="0" height="0" className="absolute">
-        <defs>
-          <filter id="brand-swap" colorInterpolationFilters="sRGB">
-            <feColorMatrix
-              type="matrix"
-              values="0 -0.458 1.083 0 0  0 -0.067 1.238 0 0  0 0.804 0.067 0 0  0 0 0 1 0"
-            />
-          </filter>
-        </defs>
-      </svg>
       <div className="flex flex-col gap-1">
         <h1 className="text-2xl font-semibold tracking-tight">Brand &amp; Identity</h1>
         <p className="text-sm text-zinc-600">
@@ -378,7 +393,7 @@ export default function BrandPage() {
           </div>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
             {c.examples.map((ex, i) => (
-              <UsageExample key={`${c.title}-${i}`} ok={ex.ok} caption={ex.caption} dark={ex.dark}>
+              <UsageExample key={`${c.title}-${i}`} ok={ex.ok} caption={ex.caption} ground={ex.ground}>
                 {ex.node}
               </UsageExample>
             ))}

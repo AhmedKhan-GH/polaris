@@ -28,6 +28,54 @@ describe('public/zeefoods_lockup.svg — the canonical lockup asset', () => {
 
   it('uses the canonical brand colors', () => {
     expect(svg).toContain(branding.colors.blue.hex); // #00447c — wordmark
-    expect(svg).toContain(branding.colors.green.hex); // #67953f — emblem (sprout is negative space)
+    expect(svg).toContain(branding.colors.green.hex); // #67953f — emblem disc
+  });
+});
+
+// The COLOR lockups PAINT the sprout solid white (Color, On dark) — the green disc is the
+// brand mark, so its sprout is real white ink. The one-color forms (Black, White) punch
+// the sprout OUT instead (own describe) — a one-color mark takes the sprout from the ground.
+describe('the color lockups carry a solid white sprout (filled, not a knockout)', () => {
+  const read = (publicPath: string) => {
+    const file = join(process.cwd(), 'public', publicPath.replace(/^\//, ''));
+    return existsSync(file) ? readFileSync(file, 'utf8') : '';
+  };
+
+  it('Color: green disc + solid white sprout + blue wordmark', () => {
+    const s = read(branding.lockup.src);
+    expect(s).toContain('#67953f'); // green disc
+    expect(s).toContain('#fff'); // solid white sprout
+    expect(s).toContain('#00447c'); // blue wordmark
+  });
+
+  it('On dark: green disc + solid white sprout + white wordmark (no blue)', () => {
+    const s = read(branding.lockup.onDark);
+    expect(s).toContain('#67953f'); // emblem stays in brand green
+    expect(s).toContain('#fff'); // white sprout + white wordmark
+    expect(s).not.toContain('#00447c'); // the wordmark is reversed to white, not blue
+  });
+
+});
+
+describe('the one-color lockups are punchouts (disc with the sprout knocked out)', () => {
+  const read = (publicPath: string) => {
+    const file = join(process.cwd(), 'public', publicPath.replace(/^\//, ''));
+    return existsSync(file) ? readFileSync(file, 'utf8') : '';
+  };
+
+  it('Black: black only — black disc + black wordmark, sprout transparent (not painted white)', () => {
+    const s = read(branding.lockup.black);
+    expect(s).toContain('#000'); // black disc + black wordmark
+    expect(s).not.toContain('#fff'); // sprout is punched out (transparent), not white
+    expect(s).not.toContain('#67953f'); // no green
+    expect(s).not.toContain('#00447c'); // no blue
+  });
+
+  it('White: white only — white disc + white wordmark, sprout transparent (not painted black)', () => {
+    const s = read(branding.lockup.white);
+    expect(s).toContain('#fff'); // white disc + white wordmark
+    expect(s).not.toContain('#000'); // sprout is punched out (transparent), not black
+    expect(s).not.toContain('#67953f'); // no green
+    expect(s).not.toContain('#00447c'); // no blue
   });
 });
