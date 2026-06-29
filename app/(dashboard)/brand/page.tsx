@@ -149,11 +149,11 @@ export default function BrandPage() {
     },
     {
       title: "Don't split the lockup",
-      desc: 'Use the emblem and wordmark together as the lockup, or each on its own. Never split the lockup across one piece, or break the wordmark into two words.',
+      desc: 'Use the emblem and wordmark together as the lockup, or the emblem on its own. Never use the wordmark by itself, split the lockup across one piece, or break the wordmark into two words.',
       examples: [
         { ok: true, caption: 'Together (the lockup)', node: mk(lockup, 'h-6') },
         { ok: true, caption: 'Emblem alone', node: mk(emblem, 'h-10') },
-        { ok: true, caption: 'Wordmark alone', node: mk(wordmark, 'h-4') },
+        { ok: false, caption: 'Wordmark by itself', node: mk(wordmark, 'h-4') },
         {
           ok: false,
           caption: 'Split to corners',
