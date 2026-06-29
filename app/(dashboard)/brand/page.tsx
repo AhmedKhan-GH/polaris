@@ -25,18 +25,14 @@ export default function BrandPage() {
   const cutout = versionedAssetSrc(branding.cutout.src); // leaf is knockout — survives a flat fill
   const wordmark = versionedAssetSrc(branding.wordmark.src);
 
-  // A versioned colorway option; `dark` previews it on a dark panel.
-  const dl = (label: string, src: string, dark = false) => ({
-    label,
-    src: versionedAssetSrc(src),
-    dark,
-  });
+  // A versioned colorway option.
+  const dl = (label: string, src: string) => ({ label, src: versionedAssetSrc(src) });
 
   const assets: Array<{
     asset: { src: string; alt: string; width: number; height: number };
     label: string;
     note?: string;
-    variants: Array<{ label: string; src: string; dark?: boolean }>;
+    variants: Array<{ label: string; src: string }>;
   }> = [
     {
       asset: ver(branding.lockup),
@@ -44,7 +40,7 @@ export default function BrandPage() {
       variants: [
         dl('Color', branding.lockup.src),
         dl('Black', branding.lockup.black),
-        dl('White', branding.lockup.white, true),
+        dl('White', branding.lockup.white),
       ],
     },
     {
@@ -54,7 +50,7 @@ export default function BrandPage() {
       variants: [
         dl('Color', branding.logo.src),
         dl('Black', branding.logo.black),
-        dl('White', branding.logo.white, true),
+        dl('White', branding.logo.white),
       ],
     },
     {
@@ -62,16 +58,16 @@ export default function BrandPage() {
       label: 'Emblem — knockout',
       note: 'Transparent leaf, for varied backgrounds',
       variants: [
-        dl('Color', branding.cutout.src, true),
+        dl('Color', branding.cutout.src),
         dl('Black', branding.cutout.black),
-        dl('White', branding.cutout.white, true),
+        dl('White', branding.cutout.white),
       ],
     },
     {
       asset: ver(branding.leaf),
       label: 'Leaf',
       note: 'White (for dark) + black',
-      variants: [dl('White', branding.leaf.src, true), dl('Black', branding.leaf.black)],
+      variants: [dl('White', branding.leaf.src), dl('Black', branding.leaf.black)],
     },
     {
       asset: ver(branding.wordmark),
@@ -79,7 +75,7 @@ export default function BrandPage() {
       variants: [
         dl('Color', branding.wordmark.src),
         dl('Black', branding.wordmark.black),
-        dl('White', branding.wordmark.white, true),
+        dl('White', branding.wordmark.white),
       ],
     },
   ];

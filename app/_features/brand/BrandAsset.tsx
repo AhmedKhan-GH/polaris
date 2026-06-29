@@ -10,7 +10,7 @@ import { useState } from 'react';
 
 export type BrandAssetData = { src: string; alt: string; width: number; height: number };
 
-export type AssetVariant = { label: string; src: string; dark?: boolean };
+export type AssetVariant = { label: string; src: string };
 
 export function BrandAsset({
   asset,
@@ -26,15 +26,13 @@ export function BrandAsset({
   const [active, setActive] = useState(0);
   const selected = variants[active] ?? variants[0];
   const filename = selected.src.replace(/^\//, '').split('?')[0];
-  // A dark panel for reversed/white marks — white ink would be invisible on white.
-  const panel = selected.dark ? 'bg-zinc-900' : 'bg-white';
 
   return (
     <div className="flex flex-col gap-3 rounded-lg border border-zinc-200 p-4">
-      <div
-        data-preview={selected.dark ? 'dark' : 'light'}
-        className={`flex h-20 items-center justify-center rounded ${panel}`}
-      >
+      {/* A neutral mid-grey panel: the brand colors, the one-color black, and the
+          reversed white mark all read against it — so every colorway previews on
+          one background. */}
+      <div className="flex h-20 items-center justify-center rounded bg-zinc-500">
         {/* eslint-disable-next-line @next/next/no-img-element -- static SVG brand asset; next/image adds nothing for an unoptimizable vector */}
         <img src={selected.src} alt={asset.alt} className="max-h-14 w-auto" />
       </div>

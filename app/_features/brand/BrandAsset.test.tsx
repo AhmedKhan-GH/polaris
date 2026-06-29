@@ -14,7 +14,7 @@ const banner = { src: '/zeefoods_lockup.svg', alt: 'Zee Foods', width: 234, heig
 const variants = [
   { label: 'Color', src: '/zeefoods_lockup.svg' },
   { label: 'Black', src: '/zeefoods_lockup_black.svg' },
-  { label: 'White', src: '/zeefoods_lockup_white.svg', dark: true },
+  { label: 'White', src: '/zeefoods_lockup_white.svg' },
 ];
 
 describe('BrandAsset', () => {
@@ -29,7 +29,7 @@ describe('BrandAsset', () => {
   });
 
   it('selecting a colorway updates the preview, filename, and download', () => {
-    const { container } = render(<BrandAsset asset={banner} label="Lockup" variants={variants} />);
+    render(<BrandAsset asset={banner} label="Lockup" variants={variants} />);
     fireEvent.click(screen.getByRole('button', { name: 'White' }));
     expect(screen.getByAltText('Zee Foods')).toHaveAttribute('src', '/zeefoods_lockup_white.svg');
     expect(screen.getByText('zeefoods_lockup_white.svg')).toBeInTheDocument();
@@ -37,8 +37,6 @@ describe('BrandAsset', () => {
       'href',
       '/zeefoods_lockup_white.svg',
     );
-    // the white colorway previews on a dark panel
-    expect(container.querySelector('[data-preview="dark"]')).not.toBeNull();
   });
 
   it('marks the active colorway as pressed', () => {
