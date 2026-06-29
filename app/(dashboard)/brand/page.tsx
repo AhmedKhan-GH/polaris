@@ -73,6 +73,16 @@ export default function BrandPage() {
           dark: true,
           node: mk(lockup, 'h-6', { filter: 'brightness(0) invert(1)' }),
         },
+        {
+          ok: false,
+          caption: 'Colors swapped',
+          node: (
+            <div className="flex items-center gap-1">
+              <img src={emblem} alt="" className="h-8 w-auto" style={{ filter: 'hue-rotate(115deg)' }} />
+              <img src={wordmark} alt="" className="h-3.5 w-auto" style={{ filter: 'hue-rotate(-115deg) saturate(1.6)' }} />
+            </div>
+          ),
+        },
         { ok: false, caption: 'Recolored', node: mk(lockup, 'h-6', { filter: 'hue-rotate(150deg) saturate(1.4)' }) },
         { ok: false, caption: 'Tinted', node: mk(lockup, 'h-6', { filter: 'sepia(1) saturate(6) hue-rotate(-20deg)' }) },
         { ok: false, caption: 'Greyed (use solid black)', node: mk(lockup, 'h-6', { filter: 'grayscale(1)' }) },
@@ -142,7 +152,7 @@ export default function BrandPage() {
     },
     {
       title: "Don't split the lockup",
-      desc: 'Use the emblem and wordmark together as the lockup, or each on its own. Never split the lockup across one piece.',
+      desc: 'Use the emblem and wordmark together as the lockup, or each on its own. Never split the lockup across one piece, or break the wordmark into two words.',
       examples: [
         { ok: true, caption: 'Together (the lockup)', node: mk(lockup, 'h-6') },
         { ok: true, caption: 'Emblem alone', node: mk(emblem, 'h-10') },
@@ -164,6 +174,20 @@ export default function BrandPage() {
             <div className="flex items-center gap-6">
               {mk(emblem, 'h-7')}
               {mk(wordmark, 'h-3')}
+            </div>
+          ),
+        },
+        {
+          ok: false,
+          caption: 'Split into zee + foods',
+          node: (
+            <div className="flex items-center gap-3">
+              <div className="overflow-hidden" style={{ width: 31 }}>
+                <img src={wordmark} alt="" style={{ width: 88, maxWidth: 'none', display: 'block' }} />
+              </div>
+              <div className="overflow-hidden" style={{ width: 57 }}>
+                <img src={wordmark} alt="" style={{ width: 88, maxWidth: 'none', display: 'block', marginLeft: -31 }} />
+              </div>
             </div>
           ),
         },
