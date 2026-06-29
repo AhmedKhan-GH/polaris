@@ -25,15 +25,18 @@ export default function BrandPage() {
   const cutout = versionedAssetSrc(branding.cutout.src); // leaf is knockout — survives a flat fill
   const wordmark = versionedAssetSrc(branding.wordmark.src);
 
-  // A versioned colorway download link.
-  const dl = (label: string, src: string) => ({ label, src: versionedAssetSrc(src) });
+  // A versioned colorway option; `dark` previews it on a dark panel.
+  const dl = (label: string, src: string, dark = false) => ({
+    label,
+    src: versionedAssetSrc(src),
+    dark,
+  });
 
   const assets: Array<{
     asset: { src: string; alt: string; width: number; height: number };
     label: string;
     note?: string;
-    preview?: 'light' | 'dark';
-    variants: Array<{ label: string; src: string }>;
+    variants: Array<{ label: string; src: string; dark?: boolean }>;
   }> = [
     {
       asset: ver(branding.lockup),
@@ -41,7 +44,7 @@ export default function BrandPage() {
       variants: [
         dl('Color', branding.lockup.src),
         dl('Black', branding.lockup.black),
-        dl('White', branding.lockup.white),
+        dl('White', branding.lockup.white, true),
       ],
     },
     {
@@ -51,26 +54,24 @@ export default function BrandPage() {
       variants: [
         dl('Color', branding.logo.src),
         dl('Black', branding.logo.black),
-        dl('White', branding.logo.white),
+        dl('White', branding.logo.white, true),
       ],
     },
     {
       asset: ver(branding.cutout),
       label: 'Emblem — knockout',
       note: 'Transparent leaf, for varied backgrounds',
-      preview: 'dark',
       variants: [
-        dl('Color', branding.cutout.src),
+        dl('Color', branding.cutout.src, true),
         dl('Black', branding.cutout.black),
-        dl('White', branding.cutout.white),
+        dl('White', branding.cutout.white, true),
       ],
     },
     {
       asset: ver(branding.leaf),
       label: 'Leaf',
       note: 'White (for dark) + black',
-      preview: 'dark',
-      variants: [dl('White', branding.leaf.src), dl('Black', branding.leaf.black)],
+      variants: [dl('White', branding.leaf.src, true), dl('Black', branding.leaf.black)],
     },
     {
       asset: ver(branding.wordmark),
@@ -78,7 +79,7 @@ export default function BrandPage() {
       variants: [
         dl('Color', branding.wordmark.src),
         dl('Black', branding.wordmark.black),
-        dl('White', branding.wordmark.white),
+        dl('White', branding.wordmark.white, true),
       ],
     },
   ];
@@ -338,15 +339,8 @@ export default function BrandPage() {
           Download the canonical SVGs. These are the files the app itself serves.
         </p>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {assets.map(({ asset, label, note, preview, variants }) => (
-            <BrandAsset
-              key={asset.src}
-              asset={asset}
-              label={label}
-              note={note}
-              preview={preview}
-              variants={variants}
-            />
+          {assets.map(({ asset, label, note, variants }) => (
+            <BrandAsset key={asset.src} asset={asset} label={label} note={note} variants={variants} />
           ))}
         </div>
       </section>

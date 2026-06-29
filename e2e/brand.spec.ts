@@ -26,7 +26,8 @@ test.describe('brand & identity', () => {
     await expect(page.getByRole('heading', { name: 'Assets' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Colors' })).toBeVisible();
     await expect(page.getByText('#00447c')).toBeVisible(); // Zee Foods Blue
-    // Each asset offers colorway downloads (Color / Black / White).
-    await expect(page.getByRole('link', { name: 'Black' }).first()).toBeVisible();
+    // Each asset card has a colorway selector and a download link.
+    await expect(page.getByRole('button', { name: 'Black' }).first()).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Download' }).first()).toBeVisible();
   });
 });

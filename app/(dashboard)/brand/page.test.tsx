@@ -42,18 +42,11 @@ describe('Brand & Identity page', () => {
     }
   });
 
-  it('offers black and white-on-dark variant downloads', () => {
-    const { container } = render(<BrandPage />);
-    const hrefs = Array.from(container.querySelectorAll('a[download]')).map(
-      (a) => a.getAttribute('href') ?? '',
-    );
-    for (const name of [
-      '/zeefoods_lockup_black.svg',
-      '/zeefoods_lockup_white.svg',
-      '/zeefoods_letters_white.svg',
-    ]) {
-      expect(hrefs.some((h) => h.startsWith(name))).toBe(true);
-    }
+  it('offers a Black + White colorway selector on each mark', () => {
+    render(<BrandPage />);
+    // every mark exposes a Black and a reversed-White colorway to pick
+    expect(screen.getAllByRole('button', { name: 'White' }).length).toBeGreaterThanOrEqual(4);
+    expect(screen.getAllByRole('button', { name: 'Black' }).length).toBeGreaterThanOrEqual(4);
   });
 
   it('shows the naming guide with the legal name and domain', () => {

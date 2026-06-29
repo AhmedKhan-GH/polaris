@@ -1,58 +1,79 @@
-// One downloadable brand file, presented as a card: a preview, its label and
-// filename, an optional usage note, and a download link to the raw SVG (served
-// statically from /public). Server component; the asset comes in via props —
-// never hardcoded (Charter D8).
+'use client';
+
+// One brand mark, presented as a card: a preview, a colorway selector
+// (Color / Black / White), and a download link. Picking a colorway updates the
+// preview (and flips the panel to dark for reversed/white marks) and points the
+// download at that file. Client component for the selection state; asset + colorway
+// data arrive via props — never hardcoded (Charter D8).
+
+import { useState } from 'react';
 
 export type BrandAssetData = { src: string; alt: string; width: number; height: number };
+
+export type AssetVariant = { label: string; src: string; dark?: boolean };
 
 export function BrandAsset({
   asset,
   label,
   note,
-  preview = 'light',
   variants,
 }: {
   asset: BrandAssetData;
   label: string;
   note?: string;
-  preview?: 'light' | 'dark';
-  // Colorway downloads (e.g. Color / Black / White). When omitted, a single
-  // "Download" link to the base asset is shown.
-  variants?: Array<{ label: string; src: string }>;
+  variants: AssetVariant[];
 }) {
-  const filename = asset.src.replace(/^\//, '').split('?')[0];
-  // A dark panel for light / knockout marks — a white leaf or a transparent
-  // cutout would be invisible (or indistinguishable from the logo) on white.
-  const panel = preview === 'dark' ? 'bg-slate-800' : 'bg-white';
-  const links = variants ?? [{ label: 'Download', src: asset.src }];
+  const [active, setActive] = useState(0);
+  const selected = variants[active] ?? variants[0];
+  const filename = selected.src.replace(/^\//, '').split('?')[0];
+  // A dark panel for reversed/white marks — white ink would be invisible on white.
+  const panel = selected.dark ? 'bg-zinc-900' : 'bg-white';
 
   return (
     <div className="flex flex-col gap-3 rounded-lg border border-zinc-200 p-4">
       <div
-        data-preview={preview}
+        data-preview={selected.dark ? 'dark' : 'light'}
         className={`flex h-20 items-center justify-center rounded ${panel}`}
       >
         {/* eslint-disable-next-line @next/next/no-img-element -- static SVG brand asset; next/image adds nothing for an unoptimizable vector */}
-        <img src={asset.src} alt={asset.alt} width={asset.width} height={asset.height} className="max-h-14 w-auto" />
+        <img src={selected.src} alt={asset.alt} className="max-h-14 w-auto" />
       </div>
-      <div className="flex items-end justify-between gap-4">
-        <div className="flex flex-col">
-          <span className="text-sm font-medium">{label}</span>
-          <span className="font-mono text-xs text-zinc-500">{filename}</span>
-          {note ? <span className="mt-0.5 text-xs text-zinc-500">{note}</span> : null}
-        </div>
-        <div className="flex flex-wrap justify-end gap-x-3 gap-y-1">
-          {links.map((v) => (
-            <a
+
+      <div className="flex flex-col">
+        <span className="text-sm font-medium">{label}</span>
+        <span className="font-mono text-xs text-zinc-500">{filename}</span>
+        {note ? <span className="mt-0.5 text-xs text-zinc-500">{note}</span> : null}
+      </div>
+
+      <div className="flex items-center justify-between gap-3">
+        <div
+          className="inline-flex overflow-hidden rounded border border-zinc-200"
+          role="group"
+          aria-label={`${label} colorway`}
+        >
+          {variants.map((v, i) => (
+            <button
               key={v.label}
-              href={v.src}
-              download={v.src.replace(/^\//, '').split('?')[0]}
-              className="text-sm font-medium text-brand-blue underline"
+              type="button"
+              onClick={() => setActive(i)}
+              aria-pressed={i === active}
+              className={`px-2.5 py-1 text-xs font-medium transition-colors ${
+                i === active
+                  ? 'bg-brand-blue text-white'
+                  : 'bg-white text-zinc-600 hover:bg-zinc-50'
+              } ${i > 0 ? 'border-l border-zinc-200' : ''}`}
             >
               {v.label}
-            </a>
+            </button>
           ))}
         </div>
+        <a
+          href={selected.src}
+          download={filename}
+          className="text-sm font-medium text-brand-blue underline"
+        >
+          Download
+        </a>
       </div>
     </div>
   );

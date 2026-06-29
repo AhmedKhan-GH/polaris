@@ -22,7 +22,7 @@ export function UsageExample({
     <figure className="flex flex-col gap-1.5">
       <div
         className={`relative flex aspect-[4/3] items-center justify-center overflow-hidden rounded-md border p-3 ${
-          dark ? 'border-zinc-700 bg-slate-800' : 'border-zinc-200 bg-white'
+          dark ? 'border-zinc-700 bg-zinc-900' : 'border-zinc-200 bg-white'
         }`}
       >
         {children}
