@@ -25,10 +25,11 @@ describe('Brand & Identity page', () => {
   });
 
   it('serves the brand SVGs as downloads', () => {
-    render(<BrandPage />);
-    const hrefs = screen
-      .getAllByRole('link', { name: /download/i })
-      .map((a) => a.getAttribute('href') ?? '');
+    const { container } = render(<BrandPage />);
+    // Each asset card now offers several colorway links; collect every download.
+    const hrefs = Array.from(container.querySelectorAll('a[download]')).map(
+      (a) => a.getAttribute('href') ?? '',
+    );
     // hrefs are cache-busted ("…svg?v=<hash>"); assert each canonical asset is present.
     for (const name of [
       '/zeefoods_lockup.svg',
@@ -36,6 +37,20 @@ describe('Brand & Identity page', () => {
       '/zeefoods_cutout.svg',
       '/zeefoods_leaf.svg',
       '/zeefoods_letters.svg',
+    ]) {
+      expect(hrefs.some((h) => h.startsWith(name))).toBe(true);
+    }
+  });
+
+  it('offers black and white-on-dark variant downloads', () => {
+    const { container } = render(<BrandPage />);
+    const hrefs = Array.from(container.querySelectorAll('a[download]')).map(
+      (a) => a.getAttribute('href') ?? '',
+    );
+    for (const name of [
+      '/zeefoods_lockup_black.svg',
+      '/zeefoods_lockup_white.svg',
+      '/zeefoods_letters_white.svg',
     ]) {
       expect(hrefs.some((h) => h.startsWith(name))).toBe(true);
     }

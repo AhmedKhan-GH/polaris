@@ -10,16 +10,21 @@ export function BrandAsset({
   label,
   note,
   preview = 'light',
+  variants,
 }: {
   asset: BrandAssetData;
   label: string;
   note?: string;
   preview?: 'light' | 'dark';
+  // Colorway downloads (e.g. Color / Black / White). When omitted, a single
+  // "Download" link to the base asset is shown.
+  variants?: Array<{ label: string; src: string }>;
 }) {
   const filename = asset.src.replace(/^\//, '').split('?')[0];
   // A dark panel for light / knockout marks — a white leaf or a transparent
   // cutout would be invisible (or indistinguishable from the logo) on white.
   const panel = preview === 'dark' ? 'bg-slate-800' : 'bg-white';
+  const links = variants ?? [{ label: 'Download', src: asset.src }];
 
   return (
     <div className="flex flex-col gap-3 rounded-lg border border-zinc-200 p-4">
@@ -36,9 +41,18 @@ export function BrandAsset({
           <span className="font-mono text-xs text-zinc-500">{filename}</span>
           {note ? <span className="mt-0.5 text-xs text-zinc-500">{note}</span> : null}
         </div>
-        <a href={asset.src} download={filename} className="text-sm font-medium text-brand-blue underline">
-          Download
-        </a>
+        <div className="flex flex-wrap justify-end gap-x-3 gap-y-1">
+          {links.map((v) => (
+            <a
+              key={v.label}
+              href={v.src}
+              download={v.src.replace(/^\//, '').split('?')[0]}
+              className="text-sm font-medium text-brand-blue underline"
+            >
+              {v.label}
+            </a>
+          ))}
+        </div>
       </div>
     </div>
   );

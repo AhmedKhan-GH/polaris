@@ -25,22 +25,62 @@ export default function BrandPage() {
   const cutout = versionedAssetSrc(branding.cutout.src); // leaf is knockout — survives a flat fill
   const wordmark = versionedAssetSrc(branding.wordmark.src);
 
+  // A versioned colorway download link.
+  const dl = (label: string, src: string) => ({ label, src: versionedAssetSrc(src) });
+
   const assets: Array<{
     asset: { src: string; alt: string; width: number; height: number };
     label: string;
     note?: string;
     preview?: 'light' | 'dark';
+    variants: Array<{ label: string; src: string }>;
   }> = [
-    { asset: ver(branding.lockup), label: 'Banner (lockup)' },
-    { asset: ver(branding.logo), label: 'Emblem', note: 'Green circle, white leaf' },
+    {
+      asset: ver(branding.lockup),
+      label: 'Lockup',
+      variants: [
+        dl('Color', branding.lockup.src),
+        dl('Black', branding.lockup.black),
+        dl('White', branding.lockup.white),
+      ],
+    },
+    {
+      asset: ver(branding.logo),
+      label: 'Emblem',
+      note: 'Green disc, white leaf',
+      variants: [
+        dl('Color', branding.logo.src),
+        dl('Black', branding.logo.black),
+        dl('White', branding.logo.white),
+      ],
+    },
     {
       asset: ver(branding.cutout),
       label: 'Emblem — knockout',
-      note: 'Leaf is transparent, for varied backgrounds',
+      note: 'Transparent leaf, for varied backgrounds',
       preview: 'dark',
+      variants: [
+        dl('Color', branding.cutout.src),
+        dl('Black', branding.cutout.black),
+        dl('White', branding.cutout.white),
+      ],
     },
-    { asset: ver(branding.leaf), label: 'Leaf', note: 'White leaf only', preview: 'dark' },
-    { asset: ver(branding.wordmark), label: 'Wordmark' },
+    {
+      asset: ver(branding.leaf),
+      label: 'Leaf',
+      note: 'White (for dark) + black',
+      preview: 'dark',
+      variants: [dl('White', branding.leaf.src), dl('Black', branding.leaf.black)],
+    },
+    {
+      asset: ver(branding.wordmark),
+      label: 'Wordmark',
+      variants: [
+        dl('Color', branding.wordmark.src),
+        dl('Black', branding.wordmark.black),
+        dl('White', branding.wordmark.white),
+      ],
+    },
   ];
 
   // A brand mark image, optionally recolored/transformed to demonstrate (mis)use.
@@ -298,8 +338,15 @@ export default function BrandPage() {
           Download the canonical SVGs. These are the files the app itself serves.
         </p>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {assets.map(({ asset, label, note, preview }) => (
-            <BrandAsset key={asset.src} asset={asset} label={label} note={note} preview={preview} />
+          {assets.map(({ asset, label, note, preview, variants }) => (
+            <BrandAsset
+              key={asset.src}
+              asset={asset}
+              label={label}
+              note={note}
+              preview={preview}
+              variants={variants}
+            />
           ))}
         </div>
       </section>

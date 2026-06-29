@@ -42,6 +42,20 @@ describe('branding brand tokens', () => {
     expect(branding.leaf.src).toBe('/zeefoods_leaf.svg');
   });
 
+  it('offers black and white-on-dark file variants for the recolorable marks', () => {
+    expect(branding.lockup.black).toBe('/zeefoods_lockup_black.svg');
+    expect(branding.lockup.white).toBe('/zeefoods_lockup_white.svg');
+    expect(branding.wordmark.black).toBe('/zeefoods_letters_black.svg');
+    expect(branding.wordmark.white).toBe('/zeefoods_letters_white.svg');
+    expect(branding.cutout.black).toBe('/zeefoods_cutout_black.svg');
+    expect(branding.cutout.white).toBe('/zeefoods_cutout_white.svg');
+    expect(branding.leaf.black).toBe('/zeefoods_leaf_black.svg');
+    // The emblem's reversible variants come from the knockout cutout: the logo's
+    // solid white leaf can't reverse to white-on-dark (it vanishes on a white disc).
+    expect(branding.logo.black).toBe('/zeefoods_cutout_black.svg');
+    expect(branding.logo.white).toBe('/zeefoods_cutout_white.svg');
+  });
+
   it('records the legal name and the written-name forms', () => {
     expect(branding.naming.legalName).toBe('Zee Foods, LLC.');
     const names = branding.naming.forms.map((f) => f.name);

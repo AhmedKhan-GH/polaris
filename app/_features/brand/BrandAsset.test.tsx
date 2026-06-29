@@ -34,4 +34,26 @@ describe('BrandAsset', () => {
     const { container } = render(<BrandAsset asset={banner} label="Leaf" preview="dark" />);
     expect(container.querySelector('[data-preview="dark"]')).not.toBeNull();
   });
+
+  it('offers a labeled download link per colorway variant', () => {
+    render(
+      <BrandAsset
+        asset={banner}
+        label="Lockup"
+        variants={[
+          { label: 'Color', src: '/zeefoods_lockup.svg' },
+          { label: 'Black', src: '/zeefoods_lockup_black.svg' },
+          { label: 'White', src: '/zeefoods_lockup_white.svg' },
+        ]}
+      />,
+    );
+    const black = screen.getByRole('link', { name: 'Black' });
+    expect(black).toHaveAttribute('href', '/zeefoods_lockup_black.svg');
+    expect(black).toHaveAttribute('download', 'zeefoods_lockup_black.svg');
+    expect(screen.getByRole('link', { name: 'White' })).toHaveAttribute(
+      'href',
+      '/zeefoods_lockup_white.svg',
+    );
+    expect(screen.getByRole('link', { name: 'Color' })).toBeInTheDocument();
+  });
 });
