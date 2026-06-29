@@ -142,11 +142,11 @@ export default function BrandPage() {
     },
     {
       title: "Don't split the lockup",
-      desc: 'Use the emblem and wordmark together as the lockup, or the emblem on its own. Never use the wordmark by itself, and never split the lockup across one piece.',
+      desc: 'Use the emblem and wordmark together as the lockup, or each on its own. Never split the lockup across one piece.',
       examples: [
         { ok: true, caption: 'Together (the lockup)', node: mk(lockup, 'h-6') },
         { ok: true, caption: 'Emblem alone', node: mk(emblem, 'h-10') },
-        { ok: false, caption: 'Wordmark by itself', node: mk(wordmark, 'h-4') },
+        { ok: true, caption: 'Wordmark alone', node: mk(wordmark, 'h-4') },
         {
           ok: false,
           caption: 'Split to corners',
@@ -171,7 +171,7 @@ export default function BrandPage() {
     },
     {
       title: 'Placement',
-      desc: 'Place the mark at the top-left of the piece, before the text — the emblem on its own, or the full lockup. Never center it, set it on the right, or put it in the middle of the text, after the text, or at the bottom.',
+      desc: 'Place the mark at the top, before the text — the emblem or full lockup at the left, or the wordmark by itself at the right, but never both at once. Never center it, put the full lockup on the right, or set it in the middle of the text, after it, or at the bottom.',
       examples: [
         {
           ok: true,
@@ -189,6 +189,29 @@ export default function BrandPage() {
           node: (
             <div className="flex h-full w-full flex-col gap-2">
               <img src={lockup} alt="" className="h-4 w-auto self-start" />
+              {body(['w-full', 'w-full', 'w-3/4'])}
+            </div>
+          ),
+        },
+        {
+          ok: true,
+          caption: 'Wordmark, top-right',
+          node: (
+            <div className="flex h-full w-full flex-col gap-2">
+              <img src={wordmark} alt="" className="h-4 w-auto self-end" />
+              {body(['w-full', 'w-full', 'w-3/4'])}
+            </div>
+          ),
+        },
+        {
+          ok: false,
+          caption: 'Emblem left + wordmark right',
+          node: (
+            <div className="flex h-full w-full flex-col gap-2">
+              <div className="flex w-full items-center justify-between">
+                <img src={emblem} alt="" className="h-6 w-auto" />
+                <img src={wordmark} alt="" className="h-4 w-auto" />
+              </div>
               {body(['w-full', 'w-full', 'w-3/4'])}
             </div>
           ),
