@@ -32,8 +32,13 @@ describe('branding brand tokens', () => {
 
   it('records the lockup geometry so the displayed ratios stay derived', () => {
     expect(branding.logoGeometry).toEqual({
-      viewBox: { width: 112.26, height: 38.39 },
-      emblem: { r: 17.58 },
+      viewBox: { width: 112.13, height: 38.4 },
+      emblem: { cx: 17.6, cy: 17.6, r: 17.6 },
     });
+  });
+
+  it('exposes the emblem variants for varied backgrounds', () => {
+    expect(branding.cutout.src).toBe('/zeefoods_cutout.svg');
+    expect(branding.leaf.src).toBe('/zeefoods_leaf.svg');
   });
 });

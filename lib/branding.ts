@@ -9,6 +9,11 @@ export const branding = {
   productName: 'Polaris',
   tagline: 'Cold chain logistics platform.',
   logo: { src: '/zeefoods_logo.svg', alt: 'Zee Foods logo', width: 80, height: 80 },
+  // Emblem variants for varied backgrounds: `cutout` is the green disc with the
+  // leaf knocked out (transparent — the background shows through); `leaf` is the
+  // white leaf alone (for when only the mark should show).
+  cutout: { src: '/zeefoods_cutout.svg', alt: 'Zee Foods emblem, knockout', width: 80, height: 80 },
+  leaf: { src: '/zeefoods_leaf.svg', alt: 'Zee Foods leaf', width: 79, height: 70 },
   wordmark: { src: '/zeefoods_letters.svg', alt: 'Zee Foods', width: 200, height: 97 },
   // The full horizontal lockup (emblem + wordmark), ~2.92:1. The emblem is a true
   // circle — see public/zeefoods_lockup.svg.
@@ -27,7 +32,7 @@ export const branding = {
   // page DERIVES its proportions instead of hardcoding them (see
   // app/_features/brand/ratios.ts). The emblem is a true circle of radius r.
   logoGeometry: {
-    viewBox: { width: 112.26, height: 38.39 },
-    emblem: { r: 17.58 },
+    viewBox: { width: 112.13, height: 38.4 },
+    emblem: { cx: 17.6, cy: 17.6, r: 17.6 },
   },
 } as const;

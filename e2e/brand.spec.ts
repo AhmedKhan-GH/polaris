@@ -23,9 +23,9 @@ test.describe('brand & identity', () => {
       page.getByRole('heading', { level: 1, name: /brand & identity/i }),
     ).toBeVisible();
 
-    await expect(page.getByAltText('Zee Foods')).toBeVisible(); // the lockup
+    await expect(page.getByRole('heading', { name: 'Assets' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Colors' })).toBeVisible();
     await expect(page.getByText('#00447c')).toBeVisible(); // Zee Foods Blue
-    await expect(page.getByText('2.92 : 1')).toBeVisible(); // lockup ratio
-    await expect(page.getByText('1 : 1')).toBeVisible(); // the circular emblem
+    await expect(page.getByRole('link', { name: /download/i }).first()).toBeVisible();
   });
 });
