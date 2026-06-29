@@ -52,14 +52,13 @@ describe('LandingPage', () => {
     expect(dashboard.closest('main')).not.toBeNull();
   });
 
-  // Brand rule (see /brand → "Don't split the lockup"): the emblem may be used on
-  // its own; only splitting the emblem and wordmark on one piece is forbidden. The
-  // hero uses the white-leaf emblem alone — the product name below is text, not the
-  // wordmark — so nothing is split.
-  it('uses the white-leaf emblem alone, not a split emblem + wordmark', () => {
+  // Brand rule (see /brand → "Don't split the lockup"): use the combined lockup —
+  // the emblem and wordmark together as one mark — never placed separately on the
+  // same piece of media.
+  it('uses the combined lockup, not a split emblem + wordmark', () => {
     const { container } = render(<LandingPage user={null} />);
     const imgs = container.querySelectorAll('img');
     expect(imgs).toHaveLength(1);
-    expect(imgs[0]?.getAttribute('src')).toBe('/zeefoods_logo.svg');
+    expect(imgs[0]?.getAttribute('src')).toBe('/zeefoods_lockup.svg');
   });
 });
