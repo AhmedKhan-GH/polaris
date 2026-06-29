@@ -143,11 +143,11 @@ export default function BrandPage() {
     },
     {
       title: "Don't split the lockup",
-      desc: 'Use the emblem and wordmark together (the lockup), or each on its own piece — never split them across the same piece.',
+      desc: 'Use the emblem and wordmark together as the lockup, or the emblem on its own. Never use the wordmark by itself, and never split the lockup across one piece.',
       examples: [
         { ok: true, caption: 'Together (the lockup)', node: mk(lockup, 'h-6') },
         { ok: true, caption: 'Emblem alone', node: mk(emblem, 'h-10') },
-        { ok: true, caption: 'Wordmark alone', node: mk(wordmark, 'h-4') },
+        { ok: false, caption: 'Wordmark by itself', node: mk(wordmark, 'h-4') },
         {
           ok: false,
           caption: 'Split to corners',
@@ -172,11 +172,11 @@ export default function BrandPage() {
     },
     {
       title: 'Placement',
-      desc: 'Place the mark at the top of the piece, before the text — aligned left, center, or right. Never set it in the middle of the text, after the text, or at the bottom.',
+      desc: 'Place the mark at the top-left of the piece, before the text — the emblem on its own, or the full lockup. Never set it in the middle of the text, after the text, or at the bottom.',
       examples: [
         {
           ok: true,
-          caption: 'Top, left',
+          caption: 'Top-left',
           node: (
             <div className="flex h-full w-full flex-col gap-2">
               <img src={emblem} alt="" className="h-6 w-auto self-start" />
@@ -186,20 +186,10 @@ export default function BrandPage() {
         },
         {
           ok: true,
-          caption: 'Top, centered',
+          caption: 'Top-left, with wordmark',
           node: (
             <div className="flex h-full w-full flex-col gap-2">
-              <img src={emblem} alt="" className="h-6 w-auto self-center" />
-              {body(['w-full', 'w-full', 'w-3/4'])}
-            </div>
-          ),
-        },
-        {
-          ok: true,
-          caption: 'Top, right',
-          node: (
-            <div className="flex h-full w-full flex-col gap-2">
-              <img src={emblem} alt="" className="h-6 w-auto self-end" />
+              <img src={lockup} alt="" className="h-4 w-auto self-start" />
               {body(['w-full', 'w-full', 'w-3/4'])}
             </div>
           ),
