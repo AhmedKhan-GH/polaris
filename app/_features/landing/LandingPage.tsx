@@ -20,15 +20,15 @@ import { branding } from '@/lib/branding';
 export function LandingPage({ user }: { user: AuthUser | null }) {
   return (
     <main className="flex flex-1 flex-col items-center justify-center gap-6 px-6 py-24 text-center">
-      {/* The combined lockup (emblem + wordmark together, at their set proportions).
-          The brand guide forbids splitting them on one piece of media — see
-          /brand → "Don't split the lockup". */}
+      {/* The white-leaf emblem on its own. The product name below is text, not the
+          wordmark, so the emblem and wordmark are never split on one piece of media
+          (brand guide → /brand → "Don't split the lockup"). */}
       {/* eslint-disable-next-line @next/next/no-img-element -- static SVG brand asset; next/image adds nothing for an unoptimizable vector */}
       <img
-        src={branding.lockup.src}
-        alt={branding.lockup.alt}
-        width={branding.lockup.width}
-        height={branding.lockup.height}
+        src={branding.logo.src}
+        alt={branding.logo.alt}
+        width={branding.logo.width}
+        height={branding.logo.height}
       />
       <h1 className="text-3xl font-semibold tracking-tight">
         {branding.productName}
