@@ -46,7 +46,7 @@ export function NotesLive({
             Note
           </th>
           <th className="hidden py-3 pr-4 text-xs font-semibold uppercase tracking-wider text-ink-faint sm:table-cell">
-            Created by
+            Author
           </th>
           <th className="py-3 pl-4 text-right text-xs font-semibold uppercase tracking-wider text-ink-faint">
             When
@@ -61,7 +61,13 @@ export function NotesLive({
             className="border-b border-hairline transition-colors hover:bg-surface-alt"
           >
             <td className="py-4 pr-4">{row.body}</td>
-            <td className="hidden py-4 pr-4 text-ink-muted sm:table-cell">{row.createdBy}</td>
+            <td className="hidden py-4 pr-4 text-ink-muted sm:table-cell">
+              {row.createdBy === userId ? (
+                'You'
+              ) : (
+                <span className="font-mono text-ink-faint">{row.createdBy.slice(0, 8)}</span>
+              )}
+            </td>
             <td className="py-4 pl-4 text-right font-mono text-ink-muted">
               {formatTimestamp(new Date(row.createdAt).getTime(), timezone, hour12)}
             </td>

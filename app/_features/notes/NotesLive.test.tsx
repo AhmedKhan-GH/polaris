@@ -48,4 +48,23 @@ describe('app/_features/notes NotesLive', () => {
     // the preferences passed in (here UTC + 12h) — proving the wiring, not raw ISO.
     expect(rows[1]).toHaveTextContent('2026-01-01 · 12:00:00 AM');
   });
+
+  it('labels the caller\'s own notes "You" and others by a short id (not a raw UUID)', () => {
+    hookRows = [
+      {
+        id: 'b',
+        createdBy: 'abcdef12-3456-7890-aaaa-bbbbbbbbbbbb',
+        body: 'theirs',
+        createdAt: '2026-02-02T00:00:00.000Z',
+      },
+      { id: 'a', createdBy: 'u1', body: 'mine', createdAt: '2026-01-01T00:00:00.000Z' },
+    ];
+    render(<NotesLive userId="u1" initial={hookRows} timezone="UTC" hour12={false} />);
+
+    const rows = screen.getAllByTestId('note-row');
+    expect(rows[1]).toHaveTextContent('You'); // createdBy === userId
+    expect(rows[0]).toHaveTextContent('abcdef12'); // others → short id
+    expect(rows[0]).not.toHaveTextContent('abcdef12-3456'); // never the full UUID
+    expect(rows[0]).not.toHaveTextContent('You');
+  });
 });

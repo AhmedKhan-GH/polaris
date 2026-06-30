@@ -1,5 +1,6 @@
 import { createNote, getNotes, NotesLive } from '@/app/_features/notes';
 import { getSessionUser } from '@/lib/auth/session';
+import { formatTimestamp } from '@/lib/datetime';
 import { getPreferences } from '@/lib/preferences';
 
 /**
@@ -27,14 +28,59 @@ export default async function NotesPage() {
   }));
   const { timezone, hour12 } = await getPreferences();
 
+  // Real, glanceable metrics derived from the visible rows — never vanity numbers.
+  const total = rows.length;
+  const authors = new Set(rows.map((r) => r.createdBy)).size;
+  const latest = total
+    ? formatTimestamp(
+        Math.max(...rows.map((r) => new Date(r.createdAt).getTime())),
+        timezone,
+        hour12,
+      )
+    : '—';
+
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-8">
-      <div className="flex flex-col gap-1">
-        <p className="text-xs font-semibold uppercase tracking-wider text-ink-faint">
-          Operations
-        </p>
-        <h1 className="font-serif text-2xl font-semibold tracking-tight">Notes</h1>
-      </div>
+      <header className="flex flex-wrap items-end justify-between gap-4 border-b border-hairline pb-5">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wider text-ink-faint">
+            Operations
+          </p>
+          <h1 className="mt-2 font-serif text-2xl font-semibold tracking-tight">Notes</h1>
+          <p className="mt-1.5 max-w-prose text-sm text-ink-muted">
+            A shared, append-only log for the team. New entries appear here the moment
+            they&rsquo;re added.
+          </p>
+        </div>
+        <span className="flex items-center gap-2 text-sm text-ink-muted">
+          <span className="h-1.5 w-1.5 rounded-full bg-success" aria-hidden="true" />
+          Live
+        </span>
+      </header>
+
+      <dl className="grid grid-cols-3 border-y border-hairline">
+        <div className="border-r border-hairline py-4 pr-6">
+          <dt className="text-xs font-semibold uppercase tracking-wider text-ink-faint">
+            Total notes
+          </dt>
+          <dd className="mt-2 text-xl font-medium tabular-nums">{total}</dd>
+        </div>
+        <div className="border-r border-hairline px-6 py-4">
+          <dt className="text-xs font-semibold uppercase tracking-wider text-ink-faint">
+            Authors
+          </dt>
+          <dd className="mt-2 text-xl font-medium tabular-nums">{authors}</dd>
+        </div>
+        <div className="px-6 py-4">
+          <dt className="text-xs font-semibold uppercase tracking-wider text-ink-faint">
+            Last updated
+          </dt>
+          <dd className="mt-2 font-mono text-base font-medium tabular-nums text-ink-muted">
+            {latest}
+          </dd>
+        </div>
+      </dl>
+
       <form action={createNote} className="flex gap-2">
         <input
           name="body"
