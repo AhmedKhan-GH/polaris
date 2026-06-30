@@ -28,24 +28,41 @@ export function NotesLive({
   const rows = useNotesRealtime(userId, initial);
 
   if (rows.length === 0) {
-    return <p data-testid="no-notes">No notes yet.</p>;
+    return (
+      <div
+        data-testid="no-notes"
+        className="border border-dashed border-hairline-strong bg-surface px-6 py-10 text-center text-sm text-ink-muted"
+      >
+        No notes yet. The first note your team adds appears here, live.
+      </div>
+    );
   }
 
   return (
-    <table className="w-full text-left text-sm">
+    <table className="w-full border-collapse text-left">
       <thead>
-        <tr>
-          <th className="py-2 pr-4 font-medium">Note</th>
-          <th className="py-2 pr-4 font-medium">Created by</th>
-          <th className="py-2 pr-4 font-medium">When</th>
+        <tr className="border-b border-hairline-strong">
+          <th className="py-3 pr-4 text-xs font-semibold uppercase tracking-wider text-ink-faint">
+            Note
+          </th>
+          <th className="hidden py-3 pr-4 text-xs font-semibold uppercase tracking-wider text-ink-faint sm:table-cell">
+            Created by
+          </th>
+          <th className="py-3 pl-4 text-right text-xs font-semibold uppercase tracking-wider text-ink-faint">
+            When
+          </th>
         </tr>
       </thead>
-      <tbody>
+      <tbody className="text-sm">
         {rows.map((row) => (
-          <tr key={row.id} data-testid="note-row">
-            <td className="py-2 pr-4">{row.body}</td>
-            <td className="py-2 pr-4">{row.createdBy}</td>
-            <td className="py-2 pr-4">
+          <tr
+            key={row.id}
+            data-testid="note-row"
+            className="border-b border-hairline transition-colors hover:bg-surface-alt"
+          >
+            <td className="py-4 pr-4">{row.body}</td>
+            <td className="hidden py-4 pr-4 text-ink-muted sm:table-cell">{row.createdBy}</td>
+            <td className="py-4 pl-4 text-right font-mono text-ink-muted">
               {formatTimestamp(new Date(row.createdAt).getTime(), timezone, hour12)}
             </td>
           </tr>

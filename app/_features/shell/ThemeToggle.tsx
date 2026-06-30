@@ -2,40 +2,44 @@
 
 import { useTransition } from 'react';
 
+import type { Theme } from '@/lib/preferences';
+
 import { setPreferences } from './actions';
 
 /**
- * 24h / 12h segmented switch for the shell top bar (ADR-0009). Sends the FULL
- * preferences payload — the current timezone travels with the toggled hour12 —
- * to `setPreferences`, wrapped in a transition so the control disables while the
+ * Light / Dark segmented switch for the shell top bar. Sends the FULL preferences
+ * payload — the current timezone and hour12 travel with the chosen theme — to
+ * `setPreferences`, wrapped in a transition so the control disables while the
  * write is in flight (the house pattern: pessimistic, never optimistic). The
- * server then re-renders the shell (`revalidatePath`), re-formatting every
- * timestamp. `aria-pressed` announces the active mode to assistive tech.
+ * server then re-renders the shell (`revalidatePath('/', 'layout')`), which
+ * re-applies the `dark` class on <html>. `aria-pressed` announces the active mode.
  */
-export function Hour12Toggle({
-  hour12,
+export function ThemeToggle({
+  theme,
   timezone,
+  hour12,
 }: {
-  hour12: boolean;
+  theme: Theme;
   timezone: string;
+  hour12: boolean;
 }) {
   const [pending, startTransition] = useTransition();
 
-  const choose = (next: boolean) => {
-    if (next === hour12 || pending) return;
+  const choose = (next: Theme) => {
+    if (next === theme || pending) return;
     startTransition(() => {
-      void setPreferences({ timezone, hour12: next });
+      void setPreferences({ timezone, hour12, theme: next });
     });
   };
 
   return (
     <div
       role="group"
-      aria-label="Time format"
+      aria-label="Color theme"
       className="inline-flex items-center border border-hairline p-0.5 text-xs"
     >
-      <Option label="24h" active={!hour12} pending={pending} onClick={() => choose(false)} />
-      <Option label="12h" active={hour12} pending={pending} onClick={() => choose(true)} />
+      <Option label="Light" active={theme === 'light'} pending={pending} onClick={() => choose('light')} />
+      <Option label="Dark" active={theme === 'dark'} pending={pending} onClick={() => choose('dark')} />
     </div>
   );
 }

@@ -35,6 +35,9 @@ function isValidTimeZone(timeZone: string): boolean {
 const preferencesSchema = z.object({
   timezone: z.string().refine(isValidTimeZone, 'Unknown timezone'),
   hour12: z.boolean(),
+  // Optional: the time controls omit it (leaving theme untouched); the theme
+  // control sends it. Validated to the same union the column is narrowed to.
+  theme: z.enum(['light', 'dark']).optional(),
 });
 
 export type PreferencesInput = z.infer<typeof preferencesSchema>;
@@ -54,14 +57,14 @@ export async function setPreferences(input: PreferencesInput): Promise<void> {
       preferencesWriteLimiter,
       `preferences:update:${ctx.userId}`,
       async () => {
-        const { timezone, hour12 } = preferencesSchema.parse(input);
+        const { timezone, hour12, theme } = preferencesSchema.parse(input);
         await withUserContext(ctx, (tx) =>
           tx
             .insert(userPreferences)
-            .values({ userId: ctx.userId, timezone, hour12 })
+            .values({ userId: ctx.userId, timezone, hour12, ...(theme ? { theme } : {}) })
             .onConflictDoUpdate({
               target: userPreferences.userId,
-              set: { timezone, hour12, updatedAt: sql`now()` },
+              set: { timezone, hour12, updatedAt: sql`now()`, ...(theme ? { theme } : {}) },
             }),
         );
       },

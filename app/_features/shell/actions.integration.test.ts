@@ -71,4 +71,13 @@ describe('setPreferences (testcontainer)', () => {
     );
     expect(err?.message).toBe('Not authenticated');
   });
+
+  it('persists the chosen theme when provided', async () => {
+    await setPreferences({ timezone: 'Asia/Tokyo', hour12: false, theme: 'dark' });
+    const { rows } = await rls.admin.query(
+      'select timezone, hour12, theme from user_preferences where user_id = $1',
+      [USER],
+    );
+    expect(rows).toEqual([{ timezone: 'Asia/Tokyo', hour12: false, theme: 'dark' }]);
+  });
 });

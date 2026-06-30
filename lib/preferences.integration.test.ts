@@ -27,7 +27,7 @@ describe('getPreferences (testcontainer)', () => {
     ({ getPreferences } = await import('@/lib/preferences'));
 
     await rls.admin.query(
-      `insert into user_preferences (user_id, timezone, hour12) values ($1, 'America/New_York', true)`,
+      `insert into user_preferences (user_id, timezone, hour12, theme) values ($1, 'America/New_York', true, 'dark')`,
       [USER],
     );
   });
@@ -42,20 +42,21 @@ describe('getPreferences (testcontainer)', () => {
     expect(await getPreferences()).toEqual({
       timezone: 'America/New_York',
       hour12: true,
+      theme: 'dark',
     });
   });
 
-  it('falls back to UTC + 24h when the user has no row', async () => {
+  it('falls back to UTC + 24h + light theme when the user has no row', async () => {
     sessionUser.mockResolvedValue({
       userId: NO_PREFS_USER,
       email: null,
       roles: ['member'],
     });
-    expect(await getPreferences()).toEqual({ timezone: 'UTC', hour12: false });
+    expect(await getPreferences()).toEqual({ timezone: 'UTC', hour12: false, theme: 'light' });
   });
 
   it('falls back to defaults when there is no session', async () => {
     sessionUser.mockResolvedValue(null);
-    expect(await getPreferences()).toEqual({ timezone: 'UTC', hour12: false });
+    expect(await getPreferences()).toEqual({ timezone: 'UTC', hour12: false, theme: 'light' });
   });
 });

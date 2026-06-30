@@ -20,7 +20,7 @@ export function BackButton() {
       onClick={() =>
         window.history.length > 1 ? router.back() : router.push('/dashboard')
       }
-      className="text-sm text-zinc-500 hover:underline"
+      className="text-sm text-ink-muted hover:text-ink hover:underline"
     >
       ← Back
     </button>

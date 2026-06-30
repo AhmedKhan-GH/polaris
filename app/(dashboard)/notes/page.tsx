@@ -28,20 +28,26 @@ export default async function NotesPage() {
   const { timezone, hour12 } = await getPreferences();
 
   return (
-    <div className="flex flex-col gap-6">
-      <h1 className="text-2xl font-semibold tracking-tight">Notes</h1>
+    <div className="mx-auto flex max-w-5xl flex-col gap-8">
+      <div className="flex flex-col gap-1">
+        <p className="text-xs font-semibold uppercase tracking-wider text-ink-faint">
+          Operations
+        </p>
+        <h1 className="font-serif text-2xl font-semibold tracking-tight">Notes</h1>
+      </div>
       <form action={createNote} className="flex gap-2">
         <input
           name="body"
           required
           aria-label="Note body"
-          className="flex-1 rounded border border-zinc-300 px-3 py-2 text-sm"
+          placeholder="Add a note…"
+          className="flex-1 border border-hairline-strong bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none"
         />
         <button
           type="submit"
-          className="rounded bg-zinc-900 px-4 py-2 text-sm font-medium text-white"
+          className="bg-accent px-4 py-2.5 text-sm font-medium text-accent-fg transition-colors hover:bg-accent-hover"
         >
-          New note
+          Add note
         </button>
       </form>
       <NotesLive

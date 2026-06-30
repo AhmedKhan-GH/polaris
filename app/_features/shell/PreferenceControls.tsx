@@ -2,6 +2,7 @@ import { listTimeZones } from '@/lib/datetime';
 import { getPreferences } from '@/lib/preferences';
 
 import { Hour12Toggle } from './Hour12Toggle';
+import { ThemeToggle } from './ThemeToggle';
 import { TimezoneSelector } from './TimezoneSelector';
 
 /**
@@ -12,13 +13,14 @@ import { TimezoneSelector } from './TimezoneSelector';
  * this only when authed.
  */
 export async function PreferenceControls() {
-  const { timezone, hour12 } = await getPreferences();
+  const { timezone, hour12, theme } = await getPreferences();
   const zones = listTimeZones();
 
   return (
     <div className="flex items-center gap-2">
       <TimezoneSelector timezone={timezone} hour12={hour12} zones={zones} />
       <Hour12Toggle hour12={hour12} timezone={timezone} />
+      <ThemeToggle theme={theme} timezone={timezone} hour12={hour12} />
     </div>
   );
 }

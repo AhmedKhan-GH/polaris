@@ -21,6 +21,9 @@ export const userPreferences = pgTable('user_preferences', {
   userId: uuid('user_id').primaryKey(),
   timezone: text('timezone').notNull().default('UTC'),
   hour12: boolean('hour12').notNull().default(false),
+  // 'light' | 'dark' — the account's chosen color theme, applied SSR on <html>
+  // (no flash). Validated to the union at the action boundary; defaults to light.
+  theme: text('theme').notNull().default('light'),
   updatedAt: timestamp('updated_at', { withTimezone: true })
     .notNull()
     .default(sql`now()`),

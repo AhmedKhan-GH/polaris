@@ -1,15 +1,99 @@
 @import "tailwindcss";
 
+/* Class-based dark mode: the `.dark` on <html> (set SSR from the account's theme
+   preference) drives both the token overrides below and any `dark:` utilities. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * Polaris Interface System tokens (proven in .ai/uiux design exemplars). Light
+ * values on :root; `.dark` overrides them. Each maps into `@theme inline` below,
+ * so Tailwind utilities — bg-surface, text-ink, border-hairline, text-accent-text,
+ * bg-success-soft, … — switch with the class. One class list serves both themes.
+ */
 :root {
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #1a1f26;
+
+  --bg: #ffffff;
+  --surface: #ffffff;
+  --surface-alt: #f5f7f9;
+  --hairline: #e5e8ec;
+  --hairline-strong: #cfd4db;
+  --ink: #1a1f26;
+  --ink-muted: #586170;
+  --ink-faint: #646c78;
+  --accent: #00447c;
+  --accent-hover: #00345f;
+  --accent-fg: #ffffff;
+  --accent-text: #00447c;
+  --accent-soft: #e9eff6;
+  --brand-line: #15a4dd;
+  --success: #3a7140;
+  --success-soft: #eaf1ea;
+  --warning: #8a5a12;
+  --warning-soft: #f6eedd;
+  --danger: #a83232;
+  --danger-soft: #f7e7e7;
+
+  color-scheme: light;
+}
+
+.dark {
+  --background: #0e1217;
+  --foreground: #e6e9ed;
+
+  --bg: #0e1217;
+  --surface: #161b22;
+  --surface-alt: #1c222b;
+  --hairline: #272e38;
+  --hairline-strong: #39414d;
+  --ink: #e6e9ed;
+  --ink-muted: #9aa3af;
+  --ink-faint: #7b8390;
+  --accent: #1f5fa8;
+  --accent-hover: #2a6cb8;
+  --accent-fg: #ffffff;
+  --accent-text: #6fa6de;
+  --accent-soft: #16243a;
+  --brand-line: #2fb1e6;
+  --success: #6fb073;
+  --success-soft: #16241a;
+  --warning: #d9a24e;
+  --warning-soft: #2a2310;
+  --danger: #e0726f;
+  --danger-soft: #2a1818;
+
+  color-scheme: dark;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-alt: var(--surface-alt);
+  --color-hairline: var(--hairline);
+  --color-hairline-strong: var(--hairline-strong);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-faint: var(--ink-faint);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-fg: var(--accent-fg);
+  --color-accent-text: var(--accent-text);
+  --color-accent-soft: var(--accent-soft);
+  --color-brand-line: var(--brand-line);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-serif: var(--font-serif);
 
   /* Canonical Zee Foods brand palette — welded to lib/branding.ts by a unit test,
      so the app can style brand surfaces by NAME (e.g. bg-brand-blue / text-brand-blue)
@@ -19,17 +103,11 @@
   --color-brand-white: #ffffff;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Roboto, Helvetica, Arial, sans-serif;
 }
 
 /*

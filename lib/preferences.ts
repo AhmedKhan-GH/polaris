@@ -4,13 +4,18 @@ import { getSessionUser } from '@/lib/auth/session';
 import { userPreferences } from '@/lib/db/schema/preferences';
 import { withUserContext } from '@/lib/db/with-user-context';
 
-export type Preferences = { timezone: string; hour12: boolean };
+export type Theme = 'light' | 'dark';
+export type Preferences = { timezone: string; hour12: boolean; theme: Theme };
 
 /**
- * The fallback when a user has no row yet (or no session at all): UTC + 24h.
- * Mirrors the table's column defaults (ADR-0009).
+ * The fallback when a user has no row yet (or no session at all): UTC + 24h +
+ * light theme. Mirrors the table's column defaults (ADR-0009).
  */
-export const DEFAULT_PREFERENCES: Preferences = { timezone: 'UTC', hour12: false };
+export const DEFAULT_PREFERENCES: Preferences = {
+  timezone: 'UTC',
+  hour12: false,
+  theme: 'light',
+};
 
 /**
  * The current user's display preferences (ADR-0009). Resolves the session, reads
@@ -30,11 +35,19 @@ export async function getPreferences(): Promise<Preferences> {
       .select({
         timezone: userPreferences.timezone,
         hour12: userPreferences.hour12,
+        theme: userPreferences.theme,
       })
       .from(userPreferences)
       .where(eq(userPreferences.userId, user.userId))
       .limit(1),
   );
 
-  return row ?? DEFAULT_PREFERENCES;
+  if (!row) return DEFAULT_PREFERENCES;
+  // `theme` is a free `text` column at the DB layer; narrow it to the union here
+  // so every caller gets a valid Theme even if the row holds an unexpected value.
+  return {
+    timezone: row.timezone,
+    hour12: row.hour12,
+    theme: row.theme === 'dark' ? 'dark' : 'light',
+  };
 }
