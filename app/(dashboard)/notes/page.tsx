@@ -40,7 +40,7 @@ export default async function NotesPage() {
     : '—';
 
   return (
-    <div className="mx-auto flex max-w-5xl flex-col gap-8">
+    <div className="mx-auto flex max-w-7xl flex-col gap-8">
       <header className="flex flex-wrap items-end justify-between gap-4 border-b border-hairline pb-5">
         <div>
           <p className="text-xs font-semibold uppercase tracking-wider text-ink-faint">
