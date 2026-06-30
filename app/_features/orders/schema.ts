@@ -97,3 +97,30 @@ export const orderLines = pgTable(
     ),
   ],
 ).enableRLS();
+
+/**
+ * Order events — the append-only status-transition log for an order (ADR-0007).
+ * Every row is a transition: `from_status` is NULL for the genesis row (order
+ * creation, `null -> 'draft'`); a normal transition carries both ends. The live
+ * `orders.status` stays the authoritative projection — this table is the
+ * durable, immutable HISTORY (event tracking, not full event sourcing).
+ *
+ * Hand-written in the migration (like the orders RLS, so `db:generate` doesn't
+ * re-emit and drift): the OWNER-read policy and the SELECT/INSERT-only grant.
+ * UPDATE/DELETE are deliberately withheld — an audit log is append-only, so no
+ * role (not even app_user) may rewrite or erase a recorded event. `actor_id` is
+ * a bare uuid (no FK to auth.users), matching `orders.created_by`, so the table
+ * applies cleanly to a vanilla Postgres container.
+ */
+export const orderEvents = pgTable('order_events', {
+  id: uuid('id').primaryKey().notNull().default(sql`gen_random_uuid()`),
+  orderId: uuid('order_id')
+    .notNull()
+    .references(() => orders.id, { onDelete: 'cascade' }),
+  fromStatus: text('from_status'),
+  toStatus: text('to_status').notNull(),
+  actorId: uuid('actor_id').notNull(),
+  occurredAt: timestamp('occurred_at', { withTimezone: true })
+    .notNull()
+    .default(sql`now()`),
+}).enableRLS();
