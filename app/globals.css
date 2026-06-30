@@ -55,7 +55,7 @@
   --accent-fg: #ffffff;
   --accent-text: #6fa6de;
   --accent-soft: #16243a;
-  --brand-line: #2fb1e6;
+  --brand-line: #3d5bd9; /* dark header rule = deep royal indigo (opposite-side blue from the sky, not the brand navy) */
   --success: #6fb073;
   --success-soft: #16241a;
   --warning: #d9a24e;
