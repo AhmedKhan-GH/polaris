@@ -58,21 +58,22 @@ export async function getNotes(): Promise<NoteRow[]> {
 /**
  * Create an immutable note owned by the acting user. Pipeline order is
  * contractual: guard → limiter → validate → context. On success it redirects to
- * `/notes` (leaving create mode and landing on the freshly written note) — never
- * on a denied, throttled, or invalid call.
+ * the freshly written note (`/notes?note=<id>`) — never on a denied, throttled,
+ * or invalid call.
  */
 export async function createNote(formData: FormData): Promise<void> {
-  await withPermission('create', 'Note', (ctx) =>
+  const id = await withPermission('create', 'Note', (ctx) =>
     withRateLimit(notesWriteLimiter, `notes:create:${ctx.userId}`, async () => {
       const { title, body } = noteInput.parse({
         title: String(formData.get('title') ?? ''),
         body: String(formData.get('body') ?? ''),
       });
-      await withUserContext(ctx, (tx) =>
-        tx.insert(notes).values({ createdBy: ctx.userId, title, body }),
+      const [created] = await withUserContext(ctx, (tx) =>
+        tx.insert(notes).values({ createdBy: ctx.userId, title, body }).returning({ id: notes.id }),
       );
+      return created.id;
     }),
   );
 
-  redirect('/notes');
+  redirect(`/notes?note=${id}`);
 }

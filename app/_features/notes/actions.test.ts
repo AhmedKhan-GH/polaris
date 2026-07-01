@@ -42,7 +42,7 @@ function txStub(rows: unknown[]) {
     insert: vi.fn(() => ({
       values: (v: unknown) => {
         fake.inserted.push(v);
-        return Promise.resolve(undefined);
+        return { returning: async () => [{ id: 'n1' }] };
       },
     })),
     select: vi.fn(() => chain),
@@ -82,11 +82,11 @@ beforeEach(() => {
 });
 
 describe('app/_features/notes createNote', () => {
-  it('inserts the immutable note and redirects to /notes on a valid input', async () => {
+  it('inserts the immutable note and redirects to the new note on a valid input', async () => {
     await createNote(fd('hello world'));
 
     expect(fake.inserted).toContainEqual({ createdBy: ME, title: 'Note', body: 'hello world' });
-    expect(fake.redirect).toHaveBeenCalledWith('/notes');
+    expect(fake.redirect).toHaveBeenCalledWith('/notes?note=n1');
   });
 
   it('rejects a note without a title, without inserting or redirecting — but only AFTER the limiter (validation lives inside it)', async () => {

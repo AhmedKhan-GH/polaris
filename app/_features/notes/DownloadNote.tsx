@@ -28,8 +28,22 @@ export function DownloadNote({
     <button
       type="button"
       onClick={onClick}
-      className="border border-hairline-strong px-3 py-1.5 text-sm text-ink-muted transition-colors hover:bg-surface-alt hover:text-ink"
+      className="inline-flex items-center gap-1.5 border border-hairline-strong bg-surface px-3 py-1.5 text-sm font-medium text-ink shadow-sm transition-colors hover:bg-surface-alt"
     >
+      <svg
+        viewBox="0 0 16 16"
+        className="size-3.5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M8 2.5v7" />
+        <path d="m5 6.5 3 3 3-3" />
+        <path d="M3 12.5h10" />
+      </svg>
       Download .md
     </button>
   );

@@ -4,7 +4,8 @@ import { getPreferences } from '@/lib/preferences';
 
 /**
  * The Notes page — an all-authed-users surface. Server-driven: `?note=` selects a
- * note to read (defaulting to the newest), `?new` opens the one-shot create form.
+ * note to read (none selected → a neutral "pick a note" prompt), `?new` opens the
+ * one-shot create form.
  * Notes are immutable, so there is no edit/history state. It loads the caller's
  * visible notes (RLS-scoped by `getNotes`) and hands them to `NotesView`.
  *
@@ -21,7 +22,7 @@ export default async function NotesPage({
   const { note, new: creatingParam } = await searchParams;
   const notes = await getNotes();
 
-  const selectedId = notes.some((n) => n.id === note) ? note! : (notes[0]?.id ?? null);
+  const selectedId = notes.some((n) => n.id === note) ? note! : null;
   const { timezone, hour12 } = await getPreferences();
 
   return (
