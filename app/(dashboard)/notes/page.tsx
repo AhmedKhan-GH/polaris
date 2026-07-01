@@ -16,10 +16,10 @@ import { getPreferences } from '@/lib/preferences';
 export default async function NotesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ note?: string }>;
+  searchParams: Promise<{ note?: string; v?: string }>;
 }) {
   const session = await getSessionUser();
-  const { note } = await searchParams;
+  const { note, v } = await searchParams;
   const notes = await getNotes();
 
   // Selection: the requested note if it's one the caller can see, else the newest.
@@ -32,6 +32,7 @@ export default async function NotesPage({
       notes={notes}
       selectedId={selectedId}
       history={history}
+      viewedVersionId={v ?? null}
       currentUserId={session!.userId}
       timezone={timezone}
       hour12={hour12}

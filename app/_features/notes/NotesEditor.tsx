@@ -22,15 +22,16 @@ function authorLabel(id: string, currentUserId: string): string {
 
 /**
  * The Notes editor — a three-pane document surface: note navigation (left), the
- * editor (center), and version history (right). Server-rendered and
- * server-action-driven: selection is the `?note=` URL param (see the page),
- * Save/Restore post `saveNote` (title + body → a new version), New posts
- * `createNote`. The only client island is the `.txt` download.
+ * editor (center), and version history (right). Server-rendered and URL-driven:
+ * `?note=` selects a note; `?v=` loads a past version into the center pane as a
+ * READ-ONLY view (older versions aren't editable — Save always appends from the
+ * current). New/Save post server actions; the only client island is `.txt` download.
  */
 export function NotesEditor({
   notes,
   selectedId,
   history,
+  viewedVersionId,
   currentUserId,
   timezone,
   hour12,
@@ -38,6 +39,7 @@ export function NotesEditor({
   notes: NoteRow[];
   selectedId: string | null;
   history: NoteVersionRow[];
+  viewedVersionId: string | null;
   currentUserId: string;
   timezone: string;
   hour12: boolean;
@@ -46,6 +48,13 @@ export function NotesEditor({
   // Versions are ordered newest-first; the first is the current one. `seq` stays
   // internal (ordering + data) — the UI never shows it.
   const currentId = history[0]?.id ?? null;
+  // The version being VIEWED read-only: only when `?v=` names a non-current version.
+  const viewed =
+    viewedVersionId && viewedVersionId !== currentId
+      ? (history.find((h) => h.id === viewedVersionId) ?? null)
+      : null;
+  // Which history row is highlighted: the viewed one, else the current (edit mode).
+  const activeVersionId = viewed?.id ?? currentId;
   const when = (d: Date) => formatTimestamp(d.getTime(), timezone, hour12);
 
   return (
@@ -106,7 +115,47 @@ export function NotesEditor({
 
       {/* ── editor ── */}
       <section className="flex min-h-0 min-w-0 flex-col">
-        {selected ? (
+        {!selected ? (
+          <div className="grid flex-1 place-items-center p-8 text-center">
+            <p className="max-w-xs text-sm text-ink-faint">
+              Select a note on the left, or name a new one to begin.
+            </p>
+          </div>
+        ) : viewed ? (
+          /* read-only view of a past version */
+          <>
+            <div className="flex shrink-0 items-center justify-between gap-3 border-b border-hairline px-5 py-2.5">
+              <p className="truncate text-xs text-ink-faint">
+                {authorLabel(viewed.editedBy, currentUserId)} · saved{' '}
+                <span className="font-mono">{when(viewed.createdAt)}</span>
+              </p>
+              <DownloadNote
+                note={{
+                  id: selected.id,
+                  title: viewed.title,
+                  createdBy: viewed.editedBy,
+                  body: viewed.body,
+                  createdAt: viewed.createdAt.toISOString(),
+                }}
+                timezone={timezone}
+                hour12={hour12}
+              />
+            </div>
+            <div className="flex shrink-0 items-center justify-between gap-3 border-b border-hairline bg-accent-soft px-5 py-2 text-xs">
+              <span className="text-ink-muted">Viewing an earlier version — read-only.</span>
+              <Link href={`/notes?note=${selected.id}`} className="font-medium text-accent-text hover:underline">
+                Back to latest
+              </Link>
+            </div>
+            <h2 className="shrink-0 border-b border-hairline px-5 py-3 font-serif text-xl font-semibold tracking-tight">
+              {labelFor(viewed.title, viewed.body)}
+            </h2>
+            <div className="min-h-0 flex-1 overflow-y-auto whitespace-pre-wrap break-words px-5 py-4 text-sm leading-relaxed text-ink">
+              {viewed.body}
+            </div>
+          </>
+        ) : (
+          /* editable current version */
           <>
             <div className="flex shrink-0 items-center justify-between gap-3 border-b border-hairline px-5 py-2.5">
               <p className="truncate text-xs text-ink-faint">
@@ -153,12 +202,6 @@ export function NotesEditor({
               </div>
             </form>
           </>
-        ) : (
-          <div className="grid flex-1 place-items-center p-8 text-center">
-            <p className="max-w-xs text-sm text-ink-faint">
-              Select a note on the left, or name a new one to begin.
-            </p>
-          </div>
         )}
       </section>
 
@@ -174,18 +217,31 @@ export function NotesEditor({
           ) : (
             history.map((v) => {
               const isCurrent = v.id === currentId;
+              const isActive = v.id === activeVersionId;
               return (
-                <div key={v.id} className="border-b border-hairline px-4 py-3">
+                <Link
+                  key={v.id}
+                  href={`/notes?note=${selectedId}&v=${v.id}`}
+                  aria-current={isActive ? 'true' : undefined}
+                  className={`block border-b border-hairline px-4 py-3 ${
+                    isActive
+                      ? 'border-l-2 border-l-accent bg-accent-soft'
+                      : 'border-l-2 border-l-transparent hover:bg-surface-alt'
+                  }`}
+                >
                   <div className="flex items-baseline justify-between gap-2">
                     <span className="tnum truncate font-mono text-xs font-medium text-ink">
                       {when(v.createdAt)}
                     </span>
-                    {isCurrent && <span className="shrink-0 text-xs text-ink-faint">Current</span>}
+                    <span className="tnum shrink-0 font-mono text-xs text-ink-faint">
+                      {v.body.length} chars
+                    </span>
                   </div>
                   <p className="mt-1 truncate text-xs text-ink-muted">
                     {authorLabel(v.editedBy, currentUserId)} · {labelFor(v.title, v.body)}
+                    {isCurrent && <span className="text-ink-faint"> · Current</span>}
                   </p>
-                </div>
+                </Link>
               );
             })
           )}
