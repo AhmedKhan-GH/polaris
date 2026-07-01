@@ -209,11 +209,11 @@ const ALLOWLIST: ReadonlyArray<(path: string) => boolean> = [
   // migration tags and are deleted alongside 0003/0004.
   (p) => /^drizzle\/0003_.*\.sql$/.test(p),
   (p) => /^drizzle\/0004_.*\.sql$/.test(p),
-  // Note-versioning migration (spec: 2026-06-30-note-versioning-design.md): adds
-  // `note_versions` + backfill to the exemplar footprint. Still deletable in one
-  // sweep alongside 0003/0004 — until notes gains EXTERNAL FKs (Phase 2), at which
-  // point notes ceases to be a disposable exemplar and Charter §4 retires for it.
-  (p) => /^drizzle\/0016_.*\.sql$/.test(p),
+  // Note-versioning migrations (spec: 2026-06-30-note-versioning-design.md): 0016
+  // adds `note_versions` + backfill; 0017 adds `title`. Part of the exemplar
+  // footprint, still deletable in one sweep alongside 0003/0004 — until notes gains
+  // EXTERNAL FKs (Phase 2), at which point Charter §4 retires for it.
+  (p) => /^drizzle\/001[67]_.*\.sql$/.test(p),
   (p) => isUnder(p, 'drizzle/meta'),
   // Its E2E journeys.
   (p) => p === 'e2e/notes.spec.ts',

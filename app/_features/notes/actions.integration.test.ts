@@ -36,10 +36,11 @@ vi.mock('@/lib/auth/session', () => ({
 // Next-runtime-only no-op outside the framework; irrelevant to this suite.
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }));
 
-/** Build a FormData carrying `body`. */
-function fd(body: string): FormData {
+/** Build a FormData carrying `body` (and an optional `title`). */
+function fd(body: string, title = ''): FormData {
   const f = new FormData();
   f.set('body', body);
+  f.set('title', title);
   return f;
 }
 
@@ -143,29 +144,30 @@ describe('notes actions through the real pipeline (testcontainer)', () => {
     expect(rows[0].n).toBe(0);
   });
 
-  it('createNote writes a genesis version (seq 1) mirroring the body', async () => {
+  it('createNote writes a genesis version (seq 1) snapshotting title + body', async () => {
     session.getSessionUser.mockResolvedValue({ userId: USER_A, email: 'a@example.com', roles: ['member'] });
 
-    await createNote(fd('v1 body'));
+    await createNote(fd('v1 body', 'V1 title'));
     const noteId = (await getNotes())[0]!.id;
     const history = await getNoteHistory(noteId);
 
     expect(history).toHaveLength(1);
-    expect(history[0]).toMatchObject({ seq: 1, body: 'v1 body', editedBy: USER_A });
+    expect(history[0]).toMatchObject({ seq: 1, title: 'V1 title', body: 'v1 body', editedBy: USER_A });
   });
 
-  it('editNote appends a version and updates the current projection', async () => {
+  it('editNote appends a version (title + body) and updates the current projection', async () => {
     session.getSessionUser.mockResolvedValue({ userId: USER_A, email: 'a@example.com', roles: ['member'] });
-    await createNote(fd('original'));
+    await createNote(fd('original')); // title ''
     const noteId = (await getNotes())[0]!.id;
 
-    await editNote(noteId, 'edited');
+    await editNote(noteId, 'Renamed', 'edited');
 
-    expect((await getNotes())[0]!.body).toBe('edited'); // projection updated
+    const now = (await getNotes())[0]!;
+    expect([now.title, now.body]).toEqual(['Renamed', 'edited']); // projection updated
     const history = await getNoteHistory(noteId); // append-only, newest first
-    expect(history.map((v) => [v.seq, v.body])).toEqual([
-      [2, 'edited'],
-      [1, 'original'],
+    expect(history.map((v) => [v.seq, v.title, v.body])).toEqual([
+      [2, 'Renamed', 'edited'],
+      [1, '', 'original'],
     ]);
   });
 
@@ -175,7 +177,7 @@ describe('notes actions through the real pipeline (testcontainer)', () => {
     const noteId = (await getNotes())[0]!.id;
 
     session.getSessionUser.mockResolvedValue({ userId: USER_B, email: 'b@example.com', roles: ['member'] });
-    await expect(editNote(noteId, 'hacked')).rejects.toThrow();
+    await expect(editNote(noteId, '', 'hacked')).rejects.toThrow();
 
     session.getSessionUser.mockResolvedValue({ userId: USER_A, email: 'a@example.com', roles: ['member'] });
     expect((await getNotes())[0]!.body).toBe('A owns this'); // unchanged

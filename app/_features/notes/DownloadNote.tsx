@@ -12,7 +12,7 @@ export function DownloadNote({
   timezone,
   hour12,
 }: {
-  note: { id: string; createdBy: string; body: string; createdAt: string };
+  note: { id: string; title: string; createdBy: string; body: string; createdAt: string };
   timezone: string;
   hour12: boolean;
 }) {

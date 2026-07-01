@@ -5,10 +5,14 @@ import { formatTimestamp } from '@/lib/datetime';
 import { createNote, saveNote, type NoteRow, type NoteVersionRow } from './actions';
 import { DownloadNote } from './DownloadNote';
 
-/** First non-empty line of a body, trimmed for the nav/title (fallback label). */
+/** First non-empty line of a body — the nav/history fallback when there's no title. */
 function firstLine(body: string): string {
-  const line = body.split('\n').find((l) => l.trim().length > 0)?.trim() ?? '';
-  return line.length > 0 ? line : 'Untitled note';
+  return body.split('\n').find((l) => l.trim().length > 0)?.trim() ?? '';
+}
+
+/** Display label for a note/version: its title, else the first body line, else "Untitled". */
+function labelFor(title: string, body: string): string {
+  return title.trim() || firstLine(body) || 'Untitled note';
 }
 
 /** Author display: the caller's own notes read "You"; others a short id (never a raw UUID). */
@@ -18,10 +22,10 @@ function authorLabel(id: string, currentUserId: string): string {
 
 /**
  * The Notes editor — a three-pane document surface: note navigation (left), the
- * editor (center), and the version history (right). Server-rendered and
+ * editor (center), and version history (right). Server-rendered and
  * server-action-driven: selection is the `?note=` URL param (see the page),
- * Save/Restore post `saveNote` (which appends a version), New posts `createNote`.
- * The only client island is the `.txt` download.
+ * Save/Restore post `saveNote` (title + body → a new version), New posts
+ * `createNote`. The only client island is the `.txt` download.
  */
 export function NotesEditor({
   notes,
@@ -53,9 +57,9 @@ export function NotesEditor({
           </div>
           <form action={createNote} className="flex gap-1.5">
             <input
-              name="body"
+              name="title"
               required
-              aria-label="New note"
+              aria-label="New note title"
               placeholder="New note…"
               className="h-8 min-w-0 flex-1 border border-hairline-strong bg-bg px-2.5 text-sm placeholder:text-ink-faint focus:border-accent focus:outline-none"
             />
@@ -70,7 +74,7 @@ export function NotesEditor({
         <nav className="min-h-0 flex-1 overflow-y-auto">
           {notes.length === 0 ? (
             <p data-testid="no-notes" className="p-4 text-sm text-ink-faint">
-              No notes yet. Write your first above.
+              No notes yet. Name your first above.
             </p>
           ) : (
             notes.map((n) => {
@@ -86,7 +90,7 @@ export function NotesEditor({
                       : 'border-l-2 border-l-transparent hover:bg-surface-alt'
                   }`}
                 >
-                  <p className="truncate text-sm font-medium">{firstLine(n.body)}</p>
+                  <p className="truncate text-sm font-medium">{labelFor(n.title, n.body)}</p>
                   <p className="mt-0.5 truncate text-xs text-ink-faint">
                     {authorLabel(n.createdBy, currentUserId)} ·{' '}
                     <span className="font-mono">{when(n.createdAt)}</span>
@@ -102,17 +106,15 @@ export function NotesEditor({
       <section className="flex min-h-0 min-w-0 flex-col">
         {selected ? (
           <>
-            <div className="flex shrink-0 items-center justify-between gap-3 border-b border-hairline px-5 py-3">
-              <div className="min-w-0">
-                <p className="truncate text-base font-medium">{firstLine(selected.body)}</p>
-                <p className="mt-0.5 text-xs text-ink-faint">
-                  {authorLabel(selected.createdBy, currentUserId)} · edited{' '}
-                  <span className="font-mono">{when(selected.createdAt)}</span> · v{currentSeq}
-                </p>
-              </div>
+            <div className="flex shrink-0 items-center justify-between gap-3 border-b border-hairline px-5 py-2.5">
+              <p className="truncate text-xs text-ink-faint">
+                {authorLabel(selected.createdBy, currentUserId)} · edited{' '}
+                <span className="font-mono">{when(selected.createdAt)}</span> · v{currentSeq}
+              </p>
               <DownloadNote
                 note={{
                   id: selected.id,
+                  title: selected.title,
                   createdBy: selected.createdBy,
                   body: selected.body,
                   createdAt: selected.createdAt.toISOString(),
@@ -123,11 +125,19 @@ export function NotesEditor({
             </div>
             <form action={saveNote} className="flex min-h-0 flex-1 flex-col">
               <input type="hidden" name="noteId" value={selected.id} />
+              <input
+                name="title"
+                defaultValue={selected.title}
+                aria-label="Note title"
+                placeholder="Untitled"
+                className="shrink-0 border-b border-hairline bg-surface px-5 py-3 font-serif text-xl font-semibold tracking-tight text-ink placeholder:text-ink-faint focus:outline-none"
+              />
               <textarea
                 name="body"
                 aria-label="Note body"
                 defaultValue={selected.body}
-                className="min-h-0 flex-1 resize-none bg-surface px-5 py-4 text-sm leading-relaxed text-ink focus:outline-none"
+                placeholder="Write…"
+                className="min-h-0 flex-1 resize-none bg-surface px-5 py-4 text-sm leading-relaxed text-ink placeholder:text-ink-faint focus:outline-none"
               />
               <div className="flex shrink-0 items-center justify-between border-t border-hairline px-5 py-2.5">
                 <span className="text-xs text-ink-faint">Saving appends a new version.</span>
@@ -143,7 +153,7 @@ export function NotesEditor({
         ) : (
           <div className="grid flex-1 place-items-center p-8 text-center">
             <p className="max-w-xs text-sm text-ink-faint">
-              Select a note on the left, or write a new one to begin.
+              Select a note on the left, or name a new one to begin.
             </p>
           </div>
         )}
@@ -171,11 +181,12 @@ export function NotesEditor({
                   <span className="tnum font-mono text-xs text-ink-faint">{when(v.createdAt)}</span>
                 </div>
                 <p className="mt-1 truncate text-xs text-ink-muted">
-                  {authorLabel(v.editedBy, currentUserId)} · {firstLine(v.body)}
+                  {authorLabel(v.editedBy, currentUserId)} · {labelFor(v.title, v.body)}
                 </p>
                 {v.seq !== currentSeq && (
                   <form action={saveNote} className="mt-1.5">
                     <input type="hidden" name="noteId" value={selectedId ?? ''} />
+                    <input type="hidden" name="title" value={v.title} />
                     <input type="hidden" name="body" value={v.body} />
                     <button
                       type="submit"

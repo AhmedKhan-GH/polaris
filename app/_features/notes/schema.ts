@@ -22,6 +22,9 @@ export const notes = pgTable('notes', {
     .notNull()
     .default(sql`gen_random_uuid()`),
   createdBy: uuid('created_by').notNull(),
+  // Current title + body projection (transitional, like `body` — see note above).
+  // Both are versioned in `note_versions`; empty title renders as "Untitled".
+  title: text('title').notNull().default(''),
   body: text('body').notNull(),
   createdAt: timestamp('created_at', { withTimezone: true })
     .notNull()
@@ -51,6 +54,9 @@ export const noteVersions = pgTable(
       .notNull()
       .references(() => notes.id, { onDelete: 'cascade' }),
     seq: integer('seq').notNull(),
+    // A version is the whole document at one edit — title AND body snapshot together,
+    // so a rename is captured in history exactly like a body edit.
+    title: text('title').notNull().default(''),
     body: text('body').notNull(),
     editedBy: uuid('edited_by').notNull(),
     createdAt: timestamp('created_at', { withTimezone: true })

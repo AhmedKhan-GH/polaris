@@ -7,6 +7,7 @@ describe('noteToTxt', () => {
     const { filename, text } = noteToTxt(
       {
         id: 'abcdef12-3456-7890-aaaa-bbbbbbbbbbbb',
+        title: 'Reefer R-07 log',
         createdBy: 'u1',
         body: 'Reefer R-07 holding −18.2°C, within spec.',
         createdAt: '2026-06-30T22:00:14.000Z',
@@ -16,6 +17,7 @@ describe('noteToTxt', () => {
     );
 
     expect(filename).toBe('note-abcdef12.txt');
+    expect(text.startsWith('Reefer R-07 log')).toBe(true); // title is the heading
     expect(text).toContain('Reefer R-07 holding −18.2°C, within spec.');
     expect(text).toContain('ID: abcdef12-3456-7890-aaaa-bbbbbbbbbbbb');
     expect(text).toContain('Author: u1');

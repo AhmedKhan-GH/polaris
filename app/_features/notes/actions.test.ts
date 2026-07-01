@@ -115,19 +115,20 @@ describe('app/_features/notes createNote', () => {
     await createNote(fd('hello world'));
 
     // The note projection…
-    expect(fake.inserted).toContainEqual({ createdBy: ME, body: 'hello world' });
+    expect(fake.inserted).toContainEqual({ createdBy: ME, title: '', body: 'hello world' });
     // …and the genesis version, in the same transaction.
     expect(fake.inserted).toContainEqual({
       noteId: 'new-note-id',
       seq: 1,
+      title: '',
       body: 'hello world',
       editedBy: ME,
     });
     expect(fake.revalidatePath).toHaveBeenCalledWith('/notes');
   });
 
-  it('rejects an empty body with the schema message, without inserting or revalidating — but only AFTER consulting the limiter (validation lives inside it)', async () => {
-    await expect(createNote(fd(''))).rejects.toThrow('Note body is required');
+  it('rejects a fully blank note with the schema message, without inserting or revalidating — but only AFTER consulting the limiter (validation lives inside it)', async () => {
+    await expect(createNote(fd(''))).rejects.toThrow('A note needs a title or body');
 
     expect(fake.inserted).toHaveLength(0);
     expect(fake.revalidatePath).not.toHaveBeenCalled();
