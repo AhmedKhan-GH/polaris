@@ -36,8 +36,8 @@ vi.mock('@/lib/auth/session', () => ({
 // Next-runtime-only no-op outside the framework; irrelevant to this suite.
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }));
 
-/** Build a FormData carrying `body` (and an optional `title`). */
-function fd(body: string, title = ''): FormData {
+/** Build a FormData carrying `body` and a `title` (required on create; defaulted here). */
+function fd(body: string, title = 'Note'): FormData {
   const f = new FormData();
   f.set('body', body);
   f.set('title', title);
@@ -167,8 +167,18 @@ describe('notes actions through the real pipeline (testcontainer)', () => {
     const history = await getNoteHistory(noteId); // append-only, newest first
     expect(history.map((v) => [v.seq, v.title, v.body])).toEqual([
       [2, 'Renamed', 'edited'],
-      [1, '', 'original'],
+      [1, 'Note', 'original'],
     ]);
+  });
+
+  it('editNote is a no-op when title + body are unchanged (no duplicate version)', async () => {
+    session.getSessionUser.mockResolvedValue({ userId: USER_A, email: 'a@example.com', roles: ['member'] });
+    await createNote(fd('same body', 'Same title'));
+    const noteId = (await getNotes())[0]!.id;
+
+    await editNote(noteId, 'Same title', 'same body'); // identical → nothing to save
+
+    expect(await getNoteHistory(noteId)).toHaveLength(1); // still just the genesis version
   });
 
   it('editNote cannot touch another user’s note (RLS fails closed)', async () => {
@@ -177,7 +187,8 @@ describe('notes actions through the real pipeline (testcontainer)', () => {
     const noteId = (await getNotes())[0]!.id;
 
     session.getSessionUser.mockResolvedValue({ userId: USER_B, email: 'b@example.com', roles: ['member'] });
-    await expect(editNote(noteId, '', 'hacked')).rejects.toThrow();
+    // A valid title so it clears validation and is rejected by RLS, not the schema.
+    await expect(editNote(noteId, 'Hacky', 'hacked')).rejects.toThrow();
 
     session.getSessionUser.mockResolvedValue({ userId: USER_A, email: 'a@example.com', roles: ['member'] });
     expect((await getNotes())[0]!.body).toBe('A owns this'); // unchanged

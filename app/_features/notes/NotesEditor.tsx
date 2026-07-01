@@ -43,7 +43,9 @@ export function NotesEditor({
   hour12: boolean;
 }) {
   const selected = notes.find((n) => n.id === selectedId) ?? null;
-  const currentSeq = history[0]?.seq ?? 0;
+  // Versions are ordered newest-first; the first is the current one. `seq` stays
+  // internal (ordering + data) — the UI never shows it.
+  const currentId = history[0]?.id ?? null;
   const when = (d: Date) => formatTimestamp(d.getTime(), timezone, hour12);
 
   return (
@@ -109,7 +111,7 @@ export function NotesEditor({
             <div className="flex shrink-0 items-center justify-between gap-3 border-b border-hairline px-5 py-2.5">
               <p className="truncate text-xs text-ink-faint">
                 {authorLabel(selected.createdBy, currentUserId)} · edited{' '}
-                <span className="font-mono">{when(selected.createdAt)}</span> · v{currentSeq}
+                <span className="font-mono">{when(selected.createdAt)}</span>
               </p>
               <DownloadNote
                 note={{
@@ -127,6 +129,7 @@ export function NotesEditor({
               <input type="hidden" name="noteId" value={selected.id} />
               <input
                 name="title"
+                required
                 defaultValue={selected.title}
                 aria-label="Note title"
                 placeholder="Untitled"
@@ -169,35 +172,35 @@ export function NotesEditor({
           {history.length === 0 ? (
             <p className="p-4 text-xs text-ink-faint">No versions to show.</p>
           ) : (
-            history.map((v) => (
-              <div key={v.id} className="border-b border-hairline px-4 py-3">
-                <div className="flex items-baseline justify-between">
-                  <span className="text-sm font-medium">
-                    v{v.seq}
-                    {v.seq === currentSeq && (
-                      <span className="ml-2 text-xs font-normal text-ink-faint">current</span>
-                    )}
-                  </span>
-                  <span className="tnum font-mono text-xs text-ink-faint">{when(v.createdAt)}</span>
+            history.map((v) => {
+              const isCurrent = v.id === currentId;
+              return (
+                <div key={v.id} className="border-b border-hairline px-4 py-3">
+                  <div className="flex items-baseline justify-between gap-2">
+                    <span className="tnum truncate font-mono text-xs font-medium text-ink">
+                      {when(v.createdAt)}
+                    </span>
+                    {isCurrent && <span className="shrink-0 text-xs text-ink-faint">Current</span>}
+                  </div>
+                  <p className="mt-1 truncate text-xs text-ink-muted">
+                    {authorLabel(v.editedBy, currentUserId)} · {labelFor(v.title, v.body)}
+                  </p>
+                  {!isCurrent && (
+                    <form action={saveNote} className="mt-1.5">
+                      <input type="hidden" name="noteId" value={selectedId ?? ''} />
+                      <input type="hidden" name="title" value={v.title} />
+                      <input type="hidden" name="body" value={v.body} />
+                      <button
+                        type="submit"
+                        className="text-xs font-medium text-accent-text hover:underline"
+                      >
+                        Restore this version
+                      </button>
+                    </form>
+                  )}
                 </div>
-                <p className="mt-1 truncate text-xs text-ink-muted">
-                  {authorLabel(v.editedBy, currentUserId)} · {labelFor(v.title, v.body)}
-                </p>
-                {v.seq !== currentSeq && (
-                  <form action={saveNote} className="mt-1.5">
-                    <input type="hidden" name="noteId" value={selectedId ?? ''} />
-                    <input type="hidden" name="title" value={v.title} />
-                    <input type="hidden" name="body" value={v.body} />
-                    <button
-                      type="submit"
-                      className="text-xs font-medium text-accent-text hover:underline"
-                    >
-                      Restore this version
-                    </button>
-                  </form>
-                )}
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       </aside>

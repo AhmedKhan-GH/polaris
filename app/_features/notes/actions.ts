@@ -1,6 +1,6 @@
 'use server';
 
-import { desc, eq, sql } from 'drizzle-orm';
+import { desc, eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 
@@ -17,18 +17,14 @@ import { noteVersions, notes } from './schema';
 const notesWriteLimiter = createRateLimiter({ points: 30, duration: 60 });
 
 /**
- * A note's editable content, validated at the action boundary. Title and body are
- * each optional strings (an empty title renders as "Untitled"), but a note may not
- * be BOTH blank — a fully empty save is rejected before any DB write.
+ * A note's editable content, validated at the action boundary. A title is
+ * REQUIRED (trimmed, non-empty) on create and edit; the body is optional. The
+ * trimmed title is what gets stored.
  */
-const noteInput = z
-  .object({
-    title: z.string().max(200, 'Title too long'),
-    body: z.string().max(20000, 'Note body too long'),
-  })
-  .refine((v) => v.title.trim().length > 0 || v.body.trim().length > 0, {
-    message: 'A note needs a title or body',
-  });
+const noteInput = z.object({
+  title: z.string().trim().min(1, 'Title is required').max(200, 'Title too long'),
+  body: z.string().max(20000, 'Note body too long'),
+});
 
 export type NoteRow = {
   id: string;
@@ -134,17 +130,25 @@ export async function editNote(noteId: string, title: string, body: string): Pro
       const parsed = noteInput.parse({ title, body });
       await withUserContext(ctx, (tx) =>
         tx.transaction(async (t) => {
-          const [{ next }] = await t
-            .select({ next: sql<number>`coalesce(max(${noteVersions.seq}), 0) + 1` })
+          const [cur] = await t
+            .select({
+              seq: noteVersions.seq,
+              title: noteVersions.title,
+              body: noteVersions.body,
+            })
             .from(noteVersions)
-            .where(eq(noteVersions.noteId, noteId));
+            .where(eq(noteVersions.noteId, noteId))
+            .orderBy(desc(noteVersions.seq))
+            .limit(1);
+          // No-op when nothing changed: don't append a duplicate version.
+          if (cur && cur.title === parsed.title && cur.body === parsed.body) return;
           await t
             .update(notes)
             .set({ title: parsed.title, body: parsed.body })
             .where(eq(notes.id, noteId));
           await t.insert(noteVersions).values({
             noteId,
-            seq: Number(next),
+            seq: (cur?.seq ?? 0) + 1,
             title: parsed.title,
             body: parsed.body,
             editedBy: ctx.userId,

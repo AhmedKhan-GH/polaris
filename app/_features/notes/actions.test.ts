@@ -79,9 +79,10 @@ function txStub(rows: unknown[]) {
   return chain;
 }
 
-function fd(body: string | null): FormData {
+function fd(body: string | null, title = 'Note'): FormData {
   const f = new FormData();
   if (body !== null) f.set('body', body);
+  f.set('title', title);
   return f;
 }
 
@@ -115,20 +116,20 @@ describe('app/_features/notes createNote', () => {
     await createNote(fd('hello world'));
 
     // The note projection…
-    expect(fake.inserted).toContainEqual({ createdBy: ME, title: '', body: 'hello world' });
+    expect(fake.inserted).toContainEqual({ createdBy: ME, title: 'Note', body: 'hello world' });
     // …and the genesis version, in the same transaction.
     expect(fake.inserted).toContainEqual({
       noteId: 'new-note-id',
       seq: 1,
-      title: '',
+      title: 'Note',
       body: 'hello world',
       editedBy: ME,
     });
     expect(fake.revalidatePath).toHaveBeenCalledWith('/notes');
   });
 
-  it('rejects a fully blank note with the schema message, without inserting or revalidating — but only AFTER consulting the limiter (validation lives inside it)', async () => {
-    await expect(createNote(fd(''))).rejects.toThrow('A note needs a title or body');
+  it('rejects a note without a title, without inserting or revalidating — but only AFTER consulting the limiter (validation lives inside it)', async () => {
+    await expect(createNote(fd('some body', ''))).rejects.toThrow('Title is required');
 
     expect(fake.inserted).toHaveLength(0);
     expect(fake.revalidatePath).not.toHaveBeenCalled();
