@@ -7,5 +7,8 @@
  */
 export { BrandAsset } from './BrandAsset';
 export { ColorSwatch } from './ColorSwatch';
+export { interfacePalette, statusMarkers } from './palette';
+export { StatusSwatch } from './StatusSwatch';
+export { TokenSwatch } from './TokenSwatch';
 export { UsageExample } from './UsageExample';
 export { versionedAssetSrc } from './asset-url';

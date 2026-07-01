@@ -1,7 +1,16 @@
 /* eslint-disable @next/next/no-img-element -- static brand SVGs; next/image adds nothing for unoptimizable vectors */
 import type { CSSProperties, ReactNode } from 'react';
 
-import { BrandAsset, ColorSwatch, UsageExample, versionedAssetSrc } from '@/app/_features/brand';
+import {
+  BrandAsset,
+  ColorSwatch,
+  interfacePalette,
+  statusMarkers,
+  StatusSwatch,
+  TokenSwatch,
+  UsageExample,
+  versionedAssetSrc,
+} from '@/app/_features/brand';
 import { branding } from '@/lib/branding';
 
 /**
@@ -92,6 +101,26 @@ export default function BrandPage() {
       {widths.map((w, i) => (
         <div key={i} className={`h-1 rounded-full bg-zinc-200 ${w}`} />
       ))}
+    </div>
+  );
+
+  // The watermark mockup, shared by every Background-watermark example so they
+  // can't drift apart: an identical "document" (top-left mark + text lines) with
+  // one faint mark sitting behind it. Each example differs ONLY in `mark`, so the
+  // single thing it demonstrates (the wrong mark, or an off-center placement) is
+  // the only thing that changes. `place` carries position + size; the faint grey
+  // (opacity 0.12) is fixed here so every watermark reads at the same weight.
+  const wmMark = (src: string, place: string): ReactNode => (
+    <img src={src} alt="" className={`pointer-events-none absolute opacity-[0.12] ${place}`} />
+  );
+  const centered = 'left-1/2 top-1/2 w-auto -translate-x-1/2 -translate-y-1/2';
+  const watermarkDoc = (mark: ReactNode): ReactNode => (
+    <div className="relative h-full w-full overflow-hidden">
+      {mark}
+      <div className="relative flex h-full w-full flex-col gap-2">
+        <img src={lockup} alt="" className="h-4 w-auto self-start" />
+        {body(['w-full', 'w-full', 'w-3/4'])}
+      </div>
     </div>
   );
 
@@ -265,70 +294,24 @@ export default function BrandPage() {
         {
           ok: true,
           caption: 'Faint leaf watermark',
-          node: (
-            <div className="relative h-full w-full overflow-hidden">
-              <img
-                src={leafBlack}
-                alt=""
-                className="pointer-events-none absolute left-1/2 top-1/2 h-24 w-auto -translate-x-1/2 -translate-y-1/2 opacity-[0.12]"
-              />
-              <div className="relative flex h-full w-full flex-col gap-2">
-                <img src={lockup} alt="" className="h-4 w-auto self-start" />
-                {body(['w-full', 'w-full', 'w-3/4'])}
-              </div>
-            </div>
-          ),
+          node: watermarkDoc(wmMark(leafBlack, `h-24 ${centered}`)),
         },
         {
           ok: false,
           caption: 'The circle emblem',
-          node: (
-            <div className="relative h-full w-full overflow-hidden">
-              <img
-                src={emblemBlack}
-                alt=""
-                className="pointer-events-none absolute left-1/2 top-1/2 h-24 w-auto -translate-x-1/2 -translate-y-1/2 opacity-[0.12]"
-              />
-              <div className="relative flex h-full w-full flex-col gap-2">
-                <img src={lockup} alt="" className="h-4 w-auto self-start" />
-                {body(['w-full', 'w-full', 'w-3/4'])}
-              </div>
-            </div>
-          ),
+          node: watermarkDoc(wmMark(emblemBlack, `h-24 ${centered}`)),
         },
         {
           ok: false,
           caption: 'The lockup or wordmark',
-          node: (
-            <div className="relative h-full w-full overflow-hidden">
-              <img
-                src={lockupBlack}
-                alt=""
-                className="pointer-events-none absolute left-1/2 top-1/2 h-10 w-auto -translate-x-1/2 -translate-y-1/2 opacity-[0.12]"
-              />
-              <div className="relative flex h-full w-full flex-col gap-2">
-                <img src={lockup} alt="" className="h-4 w-auto self-start" />
-                {body(['w-full', 'w-full', 'w-3/4'])}
-              </div>
-            </div>
-          ),
+          node: watermarkDoc(wmMark(lockupBlack, `h-10 ${centered}`)),
         },
         {
+          // Same leaf, same size as the Do — only the placement changes, so the
+          // off-center mistake is the one thing on show.
           ok: false,
           caption: 'Off-center',
-          node: (
-            <div className="relative h-full w-full overflow-hidden">
-              <img
-                src={leafBlack}
-                alt=""
-                className="pointer-events-none absolute -bottom-3 -right-3 h-20 w-auto opacity-[0.12]"
-              />
-              <div className="relative flex h-full w-full flex-col gap-2">
-                <img src={lockup} alt="" className="h-4 w-auto self-start" />
-                {body(['w-full', 'w-full', 'w-3/4'])}
-              </div>
-            </div>
-          ),
+          node: watermarkDoc(wmMark(leafBlack, 'h-24 w-auto -bottom-4 -right-4')),
         },
       ],
     },
@@ -357,10 +340,56 @@ export default function BrandPage() {
       </section>
 
       <section className="flex flex-col gap-4">
-        <h2 className="text-lg font-medium tracking-tight">Colors</h2>
+        <h2 className="text-lg font-medium tracking-tight">Brand colors</h2>
+        <p className="text-sm text-ink-muted">The identity hues — fixed, one declared value each.</p>
         <div className="flex flex-col gap-4">
           {colors.map((color) => (
             <ColorSwatch key={color.hex} color={color} />
+          ))}
+        </div>
+      </section>
+
+      <section className="flex flex-col gap-6">
+        <div className="flex flex-col gap-1">
+          <h2 className="text-lg font-medium tracking-tight">Interface palette</h2>
+          <p className="max-w-prose text-sm text-ink-muted">
+            The working colors of the app — the reference every new surface builds from. Each
+            token carries a light and a dark value (the two chips); both
+            are welded to <code className="font-mono text-xs">globals.css</code> by a test, so a
+            swatch can never drift from what ships. Use them by name —{' '}
+            <code className="font-mono text-xs">bg-surface</code>,{' '}
+            <code className="font-mono text-xs">text-ink-muted</code>,{' '}
+            <code className="font-mono text-xs">border-hairline</code> — never a raw hex.
+          </p>
+        </div>
+        {interfacePalette.map((group) => (
+          <div key={group.group} className="flex flex-col gap-3">
+            <div className="flex flex-col gap-0.5">
+              <h3 className="text-sm font-semibold text-ink">{group.group}</h3>
+              <p className="text-xs text-ink-faint">{group.blurb}</p>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {group.tones.map((tone) => (
+                <TokenSwatch key={tone.token} tone={tone} />
+              ))}
+            </div>
+          </div>
+        ))}
+      </section>
+
+      <section className="flex flex-col gap-4">
+        <div className="flex flex-col gap-1">
+          <h2 className="text-lg font-medium tracking-tight">Status markers</h2>
+          <p className="max-w-prose text-sm text-ink-muted">
+            Status hues encode <em>data state</em> — a reefer in or out of range, an SLA at risk —
+            never chrome or decoration. They appear only as a soft-filled chip with a dot, so the
+            single action color stays unambiguous. Every chip clears WCAG AA in both themes
+            (measured on each card).
+          </p>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {statusMarkers.map((marker) => (
+            <StatusSwatch key={marker.token} marker={marker} />
           ))}
         </div>
       </section>
