@@ -3,9 +3,8 @@ import Link from 'next/link';
 import { formatTimestamp } from '@/lib/datetime';
 
 import { type NoteRow } from './actions';
-import { DownloadNote } from './DownloadNote';
-import { MarkdownBody } from './MarkdownBody';
 import { NoteCreateForm } from './NoteCreateForm';
+import { NoteReader } from './NoteReader';
 
 /** First non-empty line of a body — the nav fallback when there's no title. */
 function firstLine(body: string): string {
@@ -99,25 +98,12 @@ export function NotesView({
         {creating ? (
           <NoteCreateForm />
         ) : selected ? (
-          <>
-            <div className="flex shrink-0 items-center justify-between gap-3 border-b border-hairline px-5 py-2.5">
-              <p className="truncate text-xs text-ink-faint">
-                {authorLabel(selected.createdBy, currentUserId)} ·{' '}
-                <span className="font-mono">{when(selected.createdAt)}</span>
-              </p>
-              <DownloadNote note={{ id: selected.id, title: selected.title, body: selected.body }} />
-            </div>
-            <h2 className="shrink-0 border-b border-hairline px-5 py-3 font-serif text-xl font-semibold tracking-tight">
-              {labelFor(selected.title, selected.body)}
-            </h2>
-            <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
-              {selected.body ? (
-                <MarkdownBody>{selected.body}</MarkdownBody>
-              ) : (
-                <span className="text-sm text-ink-faint">No content.</span>
-              )}
-            </div>
-          </>
+          <NoteReader
+            note={{ id: selected.id, title: selected.title, body: selected.body }}
+            label={labelFor(selected.title, selected.body)}
+            author={authorLabel(selected.createdBy, currentUserId)}
+            when={when(selected.createdAt)}
+          />
         ) : (
           <div className="grid flex-1 place-items-center p-8 text-center">
             <p className="max-w-xs text-sm text-ink-faint">
