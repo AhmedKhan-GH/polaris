@@ -111,7 +111,7 @@ Format per domain: **Mission** (the one question it answers) · **Owns** (files,
 ### D11 — Governance
 - **Mission:** "What are the rules, and how do they change?"
 - **Owns:** this charter, the tracked handbook (single source of truth — **tracked**, ending the gitignored-canon scar), `docs/adr/` (one ADR per irreversible decision; the first ADRs record: Supabase-not-Keycloak with full rationale, the 0021 scar + channel-layer fix, login-only provisioning), the feature playbook (§5), commit/branch conventions.
-- **Provides:** change control (§ header), conventions: Conventional Commits with scopes; TDD per commit (red → green → commit; no production code without a failing test that demanded it); linear trunk — feature branches rebase onto tip and fast-forward merge, preserving the TDD commit story without merge knots.
+- **Provides:** change control (§ header), conventions: Conventional Commits with scopes; **TDD scaled to altitude** (ADR-0010) — test-first for behavior that branches, transforms, or enforces a rule and for anything security/data/money-bearing (Tiers A/B, red → green → commit); design tokens, config, copy, and one-line stdlib wrappers are not red-green subjects (Tier C); linear trunk — feature branches rebase onto tip and fast-forward merge, preserving the TDD commit story without merge knots.
 - **Never:** normative content duplicated across documents (cite, don't restate). Never a gitignored source of truth. Never a superseded spec left without a banner.
 - **Proven by:** doc-drift review at each feature's close; ADR presence checked in PR review.
 
@@ -150,7 +150,7 @@ Adding a feature touches exactly these files plus the feature's own folder — n
 
 1. Read this charter and the exemplar.
 2. Copy `app/_features/notes/` → `app/_features/<name>/`; rename subjects, tables, topics — and the exports in `index.ts`, your dev API (outsiders import nothing else; Iron Rule 8).
-3. Write the failing test first — every commit on the branch is red → green → commit.
+3. Write the failing test first for behavior with logic or stakes (ADR-0010 Tiers A/B) — red → green → commit. Design tokens, copy, config, and trivial stdlib wrappers (Tier C) are not red-green subjects; guard them once in CI if regression risk is real (e.g. a11y contrast), never per edit.
 4. Register manifests in the §3 roots (the only foundation files you touch).
 5. Tables via D2 conventions (`db:generate`, hand-edit only for guards/casts, `--custom` for triggers); policies on the correct identity path (Iron Rule 6).
 6. Actions self-guard (Iron Rule 5): `withPermission` + limiter decision + Zod + `withUserContext`.
