@@ -32,7 +32,7 @@ export function Hour12Toggle({
     <div
       role="group"
       aria-label="Time format"
-      className="inline-flex items-center border border-hairline p-0.5 text-xs"
+      className="inline-flex items-center border border-ink-faint p-0.5 text-xs"
     >
       <Option label="24h" active={!hour12} pending={pending} onClick={() => choose(false)} />
       <Option label="12h" active={hour12} pending={pending} onClick={() => choose(true)} />

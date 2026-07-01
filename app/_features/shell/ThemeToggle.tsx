@@ -36,7 +36,7 @@ export function ThemeToggle({
     <div
       role="group"
       aria-label="Color theme"
-      className="inline-flex items-center border border-hairline p-0.5 text-xs"
+      className="inline-flex items-center border border-ink-faint p-0.5 text-xs"
     >
       <Option label="Light" active={theme === 'light'} pending={pending} onClick={() => choose('light')} />
       <Option label="Dark" active={theme === 'dark'} pending={pending} onClick={() => choose('dark')} />

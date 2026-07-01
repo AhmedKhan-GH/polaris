@@ -33,7 +33,7 @@ export function TimezoneSelector({
           void setPreferences({ timezone: next, hour12 });
         });
       }}
-      className="border border-hairline bg-surface text-ink px-2 py-1 text-xs disabled:opacity-50"
+      className="border border-ink-faint bg-surface text-ink px-2 py-1 text-xs disabled:opacity-50"
     >
       {zones.map((zone) => (
         <option key={zone} value={zone}>

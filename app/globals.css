@@ -28,6 +28,7 @@
   --accent-text: #00447c;
   --accent-soft: #e9eff6;
   --brand-line: #15a4dd;
+  --brand-line-soft: #d4eefa; /* soft sky wash for header strips */
   --success: #3a7140;
   --success-soft: #eaf1ea;
   --warning: #8a5a12;
@@ -49,13 +50,14 @@
   --hairline-strong: #39414d;
   --ink: #e6e9ed;
   --ink-muted: #9aa3af;
-  --ink-faint: #7b8390;
+  --ink-faint: #868f9d; /* AA (4.5:1) on surface-alt too — welded by globals.contrast.test */
   --accent: #1f5fa8;
   --accent-hover: #2a6cb8;
   --accent-fg: #ffffff;
   --accent-text: #6fa6de;
   --accent-soft: #16243a;
   --brand-line: #3d5bd9; /* dark header rule = deep royal indigo (opposite-side blue from the sky, not the brand navy) */
+  --brand-line-soft: #1d2a4d; /* soft indigo wash for header strips */
   --success: #6fb073;
   --success-soft: #16241a;
   --warning: #d9a24e;
@@ -84,6 +86,7 @@
   --color-accent-text: var(--accent-text);
   --color-accent-soft: var(--accent-soft);
   --color-brand-line: var(--brand-line);
+  --color-brand-line-soft: var(--brand-line-soft);
   --color-success: var(--success);
   --color-success-soft: var(--success-soft);
   --color-warning: var(--warning);

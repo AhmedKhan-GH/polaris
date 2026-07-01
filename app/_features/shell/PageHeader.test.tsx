@@ -20,10 +20,23 @@ vi.mock('./PreferenceControls', () => ({
   PreferenceControls: () => null,
 }));
 
+// NavMenu is a client island (open/close, focus, drawer) covered by its own
+// suite; stub it to a marker so this test checks only PageHeader's wiring —
+// whether the burger is rendered — not the drawer's behaviour.
+vi.mock('./NavMenu', () => ({
+  NavMenu: ({ items }: { items: { href: string }[] }) => (
+    <div data-testid="nav-menu">{items.length}</div>
+  ),
+}));
+
+import type { NavItem } from '@/lib/registry/nav';
+
 import { PageHeader } from './PageHeader';
 import { branding } from '@/lib/branding';
 
 afterEach(cleanup);
+
+const navItems: NavItem[] = [{ label: 'Alpha', href: '/alpha' }];
 
 describe('PageHeader', () => {
   it('always renders a home link named by the product brand', () => {
@@ -54,5 +67,17 @@ describe('PageHeader', () => {
     expect(
       screen.queryByRole('link', { name: 'Log in' }),
     ).not.toBeInTheDocument();
+  });
+
+  it('renders no navigation menu when no nav items are given', () => {
+    render(<PageHeader user={{ email: 'a@b.com' }} />);
+
+    expect(screen.queryByTestId('nav-menu')).not.toBeInTheDocument();
+  });
+
+  it('renders the navigation menu when nav items are provided', () => {
+    render(<PageHeader user={{ email: 'a@b.com' }} navItems={navItems} />);
+
+    expect(screen.getByTestId('nav-menu')).toBeInTheDocument();
   });
 });
