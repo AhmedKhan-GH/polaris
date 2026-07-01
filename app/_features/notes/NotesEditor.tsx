@@ -185,19 +185,6 @@ export function NotesEditor({
                   <p className="mt-1 truncate text-xs text-ink-muted">
                     {authorLabel(v.editedBy, currentUserId)} · {labelFor(v.title, v.body)}
                   </p>
-                  {!isCurrent && (
-                    <form action={saveNote} className="mt-1.5">
-                      <input type="hidden" name="noteId" value={selectedId ?? ''} />
-                      <input type="hidden" name="title" value={v.title} />
-                      <input type="hidden" name="body" value={v.body} />
-                      <button
-                        type="submit"
-                        className="text-xs font-medium text-accent-text hover:underline"
-                      >
-                        Restore this version
-                      </button>
-                    </form>
-                  )}
                 </div>
               );
             })
