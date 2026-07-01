@@ -1,28 +1,20 @@
 import { sql } from 'drizzle-orm';
-import { pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { integer, pgTable, text, timestamp, unique, uuid } from 'drizzle-orm/pg-core';
 
 /**
- * DISPOSABLE EXEMPLAR — Domain Charter §4. `notes` is the copy-paste template a
- * real feature is cloned from: it shows the canonical shape of an owned,
- * RLS-protected resource (schema slice here + hand-written policy/grants in the
- * migration + an ownership integration suite). It carries NO product meaning.
- * Deleting this feature — this slice, its line in `lib/registry/schema.ts`, its
- * `drizzle/0003_*.sql` migration — must leave the foundation green; nothing in
- * `lib/` may ever depend on it.
+ * `notes` — graduating from the Charter §4 disposable exemplar into a real,
+ * FK-able backbone (spec: docs/superpowers/specs/2026-06-30-note-versioning-design.md).
+ * A note is an identity + metadata anchor; its CONTENT is an append-only
+ * version chain in `note_versions`.
  *
- * Shape choices:
- * - `createdBy` (SQL `created_by`) is a bare uuid with NO FK to `auth.users`:
- *   like the other slices, the app mirrors the auth user id in, and the link is
- *   enforced at the RLS layer, so the table applies cleanly to a vanilla
- *   Postgres container (which has no `auth` schema).
- * - RLS is enabled here so it travels with the schema. The ownership POLICY and
- *   the SELECT/INSERT/UPDATE/DELETE GRANT are NOT declared in this slice — they
- *   target the `app_user` role and read the `app.user_id` / `app.user_roles`
- *   GUCs (runtime concerns), and declaring them here would make `db:generate`
- *   re-emit (and drift from) them. They live hand-written, UNGUARDED, in
- *   drizzle/0003_*.sql — both `app_user` and those GUCs exist on BOTH targets
- *   (vanilla container and live stack). See that migration for the authoritative
- *   policy/grant.
+ * TRANSITION NOTE: `body` is retained for now as the current-content projection so
+ * the existing read path + realtime broadcast keep working (expand→migrate→contract).
+ * Once the editor reads from `note_versions`, a later migration drops `body` and the
+ * note row becomes pure identity/metadata. `body` is NOT the design end-state.
+ *
+ * Shape choices (unchanged): `created_by` is a bare uuid (no FK to auth.users);
+ * RLS is enabled here, the ownership policy + grant are hand-written in the
+ * migration (drizzle/0003 for `notes`; the new one for `note_versions`).
  */
 export const notes = pgTable('notes', {
   id: uuid('id')
@@ -35,3 +27,35 @@ export const notes = pgTable('notes', {
     .notNull()
     .default(sql`now()`),
 }).enableRLS();
+
+/**
+ * `note_versions` — the append-only content history of a note (ADR-0007 document
+ * versioning). Each row is a full body SNAPSHOT at one edit; `seq` orders them
+ * (genesis = 1) and the max `seq` per note is the current content. There is no
+ * `type` and no delta — a note is *defined by* its versions.
+ *
+ * Access derives from the parent `notes` row (like `order_lines` → `orders`): the
+ * hand-written RLS policy joins back to `notes`, so this table has no `created_by`
+ * of its own (it has `edited_by`, the author of THIS version). Immutability is
+ * enforced by the GRANT — `SELECT, INSERT` only, NO UPDATE/DELETE — hand-written
+ * in the migration, exactly like `sign_in_log` / `order_events`.
+ */
+export const noteVersions = pgTable(
+  'note_versions',
+  {
+    id: uuid('id')
+      .primaryKey()
+      .notNull()
+      .default(sql`gen_random_uuid()`),
+    noteId: uuid('note_id')
+      .notNull()
+      .references(() => notes.id, { onDelete: 'cascade' }),
+    seq: integer('seq').notNull(),
+    body: text('body').notNull(),
+    editedBy: uuid('edited_by').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .default(sql`now()`),
+  },
+  (table) => [unique('note_versions_note_seq_unique').on(table.noteId, table.seq)],
+).enableRLS();

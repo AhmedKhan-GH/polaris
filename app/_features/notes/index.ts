@@ -7,4 +7,5 @@
  * seam, rule C — never re-export manifests through the index).
  */
 export { NotesLive } from './NotesLive';
-export { getNotes, createNote } from './actions';
+export { getNotes, getNoteHistory, createNote, editNote } from './actions';
+export type { NoteRow, NoteVersionRow } from './actions';

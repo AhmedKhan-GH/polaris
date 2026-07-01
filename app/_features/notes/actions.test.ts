@@ -6,19 +6,18 @@
 // foundation seam is hoisted-mocked so the cycles assert the PIPELINE ORDER and
 // wiring — guard → limiter → validate → context, then revalidate only on success
 // — WITHOUT a real session, ability, limiter store, Postgres, or Next cache. The
-// live behaviours (real CASL + RLS + limiter) are proven in the integration
-// suite.
+// live behaviours (real CASL + RLS + limiter + the version chain) are proven in
+// the integration suite.
 //
 // Mock shapes:
 //   - `@/lib/permissions/guard` withPermission: pass-through that invokes `fn`
 //     with a fixed ctx (records 'guard'), so the inner pipeline runs.
 //   - `@/lib/rate-limit` withRateLimit: pass-through spy that invokes `fn`
 //     (records 'limiter'); a per-test override can make it reject (throttle).
-//     `createRateLimiter` is a no-op stub (the action constructs one at module
-//     load; we never exercise the real store here).
 //   - `@/lib/db/with-user-context` withUserContext: invokes `fn` with a
-//     chainable tx stub (records 'context'); the tx's `insert().values()`
-//     resolves, and `select().from().orderBy()` resolves to seeded rows.
+//     chainable tx stub (records 'context'). The stub supports `transaction(fn)`
+//     (createNote's write-through), `insert().values()[.returning()]`, and
+//     `select().from().orderBy()`.
 //   - `next/cache` revalidatePath: spy, asserted called only on success.
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -30,7 +29,8 @@ const fake = vi.hoisted(() => ({
   withRateLimit: vi.fn(),
   withUserContext: vi.fn(),
   revalidatePath: vi.fn(),
-  insertValues: vi.fn(),
+  /** Every value object passed to an `insert(...).values(...)`, in order. */
+  inserted: [] as unknown[],
   rows: [
     { id: 'n1', createdBy: '11111111-1111-1111-1111-111111111111', body: 'hi', createdAt: new Date('2026-01-01T00:00:00Z') },
   ] as unknown[],
@@ -55,15 +55,26 @@ vi.mock('next/cache', () => ({
 import { createNote, getNotes } from './actions';
 
 /**
- * A drizzle-shaped chainable tx stub. `insert(...).values(...)` records the
- * inserted values and resolves; `select().from().orderBy()` resolves to `rows`.
+ * A drizzle-shaped chainable tx stub. `insert(...).values(v)` records `v` and
+ * resolves; the returned thenable also carries `.returning()` (yielding a fixed
+ * new id) for the write-through. `transaction(fn)` runs `fn` with the same chain;
+ * `select().from().orderBy()` resolves to `rows`.
  */
 function txStub(rows: unknown[]) {
+  const values = vi.fn((v: unknown) => {
+    fake.inserted.push(v);
+    const p = Promise.resolve(undefined) as Promise<undefined> & {
+      returning?: () => Promise<Array<{ id: string }>>;
+    };
+    p.returning = vi.fn(async () => [{ id: 'new-note-id' }]);
+    return p;
+  });
   const chain = {
-    insert: vi.fn(() => ({ values: fake.insertValues })),
+    insert: vi.fn(() => ({ values })),
     select: vi.fn(() => chain),
     from: vi.fn(() => chain),
     orderBy: vi.fn(async () => rows),
+    transaction: vi.fn(async (fn: (t: unknown) => unknown) => fn(chain)),
   };
   return chain;
 }
@@ -79,7 +90,7 @@ beforeEach(() => {
   fake.withRateLimit.mockReset();
   fake.withUserContext.mockReset();
   fake.revalidatePath.mockReset();
-  fake.insertValues.mockReset();
+  fake.inserted.length = 0;
   fake.calls.length = 0;
 
   // Pass-through guard: records entry, then runs the inner pipeline with a ctx.
@@ -97,16 +108,20 @@ beforeEach(() => {
     fake.calls.push('context');
     return fn(txStub(fake.rows));
   });
-  fake.insertValues.mockResolvedValue(undefined);
 });
 
 describe('app/_features/notes createNote', () => {
-  it('inserts { createdBy, body } and revalidates /notes on a valid body', async () => {
+  it('write-through: inserts the note AND its genesis version (seq 1), then revalidates', async () => {
     await createNote(fd('hello world'));
 
-    expect(fake.insertValues).toHaveBeenCalledWith({
-      createdBy: ME,
+    // The note projection…
+    expect(fake.inserted).toContainEqual({ createdBy: ME, body: 'hello world' });
+    // …and the genesis version, in the same transaction.
+    expect(fake.inserted).toContainEqual({
+      noteId: 'new-note-id',
+      seq: 1,
       body: 'hello world',
+      editedBy: ME,
     });
     expect(fake.revalidatePath).toHaveBeenCalledWith('/notes');
   });
@@ -114,7 +129,7 @@ describe('app/_features/notes createNote', () => {
   it('rejects an empty body with the schema message, without inserting or revalidating — but only AFTER consulting the limiter (validation lives inside it)', async () => {
     await expect(createNote(fd(''))).rejects.toThrow('Note body is required');
 
-    expect(fake.insertValues).not.toHaveBeenCalled();
+    expect(fake.inserted).toHaveLength(0);
     expect(fake.revalidatePath).not.toHaveBeenCalled();
     // Order proof: the guard and limiter were both entered before validation
     // threw, so abusive invalid spam still consumes the throttle budget.
@@ -130,7 +145,7 @@ describe('app/_features/notes createNote', () => {
     await expect(createNote(fd('hello'))).rejects.toThrow(
       'Rate limit exceeded. Retry in 1s',
     );
-    expect(fake.insertValues).not.toHaveBeenCalled();
+    expect(fake.inserted).toHaveLength(0);
     expect(fake.revalidatePath).not.toHaveBeenCalled();
   });
 });

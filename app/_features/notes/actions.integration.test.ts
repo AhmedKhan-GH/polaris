@@ -47,13 +47,15 @@ describe('notes actions through the real pipeline (testcontainer)', () => {
   let rls: Awaited<ReturnType<typeof startRlsTestDb>>;
   let createNote: typeof import('./actions').createNote;
   let getNotes: typeof import('./actions').getNotes;
+  let editNote: typeof import('./actions').editNote;
+  let getNoteHistory: typeof import('./actions').getNoteHistory;
   let db: typeof import('@/lib/db/client').db;
 
   beforeAll(async () => {
     rls = await startRlsTestDb();
     process.env.DATABASE_URL = rls.appConnUri;
     // Dynamic import AFTER env is set: the client binds to DATABASE_URL on load.
-    ({ createNote, getNotes } = await import('./actions'));
+    ({ createNote, getNotes, editNote, getNoteHistory } = await import('./actions'));
     ({ db } = await import('@/lib/db/client'));
   });
 
@@ -66,8 +68,9 @@ describe('notes actions through the real pipeline (testcontainer)', () => {
 
   beforeEach(async () => {
     session.getSessionUser.mockReset();
-    // Isolate each cycle: superuser truncate bypasses RLS.
-    await rls.admin.query('truncate table notes');
+    // Isolate each cycle: superuser truncate bypasses RLS. CASCADE also clears
+    // note_versions (FK child) so the append-only child never blocks the truncate.
+    await rls.admin.query('truncate table notes cascade');
   });
 
   it('USER_A (member) creates a note, then reads it back as their own', async () => {
@@ -138,5 +141,43 @@ describe('notes actions through the real pipeline (testcontainer)', () => {
     // Nothing was written: a superuser probe sees an empty table.
     const { rows } = await rls.admin.query('select count(*)::int as n from notes');
     expect(rows[0].n).toBe(0);
+  });
+
+  it('createNote writes a genesis version (seq 1) mirroring the body', async () => {
+    session.getSessionUser.mockResolvedValue({ userId: USER_A, email: 'a@example.com', roles: ['member'] });
+
+    await createNote(fd('v1 body'));
+    const noteId = (await getNotes())[0]!.id;
+    const history = await getNoteHistory(noteId);
+
+    expect(history).toHaveLength(1);
+    expect(history[0]).toMatchObject({ seq: 1, body: 'v1 body', editedBy: USER_A });
+  });
+
+  it('editNote appends a version and updates the current projection', async () => {
+    session.getSessionUser.mockResolvedValue({ userId: USER_A, email: 'a@example.com', roles: ['member'] });
+    await createNote(fd('original'));
+    const noteId = (await getNotes())[0]!.id;
+
+    await editNote(noteId, 'edited');
+
+    expect((await getNotes())[0]!.body).toBe('edited'); // projection updated
+    const history = await getNoteHistory(noteId); // append-only, newest first
+    expect(history.map((v) => [v.seq, v.body])).toEqual([
+      [2, 'edited'],
+      [1, 'original'],
+    ]);
+  });
+
+  it('editNote cannot touch another user’s note (RLS fails closed)', async () => {
+    session.getSessionUser.mockResolvedValue({ userId: USER_A, email: 'a@example.com', roles: ['member'] });
+    await createNote(fd('A owns this'));
+    const noteId = (await getNotes())[0]!.id;
+
+    session.getSessionUser.mockResolvedValue({ userId: USER_B, email: 'b@example.com', roles: ['member'] });
+    await expect(editNote(noteId, 'hacked')).rejects.toThrow();
+
+    session.getSessionUser.mockResolvedValue({ userId: USER_A, email: 'a@example.com', roles: ['member'] });
+    expect((await getNotes())[0]!.body).toBe('A owns this'); // unchanged
   });
 });

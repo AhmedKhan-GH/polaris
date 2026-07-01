@@ -19,4 +19,8 @@ export const notesAbilities: AbilityContributor = (can, identity) => {
   can('create', 'Note');
   can('read', 'Note', { createdBy: identity.userId });
   if (identity.roles.includes('owner')) can('read', 'Note');
+  // `update` covers editNote (append a version) + restore. Ownership-scoped and
+  // deliberately WITHOUT an owner-all branch — owner is read-all, write-own — to
+  // mirror the notes RLS WITH CHECK (a version may only be appended to your own note).
+  can('update', 'Note', { createdBy: identity.userId });
 };
