@@ -46,9 +46,9 @@ export function NotesView({
   const when = (d: Date) => formatTimestamp(d.getTime(), timezone, hour12);
 
   return (
-    <div className="grid grid-cols-1 border border-hairline bg-surface lg:h-[calc(100vh-12rem)] lg:grid-cols-[280px_1fr]">
+    <div className="grid grid-cols-1 border border-hairline bg-surface sm:h-[calc(100vh-12rem)] sm:grid-cols-[260px_1fr]">
       {/* ── nav (permanent) ── */}
-      <aside className="flex min-h-0 flex-col border-b border-hairline lg:border-b-0 lg:border-r">
+      <aside className="flex min-h-0 flex-col border-b border-hairline sm:border-b-0 sm:border-r">
         <div className="flex shrink-0 items-center justify-between border-b border-hairline px-4 py-3">
           <div className="flex items-baseline gap-2">
             <h1 className="font-serif text-lg font-semibold tracking-tight">Notes</h1>
