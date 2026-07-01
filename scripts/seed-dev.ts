@@ -1,6 +1,7 @@
 import { config as loadEnv } from 'dotenv';
 
 import { createUser } from './db-setup';
+import { seedDummyNotes } from './seed-dummy-notes';
 import { seedDummyProducts } from './seed-dummy-products';
 
 /**
@@ -26,21 +27,23 @@ const DEMO_USERS = [
 /**
  * Create (or reconcile) the three canonical demo accounts and mirror their roles
  * into `profiles`. Idempotent — each `createUser` tolerates an existing email.
- * Returns the owner's user id so the caller can stamp owner-managed seed data
- * (e.g. the dummy catalog's `created_by`).
+ * Returns the owner + member user ids so the caller can stamp owner/member-managed
+ * seed data (the dummy catalog's `created_by`, the dummy notes' authors).
  */
 export async function seedDemoUsers(opts: {
   adminUrl: string;
   supabaseUrl: string;
   serviceKey: string;
   password: string;
-}): Promise<{ ownerId: string }> {
+}): Promise<{ ownerId: string; memberId: string }> {
   let ownerId = '';
+  let memberId = '';
   for (const u of DEMO_USERS) {
     const id = await createUser({ ...opts, email: u.email, role: u.role });
     if (u.role === 'owner') ownerId = id;
+    if (u.role === 'member') memberId = id;
   }
-  return { ownerId };
+  return { ownerId, memberId };
 }
 
 /** True only when this file is the process entry (`npm run db:seed-dev`), not
@@ -66,13 +69,16 @@ async function cli(): Promise<void> {
     );
   }
 
-  const { ownerId } = await seedDemoUsers({ adminUrl, supabaseUrl, serviceKey, password });
+  const { ownerId, memberId } = await seedDemoUsers({ adminUrl, supabaseUrl, serviceKey, password });
   console.log(
     'db:seed-dev ✓ demo users seeded: owner@example.com, member@example.com, admin@example.com (password: TEST_USER_PASSWORD)',
   );
 
   const total = await seedDummyProducts(adminUrl, ownerId);
   console.log(`db:seed-dev ✓ dummy SKUs seeded; products now has ${total} rows`);
+
+  const totalNotes = await seedDummyNotes(adminUrl, ownerId, memberId);
+  console.log(`db:seed-dev ✓ dummy notes seeded; notes now has ${totalNotes} rows`);
 }
 
 if (isSeedDevCliEntry(process.argv[1])) {
