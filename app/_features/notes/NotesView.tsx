@@ -2,9 +2,10 @@ import Link from 'next/link';
 
 import { formatTimestamp } from '@/lib/datetime';
 
-import { createNote, type NoteRow } from './actions';
+import { type NoteRow } from './actions';
 import { DownloadNote } from './DownloadNote';
 import { MarkdownBody } from './MarkdownBody';
+import { NoteCreateForm } from './NoteCreateForm';
 
 /** First non-empty line of a body — the nav fallback when there's no title. */
 function firstLine(body: string): string {
@@ -96,36 +97,7 @@ export function NotesView({
       {/* ── main: create OR read ── */}
       <section className="flex min-h-0 min-w-0 flex-col">
         {creating ? (
-          <form action={createNote} className="flex min-h-0 flex-1 flex-col">
-            <div className="flex shrink-0 items-center justify-between border-b border-hairline px-5 py-2.5">
-              <span className="label text-ink-faint">New note</span>
-              <Link href="/notes" className="text-sm text-ink-muted transition-colors hover:text-ink">
-                Cancel
-              </Link>
-            </div>
-            <input
-              name="title"
-              required
-              aria-label="Note title"
-              placeholder="Title"
-              className="shrink-0 border-b border-hairline bg-surface px-5 py-3 font-serif text-xl font-semibold tracking-tight text-ink placeholder:text-ink-faint focus:outline-none"
-            />
-            <textarea
-              name="body"
-              aria-label="Note body"
-              placeholder="Write…"
-              className="min-h-0 flex-1 resize-none bg-surface px-5 py-4 text-sm leading-relaxed text-ink placeholder:text-ink-faint focus:outline-none"
-            />
-            <div className="flex shrink-0 items-center justify-between border-t border-hairline px-5 py-2.5">
-              <span className="text-xs text-ink-faint">Notes are permanent — they can’t be edited after saving.</span>
-              <button
-                type="submit"
-                className="bg-accent px-4 py-1.5 text-sm font-medium text-accent-fg transition-colors hover:bg-accent-hover"
-              >
-                Create
-              </button>
-            </div>
-          </form>
+          <NoteCreateForm />
         ) : selected ? (
           <>
             <div className="flex shrink-0 items-center justify-between gap-3 border-b border-hairline px-5 py-2.5">
