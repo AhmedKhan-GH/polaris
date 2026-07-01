@@ -4,6 +4,7 @@ import { formatTimestamp } from '@/lib/datetime';
 
 import { createNote, type NoteRow } from './actions';
 import { DownloadNote } from './DownloadNote';
+import { MarkdownBody } from './MarkdownBody';
 
 /** First non-empty line of a body — the nav fallback when there's no title. */
 function firstLine(body: string): string {
@@ -132,23 +133,17 @@ export function NotesView({
                 {authorLabel(selected.createdBy, currentUserId)} ·{' '}
                 <span className="font-mono">{when(selected.createdAt)}</span>
               </p>
-              <DownloadNote
-                note={{
-                  id: selected.id,
-                  title: selected.title,
-                  createdBy: selected.createdBy,
-                  body: selected.body,
-                  createdAt: selected.createdAt.toISOString(),
-                }}
-                timezone={timezone}
-                hour12={hour12}
-              />
+              <DownloadNote note={{ id: selected.id, title: selected.title, body: selected.body }} />
             </div>
             <h2 className="shrink-0 border-b border-hairline px-5 py-3 font-serif text-xl font-semibold tracking-tight">
               {labelFor(selected.title, selected.body)}
             </h2>
-            <div className="min-h-0 flex-1 overflow-y-auto whitespace-pre-wrap break-words px-5 py-4 text-sm leading-relaxed text-ink">
-              {selected.body || <span className="text-ink-faint">No content.</span>}
+            <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
+              {selected.body ? (
+                <MarkdownBody>{selected.body}</MarkdownBody>
+              ) : (
+                <span className="text-sm text-ink-faint">No content.</span>
+              )}
             </div>
           </>
         ) : (
