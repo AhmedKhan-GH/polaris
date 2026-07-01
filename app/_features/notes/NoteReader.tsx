@@ -64,11 +64,11 @@ export function NoteReader({
         {label}
       </h2>
 
-      <div className={`grid min-h-0 flex-1 ${view === 'both' ? 'md:grid-cols-2' : 'grid-cols-1'}`}>
+      <div className={`grid min-h-0 flex-1 ${view === 'both' ? 'grid-cols-2' : 'grid-cols-1'}`}>
         {/* raw source */}
         <div
           className={`flex min-h-0 flex-col ${view === 'read' ? 'hidden' : ''} ${
-            view === 'both' ? 'border-b border-hairline md:border-b-0 md:border-r' : ''
+            view === 'both' ? 'border-r border-hairline' : ''
           }`}
         >
           {view === 'both' && (

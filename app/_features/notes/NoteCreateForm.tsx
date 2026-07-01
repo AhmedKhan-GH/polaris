@@ -61,11 +61,11 @@ export function NoteCreateForm() {
         className="shrink-0 border-b border-hairline bg-surface px-5 py-3 font-serif text-xl font-semibold tracking-tight text-ink placeholder:text-ink-faint focus:outline-none"
       />
 
-      <div className={`grid min-h-0 flex-1 ${view === 'both' ? 'md:grid-cols-2' : 'grid-cols-1'}`}>
+      <div className={`grid min-h-0 flex-1 ${view === 'both' ? 'grid-cols-2' : 'grid-cols-1'}`}>
         {/* write — always mounted so `body` submits even in Read */}
         <div
           className={`flex min-h-0 flex-col ${view === 'read' ? 'hidden' : ''} ${
-            view === 'both' ? 'border-b border-hairline md:border-b-0 md:border-r' : ''
+            view === 'both' ? 'border-r border-hairline' : ''
           }`}
         >
           {view === 'both' && (
