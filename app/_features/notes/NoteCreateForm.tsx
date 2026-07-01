@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 
 import { createNote } from './actions';
-import { wordCount } from './identity';
+import { wordCount } from './wordStats';
 import { MarkdownBody } from './MarkdownBody';
 
 type View = 'type' | 'both' | 'read';

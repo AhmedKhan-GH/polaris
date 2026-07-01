@@ -1,7 +1,10 @@
 // Pure word-count helper for note metadata. No DOM, no I/O.
+// Only wordCount is tested: it has real logic (blank -> 0, whitespace-collapsing
+// split). charCount is a one-line `text.length` wrapper — a Tier-C stdlib wrapper,
+// not a red-green subject (ADR-0010).
 import { describe, expect, it } from 'vitest';
 
-import { charCount, wordCount } from './identity';
+import { wordCount } from './wordStats';
 
 describe('wordCount', () => {
   it('counts whitespace-delimited words', () => {
@@ -13,16 +16,5 @@ describe('wordCount', () => {
   it('treats empty or blank text as zero', () => {
     expect(wordCount('')).toBe(0);
     expect(wordCount('   \n\t ')).toBe(0);
-  });
-});
-
-describe('charCount', () => {
-  it('counts every character, whitespace included', () => {
-    expect(charCount('hello')).toBe(5);
-    expect(charCount('hello world')).toBe(11);
-  });
-
-  it('is zero for the empty string', () => {
-    expect(charCount('')).toBe(0);
   });
 });

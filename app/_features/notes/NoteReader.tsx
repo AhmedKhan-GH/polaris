@@ -3,7 +3,7 @@
 import { useState } from 'react';
 
 import { DownloadNote } from './DownloadNote';
-import { charCount, wordCount } from './identity';
+import { charCount, wordCount } from './wordStats';
 import { MarkdownBody } from './MarkdownBody';
 
 type View = 'source' | 'both' | 'read';
