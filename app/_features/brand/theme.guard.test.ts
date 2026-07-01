@@ -1,9 +1,10 @@
 // @vitest-environment node
 //
-// The weld that makes "single source that propagates" real: the globals.css
-// @theme brand colors MUST equal lib/branding's canonical hexes. Change a token
-// and forget the CSS (or vice versa) → this goes red. Reads the stylesheet as
-// text (not an import), so it crosses no module boundary.
+// CI drift-guard (ADR-0010): a Tier-C token weld with real regression risk, not a
+// per-edit red-green driver. The globals.css @theme brand colors MUST equal
+// lib/branding's canonical hexes — change a token and forget the CSS (or vice
+// versa) and this goes red. Reads the stylesheet as text (not an import), so it
+// crosses no module boundary.
 
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';

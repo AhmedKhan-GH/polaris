@@ -2,7 +2,8 @@
 // ground it can land on, in BOTH themes. Contrast is relational — a tone that
 // clears `surface` can still fail on the slightly lighter `surface-alt` — so this
 // reads the shipped tokens straight from globals.css and checks each text/ground
-// pair by measured ratio. Mechanical enforcement (Charter D11), not a manual eye.
+// pair by measured ratio. A CI drift-guard (ADR-0010): a Tier-C token subject with
+// real a11y regression risk — run once in CI, not a per-edit red-green driver.
 
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
