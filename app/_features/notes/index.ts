@@ -6,6 +6,6 @@
  * NotesLive) and the manifests `schema`/`permissions`/`nav` (the registry's
  * seam, rule C — never re-export manifests through the index).
  */
-export { NotesLive } from './NotesLive';
-export { getNotes, getNoteHistory, createNote, editNote } from './actions';
+export { NotesEditor } from './NotesEditor';
+export { getNotes, getNoteHistory, createNote, editNote, saveNote } from './actions';
 export type { NoteRow, NoteVersionRow } from './actions';

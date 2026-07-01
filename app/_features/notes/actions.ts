@@ -115,6 +115,15 @@ export async function createNote(formData: FormData): Promise<void> {
  * max + 1. RLS forbids editing another user's note (the `note_versions` WITH
  * CHECK requires the parent be the caller's own), so this fails closed.
  */
+/**
+ * Form adapter for the editor's Save and a version Restore: reads `noteId` +
+ * `body` from the submitted form and delegates to `editNote` (append a version).
+ * Thin on purpose — `editNote` stays the single tested edit path.
+ */
+export async function saveNote(formData: FormData): Promise<void> {
+  await editNote(String(formData.get('noteId') ?? ''), String(formData.get('body') ?? ''));
+}
+
 export async function editNote(noteId: string, body: string): Promise<void> {
   await withPermission('update', 'Note', (ctx) =>
     withRateLimit(notesWriteLimiter, `notes:edit:${ctx.userId}`, async () => {
