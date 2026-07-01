@@ -127,6 +127,13 @@
       "when": 1782867445902,
       "tag": "0017_woozy_zarek",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1782871914236,
+      "tag": "0018_spooky_zodiak",
+      "breakpoints": true
     }
   ]
 }

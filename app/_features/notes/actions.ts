@@ -1,25 +1,25 @@
 'use server';
 
-import { desc, eq } from 'drizzle-orm';
-import { revalidatePath } from 'next/cache';
+import { desc } from 'drizzle-orm';
+import { redirect } from 'next/navigation';
 import { z } from 'zod';
 
 import { withUserContext } from '@/lib/db/with-user-context';
 import { withPermission } from '@/lib/permissions/guard';
 import { createRateLimiter, withRateLimit } from '@/lib/rate-limit';
 
-import { noteVersions, notes } from './schema';
+import { notes } from './schema';
 
 /**
  * Write budget for notes, OWNED by this feature (Charter D6): 30 writes / 60s
- * per acting user. Shared by every note write (create + edit).
+ * per acting user. Notes are immutable, so the only write is create.
  */
 const notesWriteLimiter = createRateLimiter({ points: 30, duration: 60 });
 
 /**
- * A note's editable content, validated at the action boundary. A title is
- * REQUIRED (trimmed, non-empty) on create and edit; the body is optional. The
- * trimmed title is what gets stored.
+ * A note's content, validated at the action boundary. A title is REQUIRED
+ * (trimmed, non-empty); the body is optional. Notes are write-once, so this runs
+ * only on create.
  */
 const noteInput = z.object({
   title: z.string().trim().min(1, 'Title is required').max(200, 'Title too long'),
@@ -34,18 +34,9 @@ export type NoteRow = {
   createdAt: Date;
 };
 
-export type NoteVersionRow = {
-  id: string;
-  seq: number;
-  title: string;
-  body: string;
-  editedBy: string;
-  createdAt: Date;
-};
-
 /**
- * Read the caller's visible notes, newest first (CASL `read Note` + RLS). Title +
- * body are the current-content projection, kept in sync by the write-through below.
+ * Read the caller's visible notes, newest first (CASL `read Note` + RLS): a member
+ * sees their own, an owner sees all. Both layers must pass to return a row.
  */
 export async function getNotes(): Promise<NoteRow[]> {
   return withPermission('read', 'Note', (ctx) =>
@@ -65,34 +56,10 @@ export async function getNotes(): Promise<NoteRow[]> {
 }
 
 /**
- * The append-only version chain of one note, newest first — the History panel's
- * source (and restore/`.txt` source). Each version snapshots title + body. RLS
- * scopes it to notes the caller may see (the policy joins back to the parent note).
- */
-export async function getNoteHistory(noteId: string): Promise<NoteVersionRow[]> {
-  return withPermission('read', 'Note', (ctx) =>
-    withUserContext(ctx, (tx) =>
-      tx
-        .select({
-          id: noteVersions.id,
-          seq: noteVersions.seq,
-          title: noteVersions.title,
-          body: noteVersions.body,
-          editedBy: noteVersions.editedBy,
-          createdAt: noteVersions.createdAt,
-        })
-        .from(noteVersions)
-        .where(eq(noteVersions.noteId, noteId))
-        .orderBy(desc(noteVersions.seq)),
-    ),
-  );
-}
-
-/**
- * Create a note owned by the acting user. Write-through, one transaction: the
- * `notes` projection AND its genesis `note_versions` row (`seq 1`, title + body)
- * together, so projection and chain never diverge. Pipeline order is contractual:
- * guard → limiter → validate → context, then revalidate.
+ * Create an immutable note owned by the acting user. Pipeline order is
+ * contractual: guard → limiter → validate → context. On success it redirects to
+ * `/notes` (leaving create mode and landing on the freshly written note) — never
+ * on a denied, throttled, or invalid call.
  */
 export async function createNote(formData: FormData): Promise<void> {
   await withPermission('create', 'Note', (ctx) =>
@@ -102,74 +69,10 @@ export async function createNote(formData: FormData): Promise<void> {
         body: String(formData.get('body') ?? ''),
       });
       await withUserContext(ctx, (tx) =>
-        tx.transaction(async (t) => {
-          const [row] = await t
-            .insert(notes)
-            .values({ createdBy: ctx.userId, title, body })
-            .returning({ id: notes.id });
-          await t
-            .insert(noteVersions)
-            .values({ noteId: row.id, seq: 1, title, body, editedBy: ctx.userId });
-        }),
+        tx.insert(notes).values({ createdBy: ctx.userId, title, body }),
       );
     }),
   );
 
-  revalidatePath('/notes');
-}
-
-/**
- * Edit a note: APPEND a new version (title + body snapshot; never mutate history)
- * and update the current projection, in one transaction. `seq` is the note's
- * current max + 1. RLS forbids editing another user's note (the `note_versions`
- * WITH CHECK requires the parent be the caller's own), so this fails closed.
- */
-export async function editNote(noteId: string, title: string, body: string): Promise<void> {
-  await withPermission('update', 'Note', (ctx) =>
-    withRateLimit(notesWriteLimiter, `notes:edit:${ctx.userId}`, async () => {
-      const parsed = noteInput.parse({ title, body });
-      await withUserContext(ctx, (tx) =>
-        tx.transaction(async (t) => {
-          const [cur] = await t
-            .select({
-              seq: noteVersions.seq,
-              title: noteVersions.title,
-              body: noteVersions.body,
-            })
-            .from(noteVersions)
-            .where(eq(noteVersions.noteId, noteId))
-            .orderBy(desc(noteVersions.seq))
-            .limit(1);
-          // No-op when nothing changed: don't append a duplicate version.
-          if (cur && cur.title === parsed.title && cur.body === parsed.body) return;
-          await t
-            .update(notes)
-            .set({ title: parsed.title, body: parsed.body })
-            .where(eq(notes.id, noteId));
-          await t.insert(noteVersions).values({
-            noteId,
-            seq: (cur?.seq ?? 0) + 1,
-            title: parsed.title,
-            body: parsed.body,
-            editedBy: ctx.userId,
-          });
-        }),
-      );
-    }),
-  );
-
-  revalidatePath('/notes');
-}
-
-/**
- * Form adapter for the editor's Save and a version Restore: reads `noteId`,
- * `title`, `body` from the submitted form and delegates to `editNote` (append a
- * version). Thin on purpose — `editNote` stays the single tested edit path.
- */
-export async function saveNote(formData: FormData): Promise<void> {
-  await editNote(
-    String(formData.get('noteId') ?? ''),
-    String(formData.get('title') ?? ''),
-    String(formData.get('body') ?? ''),
-  );
+  redirect('/notes');
 }

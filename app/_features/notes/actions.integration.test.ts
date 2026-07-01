@@ -1,23 +1,18 @@
 // notes actions through the REAL pipeline, minus session.
 //
-// This suite mocks EXACTLY ONE seam — `@/lib/auth/session` getSessionUser — and
+// Mocks EXACTLY ONE behavioural seam — `@/lib/auth/session` getSessionUser — and
 // runs everything else for real: the registry-backed CASL ability, the real
 // `withPermission` guard, the real feature-owned rate limiter, the real
 // `withUserContext` GUC plumbing, the real `notes` schema, and the real Drizzle
-// client against a throwaway Postgres testcontainer. It is the end-to-end proof
-// that the action pipeline + Postgres RLS agree on who can see and write what;
-// only the request's identity is stubbed (there is no HTTP layer here to carry a
-// Supabase token).
+// client against a throwaway Postgres testcontainer. End-to-end proof that the
+// action pipeline + Postgres RLS agree on who can see and write what.
 //
-// Module-load order is the contract: `lib/db/client` reads `DATABASE_URL` at
-// import time, so we boot the container, point `DATABASE_URL` at the `app_user`
-// connection string, and only THEN dynamically import the actions module (which
-// transitively imports the client). Importing earlier would bind the client to
-// the wrong (or missing) URL.
+// Module-load order is the contract: point `DATABASE_URL` at the `app_user`
+// connection string BEFORE dynamically importing the actions module.
 //
-// `next/cache` revalidatePath is also stubbed: it is a Next-runtime-only call
-// with no meaning (and would throw) outside the framework, and it is irrelevant
-// to what this suite proves. The session mock is the only BEHAVIOURAL double.
+// `next/navigation` redirect is stubbed to a no-op: createNote redirects on
+// success, which would otherwise throw NEXT_REDIRECT outside the framework. The
+// session mock is the only BEHAVIOURAL double.
 
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -26,17 +21,11 @@ import { startRlsTestDb } from '@/lib/db/__tests__/rls-test-db';
 const USER_A = '11111111-1111-1111-1111-111111111111';
 const USER_B = '22222222-2222-2222-2222-222222222222';
 
-// The single behavioural double: the guard resolves identity through this.
-const session = vi.hoisted(() => ({
-  getSessionUser: vi.fn(),
-}));
-vi.mock('@/lib/auth/session', () => ({
-  getSessionUser: session.getSessionUser,
-}));
-// Next-runtime-only no-op outside the framework; irrelevant to this suite.
-vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }));
+const session = vi.hoisted(() => ({ getSessionUser: vi.fn() }));
+vi.mock('@/lib/auth/session', () => ({ getSessionUser: session.getSessionUser }));
+vi.mock('next/navigation', () => ({ redirect: vi.fn() }));
 
-/** Build a FormData carrying `body` and a `title` (required on create; defaulted here). */
+/** Build a FormData carrying `body` and a `title` (required on create; defaulted). */
 function fd(body: string, title = 'Note'): FormData {
   const f = new FormData();
   f.set('body', body);
@@ -48,61 +37,41 @@ describe('notes actions through the real pipeline (testcontainer)', () => {
   let rls: Awaited<ReturnType<typeof startRlsTestDb>>;
   let createNote: typeof import('./actions').createNote;
   let getNotes: typeof import('./actions').getNotes;
-  let editNote: typeof import('./actions').editNote;
-  let getNoteHistory: typeof import('./actions').getNoteHistory;
   let db: typeof import('@/lib/db/client').db;
 
   beforeAll(async () => {
     rls = await startRlsTestDb();
     process.env.DATABASE_URL = rls.appConnUri;
-    // Dynamic import AFTER env is set: the client binds to DATABASE_URL on load.
-    ({ createNote, getNotes, editNote, getNoteHistory } = await import('./actions'));
+    ({ createNote, getNotes } = await import('./actions'));
     ({ db } = await import('@/lib/db/client'));
   });
 
   afterAll(async () => {
-    // End the app pool the client opened so it does not hold the event loop,
-    // then tear the container down.
     await db.$client.end();
     await rls.cleanup();
   });
 
   beforeEach(async () => {
     session.getSessionUser.mockReset();
-    // Isolate each cycle: superuser truncate bypasses RLS. CASCADE also clears
-    // note_versions (FK child) so the append-only child never blocks the truncate.
-    await rls.admin.query('truncate table notes cascade');
+    // Isolate each cycle: superuser truncate bypasses RLS.
+    await rls.admin.query('truncate table notes');
   });
 
   it('USER_A (member) creates a note, then reads it back as their own', async () => {
-    session.getSessionUser.mockResolvedValue({
-      userId: USER_A,
-      email: 'a@example.com',
-      roles: ['member'],
-    });
+    session.getSessionUser.mockResolvedValue({ userId: USER_A, email: 'a@example.com', roles: ['member'] });
 
-    await createNote(fd('hello'));
+    await createNote(fd('hello', 'Greeting'));
     const rows = await getNotes();
 
     expect(rows).toHaveLength(1);
-    expect(rows[0]?.createdBy).toBe(USER_A);
-    expect(rows[0]?.body).toBe('hello');
+    expect(rows[0]).toMatchObject({ createdBy: USER_A, title: 'Greeting', body: 'hello' });
   });
 
   it('USER_B (member) sees only their own notes — USER_A’s are invisible (RLS)', async () => {
-    // Seed one note per user as USER_A then USER_B.
-    session.getSessionUser.mockResolvedValue({
-      userId: USER_A,
-      email: 'a@example.com',
-      roles: ['member'],
-    });
+    session.getSessionUser.mockResolvedValue({ userId: USER_A, email: 'a@example.com', roles: ['member'] });
     await createNote(fd('from A'));
 
-    session.getSessionUser.mockResolvedValue({
-      userId: USER_B,
-      email: 'b@example.com',
-      roles: ['member'],
-    });
+    session.getSessionUser.mockResolvedValue({ userId: USER_B, email: 'b@example.com', roles: ['member'] });
     await createNote(fd('from B'));
 
     const rows = await getNotes();
@@ -111,25 +80,13 @@ describe('notes actions through the real pipeline (testcontainer)', () => {
   });
 
   it('USER_B with the owner role sees ALL notes (owner read-all branch)', async () => {
-    session.getSessionUser.mockResolvedValue({
-      userId: USER_A,
-      email: 'a@example.com',
-      roles: ['member'],
-    });
+    session.getSessionUser.mockResolvedValue({ userId: USER_A, email: 'a@example.com', roles: ['member'] });
     await createNote(fd('from A'));
 
-    session.getSessionUser.mockResolvedValue({
-      userId: USER_B,
-      email: 'b@example.com',
-      roles: ['member'],
-    });
+    session.getSessionUser.mockResolvedValue({ userId: USER_B, email: 'b@example.com', roles: ['member'] });
     await createNote(fd('from B'));
 
-    session.getSessionUser.mockResolvedValue({
-      userId: USER_B,
-      email: 'b@example.com',
-      roles: ['owner'],
-    });
+    session.getSessionUser.mockResolvedValue({ userId: USER_B, email: 'b@example.com', roles: ['owner'] });
     const rows = await getNotes();
     expect(rows.map((r) => r.body).sort()).toEqual(['from A', 'from B']);
   });
@@ -139,58 +96,7 @@ describe('notes actions through the real pipeline (testcontainer)', () => {
 
     await expect(createNote(fd('nope'))).rejects.toThrow('Not authenticated');
 
-    // Nothing was written: a superuser probe sees an empty table.
     const { rows } = await rls.admin.query('select count(*)::int as n from notes');
     expect(rows[0].n).toBe(0);
-  });
-
-  it('createNote writes a genesis version (seq 1) snapshotting title + body', async () => {
-    session.getSessionUser.mockResolvedValue({ userId: USER_A, email: 'a@example.com', roles: ['member'] });
-
-    await createNote(fd('v1 body', 'V1 title'));
-    const noteId = (await getNotes())[0]!.id;
-    const history = await getNoteHistory(noteId);
-
-    expect(history).toHaveLength(1);
-    expect(history[0]).toMatchObject({ seq: 1, title: 'V1 title', body: 'v1 body', editedBy: USER_A });
-  });
-
-  it('editNote appends a version (title + body) and updates the current projection', async () => {
-    session.getSessionUser.mockResolvedValue({ userId: USER_A, email: 'a@example.com', roles: ['member'] });
-    await createNote(fd('original')); // title ''
-    const noteId = (await getNotes())[0]!.id;
-
-    await editNote(noteId, 'Renamed', 'edited');
-
-    const now = (await getNotes())[0]!;
-    expect([now.title, now.body]).toEqual(['Renamed', 'edited']); // projection updated
-    const history = await getNoteHistory(noteId); // append-only, newest first
-    expect(history.map((v) => [v.seq, v.title, v.body])).toEqual([
-      [2, 'Renamed', 'edited'],
-      [1, 'Note', 'original'],
-    ]);
-  });
-
-  it('editNote is a no-op when title + body are unchanged (no duplicate version)', async () => {
-    session.getSessionUser.mockResolvedValue({ userId: USER_A, email: 'a@example.com', roles: ['member'] });
-    await createNote(fd('same body', 'Same title'));
-    const noteId = (await getNotes())[0]!.id;
-
-    await editNote(noteId, 'Same title', 'same body'); // identical → nothing to save
-
-    expect(await getNoteHistory(noteId)).toHaveLength(1); // still just the genesis version
-  });
-
-  it('editNote cannot touch another user’s note (RLS fails closed)', async () => {
-    session.getSessionUser.mockResolvedValue({ userId: USER_A, email: 'a@example.com', roles: ['member'] });
-    await createNote(fd('A owns this'));
-    const noteId = (await getNotes())[0]!.id;
-
-    session.getSessionUser.mockResolvedValue({ userId: USER_B, email: 'b@example.com', roles: ['member'] });
-    // A valid title so it clears validation and is rejected by RLS, not the schema.
-    await expect(editNote(noteId, 'Hacky', 'hacked')).rejects.toThrow();
-
-    session.getSessionUser.mockResolvedValue({ userId: USER_A, email: 'a@example.com', roles: ['member'] });
-    expect((await getNotes())[0]!.body).toBe('A owns this'); // unchanged
   });
 });
